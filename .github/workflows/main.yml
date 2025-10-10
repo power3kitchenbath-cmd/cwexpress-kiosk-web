@@ -1,0 +1,239 @@
+import React from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { CheckCircle2, FileDown, Send, DollarSign, ArrowRight, PencilLine } from "lucide-react";
+
+const MOCK_DATA = {
+  ticketId: "Design-0001",
+  status: "Ready for Review",
+  customer: { name: "Sample Customer", phone: "(555) 010-1234" },
+  renders: [
+    "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?q=80&w=2000&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1507668077129-56e32842fceb?q=80&w=2000&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2000&auto=format&fit=crop",
+  ],
+  pdfUrl: "https://example.com/Design-0001/plans.pdf",
+  estimate: {
+    items: [
+      { item_code: "W0930", mapped_sku: "W0930-WS-WHT", description: "Wall Cabinet 9x30", qty: 2, unit_price: 129.0, line_total: 258.0 },
+      { item_code: "W1230", mapped_sku: "W1230-WS-WHT", description: "Wall Cabinet 12x30", qty: 1, unit_price: 139.0, line_total: 139.0 },
+      { item_code: "B24", mapped_sku: "B24-WS-WHT", description: "Base Cabinet 24", qty: 1, unit_price: 199.0, line_total: 199.0 },
+      { item_code: "W3030", mapped_sku: "W3030-WS-WHT", description: "Wall Cabinet 30x30", qty: 2, unit_price: 219.0, line_total: 438.0 },
+      { item_code: "DB36", mapped_sku: "DB36-S3-NAVY", description: "3-Drawer Base 36", qty: 1, unit_price: 399.0, line_total: 399.0 },
+    ],
+    subtotal: 1433.0,
+    tax_rate: 0.0,
+    tax: 0.0,
+    grand_total: 1433.0,
+  },
+};
+
+function StepPill({ idx, label, active, done }) {
+  return (
+    <div className={`flex items-center gap-3 ${done ? "opacity-80" : ""}`}>
+      <div
+        className={`w-9 h-9 rounded-full flex items-center justify-center border text-sm font-semibold shadow ${
+          done ? "bg-green-100 border-green-300" : active ? "bg-blue-100 border-blue-300" : "bg-white border-gray-300"
+        }`}
+      >
+        {done ? <CheckCircle2 className="w-5 h-5" /> : idx}
+      </div>
+      <div className={`text-sm ${active ? "font-semibold" : "text-gray-600"}`}>{label}</div>
+    </div>
+  );
+}
+
+function MoneyRow({ label, value, bold }) {
+  const v = Number.isFinite(value) ? Number(value) : 0;
+  return (
+    <div className="flex justify-between py-1 text-sm">
+      <div className={bold ? "font-semibold" : "text-gray-600"}>{label}</div>
+      <div className={bold ? "font-semibold" : ""}>${v.toFixed(2)}</div>
+    </div>
+  );
+}
+
+export default function DesignReviewMock() {
+  const d = MOCK_DATA;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 p-6 md:p-10">
+      <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Kitchen Design Review</h1>
+          <div className="mt-1 text-sm text-gray-600">
+            Ticket <span className="font-mono">{d.ticketId}</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge className="text-xs py-1 px-2 rounded-2xl">{d.status}</Badge>
+          <div className="text-sm text-gray-600">
+            {d.customer.name} · {d.customer.phone}
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="rounded-2xl shadow-sm">
+          <CardContent className="p-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <StepPill idx={1} label="Intake" done />
+              <StepPill idx={2} label="Design" done />
+              <StepPill idx={3} label="Review & Approve" active />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="max-w-6xl mx-auto mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          <Card className="rounded-2xl shadow-sm">
+            <CardContent className="p-4 md:p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold">Design Renders</h2>
+                <Button variant="secondary" className="rounded-2xl">
+                  <FileDown className="w-4 h-4 mr-2" />
+                  Download All
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {d.renders.map((src, i) => (
+                  <div key={i} className="aspect-video rounded-xl overflow-hidden shadow">
+                    <img src={src} alt={`Render ${i + 1}`} className="w-full h-full object-cover" />
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-5 flex items-center justify-between">
+                <div>
+                  <div className="text-sm text-gray-600">Plans & Elevations (PDF)</div>
+                  <a href={d.pdfUrl} target="_blank" rel="noreferrer" className="text-sm underline">
+                    Open plans.pdf
+                  </a>
+                </div>
+                <Button className="rounded-2xl">
+                  <FileDown className="w-4 h-4 mr-2" />
+                  Download PDF
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-2xl shadow-sm">
+            <CardContent className="p-4 md:p-6">
+              <h3 className="text-lg font-semibold mb-3">Request Revisions</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <Input placeholder="Your name (optional on kiosk)" />
+                <Input placeholder="Phone or Email (optional)" />
+              </div>
+              <Textarea className="mt-3" placeholder={"Tell our designer what you’d like changed (e.g., make island 42\" deep; switch wall W0930 to W0942)."} />
+              <div className="mt-3 flex gap-3">
+                <Button variant="secondary" className="rounded-2xl">
+                  <PencilLine className="w-4 h-4 mr-2" />
+                  Save Note
+                </Button>
+                <Button className="rounded-2xl">
+                  <Send className="w-4 h-4 mr-2" />
+                  Submit Revision Request
+                </Button>
+              </div>
+              <Alert className="mt-3">
+                <AlertTitle>Tip</AlertTitle>
+                <AlertDescription>
+                  Photos help! You can add pictures of your space on the intake screen or text them to your designer.
+                </AlertDescription>
+              </Alert>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="space-y-6">
+          <Card className="rounded-2xl shadow-sm">
+            <CardContent className="p-4 md:p-6">
+              <h2 className="text-lg font-semibold mb-3">Estimate</h2>
+              <div className="max-h-[340px] overflow-auto border rounded-xl">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 sticky top-0">
+                    <tr className="text-left">
+                      <th className="px-3 py-2">Item</th>
+                      <th className="px-3 py-2">SKU</th>
+                      <th className="px-3 py-2 text-right">Qty</th>
+                      <th className="px-3 py-2 text-right">Unit</th>
+                      <th className="px-3 py-2 text-right">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {d.estimate.items.map((li, i) => (
+                      <tr key={i} className="border-t">
+                        <td className="px-3 py-2">{li.description}</td>
+                        <td className="px-3 py-2 font-mono text-[12px]">{li.mapped_sku}</td>
+                        <td className="px-3 py-2 text-right">{li.qty}</td>
+                        <td className="px-3 py-2 text-right">${Number(li.unit_price).toFixed(2)}</td>
+                        <td className="px-3 py-2 text-right font-medium">${Number(li.line_total).toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="mt-4">
+                <MoneyRow label="Subtotal" value={d.estimate.subtotal} />
+                <MoneyRow label={`Tax (${(d.estimate.tax_rate * 100).toFixed(0)}%)`} value={d.estimate.tax} />
+                <div className="border-t my-2" />
+                <MoneyRow label="Grand Total" value={d.estimate.grand_total} bold />
+              </div>
+
+              <div className="mt-4 grid grid-cols-1 gap-3">
+                <Button className="rounded-2xl h-12 text-base">
+                  <DollarSign className="w-5 h-5 mr-2" />
+                  Approve & Checkout
+                </Button>
+                <Button variant="outline" className="rounded-2xl h-12 text-base">
+                  <ArrowRight className="w-5 h-5 mr-2" />
+                  Continue Browsing Cabinets
+                </Button>
+              </div>
+
+              <div className="mt-4 text-xs text-gray-500">
+                By approving, you confirm the layout and finishes shown. Final field measurements and install pricing may adjust the total.
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-2xl shadow-sm">
+            <CardContent className="p-4 md:p-6">
+              <h3 className="text-sm font-semibold mb-2">Status & Notifications</h3>
+              <ul className="text-sm space-y-1 text-gray-700">
+                <li>• Deposit received</li>
+                <li>• Design uploaded by designer</li>
+                <li>• Ready for customer review</li>
+              </ul>
+              <div className="mt-3 text-xs text-gray-500">
+                Webhooks: set <span className="font-mono">KIOSK_WEBHOOK_URL</span> to notify customers when designs are ready.
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto mt-8 text-center text-xs text-gray-500">
+        © {new Date().getFullYear()} Power3 Kitchen & Bath Depot · CW Express USA
+      </div>
+    </div>
+  );
+}
+
+function __run_inline_tests() {
+  const items = MOCK_DATA.estimate.items;
+  const subtotal = items.reduce((s, li) => s + Number(li.line_total || 0), 0);
+  if (Math.abs(subtotal - 1433.0) > 1e-9) throw new Error("subtotal test failed");
+  if (items.length !== 5) throw new Error("items count test failed");
+  if (Number.isNaN(Number(items[0].unit_price))) throw new Error("unit price type test failed");
+}
+
+if (typeof window !== "undefined" && window && !window.__UI_TESTS_DISABLED__) {
+  try { __run_inline_tests(); } catch (e) { console.error(e); }
+}
