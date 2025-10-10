@@ -8,7 +8,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft, Calculator } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { z } from "zod";
 import logo from "@/assets/logo.png";
+
+const cabinetSchema = z.object({
+  quantity: z.number().int().min(1, "Quantity must be at least 1").max(1000, "Quantity cannot exceed 1000")
+});
+
+const flooringSchema = z.object({
+  squareFeet: z.number().min(0.1, "Square feet must be at least 0.1").max(100000, "Square feet cannot exceed 100,000")
+});
 
 interface CabinetItem {
   type: string;
@@ -100,7 +109,10 @@ export default function Estimator() {
   const addCabinet = () => {
     if (cabinetType && cabinetQuantity) {
       const quantity = parseInt(cabinetQuantity);
-      if (quantity > 0) {
+      
+      try {
+        cabinetSchema.parse({ quantity });
+        
         const selectedType = cabinetTypes.find(c => c.name === cabinetType);
         if (selectedType) {
           setCabinets([...cabinets, {
@@ -110,6 +122,14 @@ export default function Estimator() {
           }]);
           setCabinetQuantity("");
         }
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          toast({
+            title: "Invalid Input",
+            description: error.errors[0].message,
+            variant: "destructive",
+          });
+        }
       }
     }
   };
@@ -117,7 +137,10 @@ export default function Estimator() {
   const addFlooring = () => {
     if (flooringType && flooringSquareFeet) {
       const sqFt = parseFloat(flooringSquareFeet);
-      if (sqFt > 0) {
+      
+      try {
+        flooringSchema.parse({ squareFeet: sqFt });
+        
         const selectedType = flooringTypes.find(f => f.name === flooringType);
         if (selectedType) {
           setFlooring([...flooring, {
@@ -126,6 +149,14 @@ export default function Estimator() {
             pricePerSqFt: selectedType.price_per_sqft,
           }]);
           setFlooringSquareFeet("");
+        }
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          toast({
+            title: "Invalid Input",
+            description: error.errors[0].message,
+            variant: "destructive",
+          });
         }
       }
     }
@@ -236,7 +267,8 @@ export default function Estimator() {
                   <Input
                     type="number"
                     min="1"
-                    placeholder="Enter quantity"
+                    max="1000"
+                    placeholder="Enter quantity (1-1000)"
                     value={cabinetQuantity}
                     onChange={(e) => setCabinetQuantity(e.target.value)}
                   />
@@ -291,9 +323,10 @@ export default function Estimator() {
                   <Label>Square Feet</Label>
                   <Input
                     type="number"
-                    min="1"
+                    min="0.1"
+                    max="100000"
                     step="0.1"
-                    placeholder="Enter square feet"
+                    placeholder="Enter square feet (0.1-100,000)"
                     value={flooringSquareFeet}
                     onChange={(e) => setFlooringSquareFeet(e.target.value)}
                   />

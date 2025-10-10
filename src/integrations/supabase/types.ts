@@ -44,7 +44,7 @@ export type Database = {
           flooring_total: number
           grand_total: number
           id: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           cabinet_items?: Json
@@ -54,7 +54,7 @@ export type Database = {
           flooring_total?: number
           grand_total?: number
           id?: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           cabinet_items?: Json
@@ -64,7 +64,7 @@ export type Database = {
           flooring_total?: number
           grand_total?: number
           id?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
