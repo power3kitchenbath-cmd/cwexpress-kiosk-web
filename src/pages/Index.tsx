@@ -83,7 +83,7 @@ const Index = () => {
       </section>
 
       {/* Bottom Banner */}
-      <footer className="bg-[hsl(215,85%,35%)] py-8">
+      <footer className="bg-[hsl(215,85%,35%)] py-8 relative">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-primary-foreground mb-2">
             CABINETS • COUNTERTOPS • FLOORS
@@ -91,6 +91,12 @@ const Index = () => {
           <p className="text-accent text-lg font-semibold">
             Factory Direct Pricing - Professional Quality
           </p>
+          <button
+            onClick={() => navigate("/admin")}
+            className="absolute bottom-2 right-2 text-xs text-primary-foreground/40 hover:text-primary-foreground/60 transition-colors"
+          >
+            Admin
+          </button>
         </div>
       </footer>
     </main>
