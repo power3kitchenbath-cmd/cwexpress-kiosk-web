@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Estimator from "./pages/Estimator";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
+import Estimates from "./pages/Estimates";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/estimator" element={<Estimator />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/estimates" element={<Estimates />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
