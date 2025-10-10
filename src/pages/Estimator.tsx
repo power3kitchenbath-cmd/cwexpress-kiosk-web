@@ -5,9 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Calculator } from "lucide-react";
+import { ArrowLeft, Calculator, Shield } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useUserRole } from "@/hooks/use-user-role";
 import { z } from "zod";
 import logo from "@/assets/logo.png";
 
@@ -46,6 +47,7 @@ interface FlooringType {
 export default function Estimator() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isAdmin } = useUserRole();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -218,6 +220,16 @@ export default function Estimator() {
               <ArrowLeft className="mr-2" />
               Back to Home
             </Button>
+            {isAdmin && (
+              <Button
+                variant="ghost"
+                onClick={() => navigate("/admin")}
+                className="text-primary-foreground hover:bg-primary-foreground/10"
+              >
+                <Shield className="mr-2" />
+                Admin
+              </Button>
+            )}
             <Button
               variant="ghost"
               onClick={handleLogout}
