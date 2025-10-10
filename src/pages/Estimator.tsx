@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Calculator } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import logo from "@/assets/logo.png";
 
 interface CabinetItem {
@@ -20,24 +22,27 @@ interface FlooringItem {
   pricePerSqFt: number;
 }
 
-const CABINET_PRICES: Record<string, number> = {
-  "base-cabinet": 450,
-  "wall-cabinet": 350,
-  "tall-cabinet": 650,
-  "corner-cabinet": 550,
-  "island-cabinet": 850,
-};
+interface CabinetType {
+  id: string;
+  name: string;
+  price_per_unit: number;
+}
 
-const FLOORING_PRICES: Record<string, number> = {
-  "hardwood": 8.50,
-  "laminate": 4.25,
-  "tile": 6.75,
-  "vinyl": 3.50,
-  "carpet": 3.00,
-};
+interface FlooringType {
+  id: string;
+  name: string;
+  price_per_sqft: number;
+}
 
 export default function Estimator() {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  const [cabinetTypes, setCabinetTypes] = useState<CabinetType[]>([]);
+  const [flooringTypes, setFlooringTypes] = useState<FlooringType[]>([]);
+  
   const [cabinetType, setCabinetType] = useState("");
   const [cabinetQuantity, setCabinetQuantity] = useState("");
   const [cabinets, setCabinets] = useState<CabinetItem[]>([]);
@@ -46,17 +51,65 @@ export default function Estimator() {
   const [flooringSquareFeet, setFlooringSquareFeet] = useState("");
   const [flooring, setFlooring] = useState<FlooringItem[]>([]);
 
+  useEffect(() => {
+    checkAuth();
+    fetchPrices();
+  }, []);
+
+  const checkAuth = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      navigate("/auth");
+    } else {
+      setIsAuthenticated(true);
+    }
+    setIsLoading(false);
+  };
+
+  const fetchPrices = async () => {
+    const { data: cabinetData } = await supabase
+      .from("cabinet_types")
+      .select("*")
+      .order("name");
+    
+    const { data: flooringData } = await supabase
+      .from("flooring_types")
+      .select("*")
+      .order("name");
+
+    if (cabinetData) {
+      setCabinetTypes(cabinetData);
+      if (cabinetData.length > 0) {
+        setCabinetType(cabinetData[0].name);
+      }
+    }
+    
+    if (flooringData) {
+      setFlooringTypes(flooringData);
+      if (flooringData.length > 0) {
+        setFlooringType(flooringData[0].name);
+      }
+    }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/auth");
+  };
+
   const addCabinet = () => {
     if (cabinetType && cabinetQuantity) {
       const quantity = parseInt(cabinetQuantity);
       if (quantity > 0) {
-        setCabinets([...cabinets, {
-          type: cabinetType,
-          quantity,
-          pricePerUnit: CABINET_PRICES[cabinetType],
-        }]);
-        setCabinetType("");
-        setCabinetQuantity("");
+        const selectedType = cabinetTypes.find(c => c.name === cabinetType);
+        if (selectedType) {
+          setCabinets([...cabinets, {
+            type: cabinetType,
+            quantity,
+            pricePerUnit: selectedType.price_per_unit,
+          }]);
+          setCabinetQuantity("");
+        }
       }
     }
   };
@@ -65,13 +118,15 @@ export default function Estimator() {
     if (flooringType && flooringSquareFeet) {
       const sqFt = parseFloat(flooringSquareFeet);
       if (sqFt > 0) {
-        setFlooring([...flooring, {
-          type: flooringType,
-          squareFeet: sqFt,
-          pricePerSqFt: FLOORING_PRICES[flooringType],
-        }]);
-        setFlooringType("");
-        setFlooringSquareFeet("");
+        const selectedType = flooringTypes.find(f => f.name === flooringType);
+        if (selectedType) {
+          setFlooring([...flooring, {
+            type: flooringType,
+            squareFeet: sqFt,
+            pricePerSqFt: selectedType.price_per_sqft,
+          }]);
+          setFlooringSquareFeet("");
+        }
       }
     }
   };
@@ -80,26 +135,66 @@ export default function Estimator() {
   const flooringTotal = flooring.reduce((sum, item) => sum + (item.squareFeet * item.pricePerSqFt), 0);
   const grandTotal = cabinetTotal + flooringTotal;
 
-  const formatCabinetName = (type: string) => {
-    return type.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-  };
-
-  const formatFlooringName = (type: string) => {
+  const formatName = (type: string) => {
     return type.charAt(0).toUpperCase() + type.slice(1);
   };
+
+  const saveEstimate = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabase.from("estimates").insert({
+      user_id: user.id,
+      cabinet_items: cabinets as any,
+      flooring_items: flooring as any,
+      cabinet_total: cabinetTotal,
+      flooring_total: flooringTotal,
+      grand_total: grandTotal,
+    });
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save estimate",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Estimate saved successfully",
+      });
+    }
+  };
+
+  if (isLoading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary via-primary to-primary-dark">
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
-          <Button
-            variant="ghost"
-            onClick={() => navigate("/")}
-            className="text-primary-foreground hover:bg-primary-foreground/10"
-          >
-            <ArrowLeft className="mr-2" />
-            Back to Home
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              onClick={() => navigate("/")}
+              className="text-primary-foreground hover:bg-primary-foreground/10"
+            >
+              <ArrowLeft className="mr-2" />
+              Back to Home
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={handleLogout}
+              className="text-primary-foreground hover:bg-primary-foreground/10"
+            >
+              Logout
+            </Button>
+          </div>
           <img src={logo} alt="The Cabinet Store" className="h-16 object-contain" />
         </div>
 
@@ -127,11 +222,11 @@ export default function Estimator() {
                       <SelectValue placeholder="Select cabinet type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="base-cabinet">Base Cabinet - $450</SelectItem>
-                      <SelectItem value="wall-cabinet">Wall Cabinet - $350</SelectItem>
-                      <SelectItem value="tall-cabinet">Tall Cabinet - $650</SelectItem>
-                      <SelectItem value="corner-cabinet">Corner Cabinet - $550</SelectItem>
-                      <SelectItem value="island-cabinet">Island Cabinet - $850</SelectItem>
+                      {cabinetTypes.map((cabinet) => (
+                        <SelectItem key={cabinet.id} value={cabinet.name}>
+                          {formatName(cabinet.name)} - ${cabinet.price_per_unit}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -156,7 +251,7 @@ export default function Estimator() {
                     <h4 className="font-semibold">Added Cabinets:</h4>
                     {cabinets.map((item, index) => (
                       <div key={index} className="flex justify-between text-sm">
-                        <span>{formatCabinetName(item.type)} x{item.quantity}</span>
+                        <span>{formatName(item.type)} x{item.quantity}</span>
                         <span className="font-semibold">${(item.quantity * item.pricePerUnit).toFixed(2)}</span>
                       </div>
                     ))}
@@ -183,11 +278,11 @@ export default function Estimator() {
                       <SelectValue placeholder="Select flooring type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="hardwood">Hardwood - $8.50/sq ft</SelectItem>
-                      <SelectItem value="laminate">Laminate - $4.25/sq ft</SelectItem>
-                      <SelectItem value="tile">Tile - $6.75/sq ft</SelectItem>
-                      <SelectItem value="vinyl">Vinyl - $3.50/sq ft</SelectItem>
-                      <SelectItem value="carpet">Carpet - $3.00/sq ft</SelectItem>
+                      {flooringTypes.map((flooring) => (
+                        <SelectItem key={flooring.id} value={flooring.name}>
+                          {formatName(flooring.name)} - ${flooring.price_per_sqft}/sq ft
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -213,7 +308,7 @@ export default function Estimator() {
                     <h4 className="font-semibold">Added Flooring:</h4>
                     {flooring.map((item, index) => (
                       <div key={index} className="flex justify-between text-sm">
-                        <span>{formatFlooringName(item.type)} - {item.squareFeet} sq ft</span>
+                        <span>{formatName(item.type)} - {item.squareFeet} sq ft</span>
                         <span className="font-semibold">${(item.squareFeet * item.pricePerSqFt).toFixed(2)}</span>
                       </div>
                     ))}
@@ -248,6 +343,14 @@ export default function Estimator() {
                     <span className="text-accent">${grandTotal.toFixed(2)}</span>
                   </div>
                 </div>
+                <Button 
+                  onClick={saveEstimate} 
+                  className="mt-6 w-full"
+                  variant="kiosk"
+                  disabled={cabinets.length === 0 && flooring.length === 0}
+                >
+                  Save Estimate
+                </Button>
                 <p className="text-sm text-muted-foreground mt-4">
                   * This is an estimate. Final pricing may vary based on specific requirements and installation.
                 </p>
