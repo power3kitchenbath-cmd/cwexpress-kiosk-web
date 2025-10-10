@@ -1,12 +1,15 @@
 import { OrderingOption } from "@/components/OrderingOption";
 import { Monitor, Store, Globe } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import showroomImg from "@/assets/showroom.jpg";
 import kioskImg from "@/assets/kiosk-screen.jpg";
 import logoImg from "@/assets/logo.png";
 
 const Index = () => {
+  const navigate = useNavigate();
+  
   const handleKioskClick = () => {
-    console.log("Express Kiosk clicked");
+    navigate("/estimator");
   };
 
   const handleShowroomClick = () => {
