@@ -202,6 +202,9 @@ export default function Estimator() {
   } else if (totalCabinetQuantity >= 12 && totalCabinetQuantity <= 15) {
     markupPercentage = 0.35;
     markupLabel = "Order Markup (35%)";
+  } else if (totalCabinetQuantity >= 18) {
+    markupPercentage = 0.30;
+    markupLabel = "Order Markup (30%)";
   }
   
   const markupAmount = subtotal * markupPercentage;
