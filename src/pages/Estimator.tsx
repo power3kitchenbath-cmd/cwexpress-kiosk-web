@@ -191,7 +191,11 @@ export default function Estimator() {
 
   const cabinetTotal = cabinets.reduce((sum, item) => sum + (item.quantity * item.pricePerUnit), 0);
   const flooringTotal = flooring.reduce((sum, item) => sum + (item.squareFeet * item.pricePerSqFt), 0);
-  const grandTotal = cabinetTotal + flooringTotal;
+  const totalCabinetQuantity = cabinets.reduce((sum, item) => sum + item.quantity, 0);
+  const subtotal = cabinetTotal + flooringTotal;
+  const markupPercentage = totalCabinetQuantity < 10 ? 0.45 : 0;
+  const markupAmount = subtotal * markupPercentage;
+  const grandTotal = subtotal + markupAmount;
 
   const formatName = (type: string) => {
     return type.charAt(0).toUpperCase() + type.slice(1);
@@ -437,6 +441,16 @@ export default function Estimator() {
                     <span>Flooring:</span>
                     <span className="font-semibold">${flooringTotal.toFixed(2)}</span>
                   </div>
+                  <div className="flex justify-between pt-2 border-t">
+                    <span>Subtotal:</span>
+                    <span className="font-semibold">${subtotal.toFixed(2)}</span>
+                  </div>
+                  {markupPercentage > 0 && (
+                    <div className="flex justify-between text-amber-600">
+                      <span>Small Order Markup (45%):</span>
+                      <span className="font-semibold">${markupAmount.toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-2xl font-bold pt-4 border-t-2">
                     <span>Grand Total:</span>
                     <span className="text-accent">${grandTotal.toFixed(2)}</span>
