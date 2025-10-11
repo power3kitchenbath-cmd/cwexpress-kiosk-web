@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -46,6 +46,8 @@ interface FlooringType {
 
 export default function Estimator() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editId = searchParams.get("id");
   const { toast } = useToast();
   const { isAdmin } = useUserRole();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -65,7 +67,10 @@ export default function Estimator() {
   useEffect(() => {
     checkAuth();
     fetchPrices();
-  }, []);
+    if (editId) {
+      loadEstimate(editId);
+    }
+  }, [editId]);
 
   const checkAuth = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -90,17 +95,37 @@ export default function Estimator() {
 
     if (cabinetData) {
       setCabinetTypes(cabinetData);
-      if (cabinetData.length > 0) {
+      if (cabinetData.length > 0 && !cabinetType) {
         setCabinetType(cabinetData[0].name);
       }
     }
     
     if (flooringData) {
       setFlooringTypes(flooringData);
-      if (flooringData.length > 0) {
+      if (flooringData.length > 0 && !flooringType) {
         setFlooringType(flooringData[0].name);
       }
     }
+  };
+
+  const loadEstimate = async (id: string) => {
+    const { data, error } = await supabase
+      .from("estimates")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (error || !data) {
+      toast({
+        title: "Error",
+        description: "Failed to load estimate",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setCabinets((data.cabinet_items as unknown) as CabinetItem[]);
+    setFlooring((data.flooring_items as unknown) as FlooringItem[]);
   };
 
   const handleLogout = async () => {
@@ -176,26 +201,55 @@ export default function Estimator() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { error } = await supabase.from("estimates").insert({
-      user_id: user.id,
-      cabinet_items: cabinets as any,
-      flooring_items: flooring as any,
-      cabinet_total: cabinetTotal,
-      flooring_total: flooringTotal,
-      grand_total: grandTotal,
-    });
+    if (editId) {
+      // Update existing estimate
+      const { error } = await supabase
+        .from("estimates")
+        .update({
+          cabinet_items: cabinets as any,
+          flooring_items: flooring as any,
+          cabinet_total: cabinetTotal,
+          flooring_total: flooringTotal,
+          grand_total: grandTotal,
+        })
+        .eq("id", editId);
 
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save estimate",
-        variant: "destructive",
-      });
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to update estimate",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "Estimate updated successfully",
+        });
+        navigate("/estimates");
+      }
     } else {
-      toast({
-        title: "Success",
-        description: "Estimate saved successfully",
+      // Create new estimate
+      const { error } = await supabase.from("estimates").insert({
+        user_id: user.id,
+        cabinet_items: cabinets as any,
+        flooring_items: flooring as any,
+        cabinet_total: cabinetTotal,
+        flooring_total: flooringTotal,
+        grand_total: grandTotal,
       });
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to save estimate",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "Estimate saved successfully",
+        });
+      }
     }
   };
 
@@ -245,7 +299,7 @@ export default function Estimator() {
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-primary-foreground mb-2 flex items-center justify-center gap-3">
               <Calculator className="w-10 h-10" />
-              Price Estimator
+              {editId ? "Edit Estimate" : "Price Estimator"}
             </h1>
             <p className="text-primary-foreground/80">Calculate your cabinet and flooring costs</p>
           </div>
@@ -394,7 +448,7 @@ export default function Estimator() {
                   variant="kiosk"
                   disabled={cabinets.length === 0 && flooring.length === 0}
                 >
-                  Save Estimate
+                  {editId ? "Update Estimate" : "Save Estimate"}
                 </Button>
                 <p className="text-sm text-muted-foreground mt-4">
                   * This is an estimate. Final pricing may vary based on specific requirements and installation.
