@@ -193,7 +193,17 @@ export default function Estimator() {
   const flooringTotal = flooring.reduce((sum, item) => sum + (item.squareFeet * item.pricePerSqFt), 0);
   const totalCabinetQuantity = cabinets.reduce((sum, item) => sum + item.quantity, 0);
   const subtotal = cabinetTotal + flooringTotal;
-  const markupPercentage = totalCabinetQuantity < 10 ? 0.45 : 0;
+  
+  let markupPercentage = 0;
+  let markupLabel = "";
+  if (totalCabinetQuantity < 10) {
+    markupPercentage = 0.45;
+    markupLabel = "Small Order Markup (45%)";
+  } else if (totalCabinetQuantity >= 12 && totalCabinetQuantity <= 15) {
+    markupPercentage = 0.35;
+    markupLabel = "Order Markup (35%)";
+  }
+  
   const markupAmount = subtotal * markupPercentage;
   const grandTotal = subtotal + markupAmount;
 
@@ -447,7 +457,7 @@ export default function Estimator() {
                   </div>
                   {markupPercentage > 0 && (
                     <div className="flex justify-between text-amber-600">
-                      <span>Small Order Markup (45%):</span>
+                      <span>{markupLabel}:</span>
                       <span className="font-semibold">${markupAmount.toFixed(2)}</span>
                     </div>
                   )}
