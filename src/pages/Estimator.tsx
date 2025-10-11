@@ -371,7 +371,7 @@ export default function Estimator() {
                       </div>
                     ))}
                     <div className="flex justify-between font-bold pt-2 border-t">
-                      <span>Cabinet Subtotal:</span>
+                      <span>Factory Price:</span>
                       <span>${cabinetTotal.toFixed(2)}</span>
                     </div>
                   </div>
