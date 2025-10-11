@@ -6,8 +6,9 @@ import { useUserRole } from "@/hooks/use-user-role";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Download } from "lucide-react";
+import { ArrowLeft, Download, Trash2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import logo from "@/assets/logo.png";
 
 type Estimate = Tables<"estimates">;
@@ -55,6 +56,30 @@ const Estimates = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("estimates")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Estimate deleted successfully",
+      });
+      
+      fetchEstimates();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete estimate",
+        variant: "destructive",
+      });
     }
   };
 
@@ -143,6 +168,7 @@ const Estimates = () => {
                       <TableHead>Flooring Items</TableHead>
                       <TableHead>Flooring Total</TableHead>
                       <TableHead className="text-right">Grand Total</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -191,6 +217,29 @@ const Estimates = () => {
                           <TableCell>${Number(estimate.flooring_total).toFixed(2)}</TableCell>
                           <TableCell className="text-right font-bold">
                             ${Number(estimate.grand_total).toFixed(2)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Estimate</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete this estimate? This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDelete(estimate.id)}>
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </TableCell>
                         </TableRow>
                       );
