@@ -12,6 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import logo from "@/assets/logo.png";
 
 type Estimate = Tables<"estimates">;
+type DesignProject = Tables<"design_projects">;
 
 const Estimates = () => {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ const Estimates = () => {
   const { isAdmin, loading: roleLoading } = useUserRole();
   
   const [estimates, setEstimates] = useState<Estimate[]>([]);
+  const [designProjects, setDesignProjects] = useState<DesignProject[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -35,6 +37,7 @@ const Estimates = () => {
   useEffect(() => {
     if (isAdmin) {
       fetchEstimates();
+      fetchDesignProjects();
     }
   }, [isAdmin]);
 
@@ -56,6 +59,20 @@ const Estimates = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchDesignProjects = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("design_projects")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setDesignProjects(data || []);
+    } catch (error) {
+      console.error("Failed to load design projects:", error);
     }
   };
 
@@ -260,6 +277,52 @@ const Estimates = () => {
             )}
           </CardContent>
         </Card>
+
+        {designProjects.length > 0 && (
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle>KCDW Design Projects</CardTitle>
+              <CardDescription>
+                {designProjects.length} imported design project{designProjects.length !== 1 ? "s" : ""}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {designProjects.map((project) => (
+                  <Card key={project.id} className="overflow-hidden">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg">{project.project_name}</CardTitle>
+                      <CardDescription className="text-xs">
+                        {new Date(project.created_at || "").toLocaleDateString()}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      {project.cabinet_data && Array.isArray(project.cabinet_data) && project.cabinet_data.length > 0 && (
+                        <div className="text-sm">
+                          <span className="font-medium">Cabinets:</span>{" "}
+                          {project.cabinet_data.length} items
+                        </div>
+                      )}
+                      {project.design_drawing_file && (
+                        <div className="text-sm text-muted-foreground">
+                          📄 Design drawing attached
+                        </div>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full mt-2"
+                        onClick={() => navigate(`/design/${project.id}`)}
+                      >
+                        View Project
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

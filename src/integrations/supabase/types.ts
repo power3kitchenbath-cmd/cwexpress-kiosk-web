@@ -35,6 +35,39 @@ export type Database = {
         }
         Relationships: []
       }
+      design_projects: {
+        Row: {
+          cabinet_data: Json | null
+          cabinet_list_file: string | null
+          created_at: string
+          design_drawing_file: string | null
+          id: string
+          project_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cabinet_data?: Json | null
+          cabinet_list_file?: string | null
+          created_at?: string
+          design_drawing_file?: string | null
+          id?: string
+          project_name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cabinet_data?: Json | null
+          cabinet_list_file?: string | null
+          created_at?: string
+          design_drawing_file?: string | null
+          id?: string
+          project_name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       estimates: {
         Row: {
           cabinet_items: Json

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -46,6 +46,7 @@ interface FlooringType {
 
 export default function Estimator() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const editId = searchParams.get("id");
   const { toast } = useToast();
@@ -70,7 +71,11 @@ export default function Estimator() {
     if (editId) {
       loadEstimate(editId);
     }
-  }, [editId]);
+    // Handle imported cabinets from design import
+    if (location.state?.importedCabinets) {
+      loadImportedCabinets(location.state.importedCabinets);
+    }
+  }, [editId, location.state]);
 
   const checkAuth = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -126,6 +131,45 @@ export default function Estimator() {
 
     setCabinets((data.cabinet_items as unknown) as CabinetItem[]);
     setFlooring((data.flooring_items as unknown) as FlooringItem[]);
+  };
+
+  const loadImportedCabinets = (importedCabinets: any[]) => {
+    const matchedCabinets: CabinetItem[] = [];
+    let unmatchedCount = 0;
+
+    importedCabinets.forEach((imported) => {
+      // Try to match by name (case-insensitive, partial match)
+      const matchedType = cabinetTypes.find((ct) =>
+        ct.name.toLowerCase().includes(imported.name.toLowerCase()) ||
+        imported.name.toLowerCase().includes(ct.name.toLowerCase())
+      );
+
+      if (matchedType) {
+        matchedCabinets.push({
+          type: matchedType.name,
+          quantity: imported.quantity || 1,
+          pricePerUnit: matchedType.price_per_unit,
+        });
+      } else {
+        unmatchedCount++;
+      }
+    });
+
+    if (matchedCabinets.length > 0) {
+      setCabinets(matchedCabinets);
+      toast({
+        title: "Cabinets Imported",
+        description: `Successfully imported ${matchedCabinets.length} cabinet(s).${
+          unmatchedCount > 0 ? ` ${unmatchedCount} cabinet(s) could not be matched.` : ""
+        }`,
+      });
+    } else {
+      toast({
+        title: "No Matches Found",
+        description: "Could not match imported cabinets with available types. Please add them manually.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleLogout = async () => {

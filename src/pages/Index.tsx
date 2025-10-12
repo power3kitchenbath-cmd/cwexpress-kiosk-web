@@ -13,7 +13,7 @@ const Index = () => {
   };
 
   const handleShowroomClick = () => {
-    console.log("Showroom clicked");
+    navigate("/design-import");
   };
 
   const handleWebsiteClick = () => {
@@ -64,10 +64,10 @@ const Index = () => {
           />
           
           <OrderingOption
-            title="BUY FACTORY DIRECT"
-            description="Visit our showroom to eliminate the middleman. Quality cabinets, countertops, and floors at unbeatable prices."
+            title="IMPORT KCDW DESIGN"
+            description="Upload your KCDW cabinet designs and drawings to automatically generate estimates and present to clients."
             image={showroomImg}
-            buttonText="View Showroom"
+            buttonText="Import Design"
             onButtonClick={handleShowroomClick}
             highlight={true}
           />
