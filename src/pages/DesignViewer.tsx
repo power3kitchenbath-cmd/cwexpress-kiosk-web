@@ -39,12 +39,15 @@ export default function DesignViewer() {
 
       setProject(data as DesignProject);
 
-      // Get public URL for drawing if it exists
+      // Get signed URL for drawing if it exists (expires in 1 hour)
       if (data.design_drawing_file) {
-        const { data: urlData } = supabase.storage
+        const { data: urlData, error: urlError } = await supabase.storage
           .from("design-files")
-          .getPublicUrl(data.design_drawing_file);
-        setDrawingUrl(urlData.publicUrl);
+          .createSignedUrl(data.design_drawing_file, 3600);
+        
+        if (!urlError && urlData) {
+          setDrawingUrl(urlData.signedUrl);
+        }
       }
     } catch (error: any) {
       console.error("Error fetching design:", error);
