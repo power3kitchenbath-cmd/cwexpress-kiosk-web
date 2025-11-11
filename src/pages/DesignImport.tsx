@@ -19,36 +19,62 @@ export default function DesignImport() {
   const handleCabinetFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // File size validation (10MB limit)
+      const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+      if (file.size > maxSize) {
+        toast({
+          title: "File Too Large",
+          description: "Cabinet list file must be under 10MB.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Content-type validation
       const validTypes = [
         "text/csv",
         "application/vnd.ms-excel",
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       ];
-      if (validTypes.includes(file.type) || file.name.endsWith(".csv")) {
-        setCabinetFile(file);
-      } else {
+      if (!validTypes.includes(file.type) && !file.name.endsWith(".csv")) {
         toast({
           title: "Invalid File Type",
           description: "Please upload a CSV or Excel file for the cabinet list.",
           variant: "destructive",
         });
+        return;
       }
+
+      setCabinetFile(file);
     }
   };
 
   const handleDrawingFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // File size validation (10MB limit)
+      const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+      if (file.size > maxSize) {
+        toast({
+          title: "File Too Large",
+          description: "Drawing file must be under 10MB.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Content-type validation
       const validTypes = ["application/pdf", "image/jpeg", "image/png", "image/jpg"];
-      if (validTypes.includes(file.type)) {
-        setDrawingFile(file);
-      } else {
+      if (!validTypes.includes(file.type)) {
         toast({
           title: "Invalid File Type",
           description: "Please upload a PDF, JPG, or PNG file for the design drawing.",
           variant: "destructive",
         });
+        return;
       }
+
+      setDrawingFile(file);
     }
   };
 
@@ -80,9 +106,14 @@ export default function DesignImport() {
 
           const cabinets = lines.slice(1).map((line) => {
             const values = line.split(",").map((v) => v.trim());
+            // Sanitize values to prevent CSV injection
+            const sanitizeName = (val: string) => {
+              // Remove leading special characters that could trigger CSV injection
+              return val.replace(/^[=+\-@]/g, '').substring(0, 100);
+            };
             return {
-              name: values[nameIndex] || "Unknown",
-              quantity: qtyIndex !== -1 ? parseInt(values[qtyIndex]) || 1 : 1,
+              name: sanitizeName(values[nameIndex] || "Unknown"),
+              quantity: qtyIndex !== -1 ? Math.min(Math.max(parseInt(values[qtyIndex]) || 1, 1), 9999) : 1,
             };
           }).filter((cab) => cab.name && cab.name !== "Unknown");
 
