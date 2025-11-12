@@ -14,6 +14,16 @@ import LaunchPlan from "./pages/LaunchPlan";
 import InvestorDeck from "./pages/InvestorDeck";
 import Presentations from "./pages/Presentations";
 import NotFound from "./pages/NotFound";
+import { ShippingLayout } from "./layouts/ShippingLayout";
+import Dashboard from "./pages/shipping/Dashboard";
+import ShipNow from "./pages/shipping/ShipNow";
+import TrackPackage from "./pages/shipping/TrackPackage";
+import PackageDetail from "./pages/shipping/PackageDetail";
+import Fleet from "./pages/shipping/Fleet";
+import Policies from "./pages/shipping/Policies";
+import ReturnPolicy from "./pages/shipping/policies/ReturnPolicy";
+import ShippingProcedures from "./pages/shipping/policies/ShippingProcedures";
+import Contact from "./pages/shipping/Contact";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +44,20 @@ const App = () => (
           <Route path="/launch-plan" element={<LaunchPlan />} />
           <Route path="/investor-deck" element={<InvestorDeck />} />
           <Route path="/presentations" element={<Presentations />} />
+          
+          {/* CW Express Shipping Platform */}
+          <Route path="/shipping" element={<ShippingLayout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="ship" element={<ShipNow />} />
+            <Route path="track" element={<TrackPackage />} />
+            <Route path="track/:trackingNumber" element={<PackageDetail />} />
+            <Route path="fleet" element={<Fleet />} />
+            <Route path="policies" element={<Policies />} />
+            <Route path="policies/returns" element={<ReturnPolicy />} />
+            <Route path="policies/shipping" element={<ShippingProcedures />} />
+            <Route path="contact" element={<Contact />} />
+          </Route>
+          
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
