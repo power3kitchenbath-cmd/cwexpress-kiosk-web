@@ -47,6 +47,15 @@ const Presentations = () => {
     },
     {
       id: 2,
+      title: "Investor Pitch Deck",
+      description: "Funding requirements, ROI projections, competitive analysis, and exit strategy",
+      type: "Investment Materials",
+      icon: Presentation,
+      path: "/investor-deck",
+      badge: "Confidential",
+    },
+    {
+      id: 3,
       title: "Supplier Comparison Analysis",
       description: "Detailed comparison between Caesarstone and Best Cheer Stone USA",
       type: "Analysis",
@@ -55,7 +64,7 @@ const Presentations = () => {
       badge: "Confidential",
     },
     {
-      id: 3,
+      id: 4,
       title: "Power3 Ecosystem Overview",
       description: "Strategic value and synergies within the Power3 company portfolio",
       type: "Overview",
