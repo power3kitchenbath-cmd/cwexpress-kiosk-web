@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_notifications: {
+        Row: {
+          created_at: string
+          data: Json | null
+          expires_at: string | null
+          id: string
+          message: string
+          read: boolean
+          severity: string
+          title: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json | null
+          expires_at?: string | null
+          id?: string
+          message: string
+          read?: boolean
+          severity?: string
+          title: string
+          type: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json | null
+          expires_at?: string | null
+          id?: string
+          message?: string
+          read?: boolean
+          severity?: string
+          title?: string
+          type?: string
+        }
+        Relationships: []
+      }
       cabinet_types: {
         Row: {
           created_at: string | null
@@ -473,6 +509,15 @@ export type Database = {
       }
     }
     Functions: {
+      calculate_email_delivery_rate: {
+        Args: never
+        Returns: {
+          delivery_rate: number
+          failed_emails: number
+          total_emails: number
+        }[]
+      }
+      check_email_delivery_health: { Args: never; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
