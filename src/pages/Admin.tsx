@@ -17,6 +17,7 @@ import { ProCustomersSection } from "@/components/admin/ProCustomersSection";
 import { OrderStatistics } from "@/components/admin/OrderStatistics";
 import { FailedEmailsSection } from "@/components/admin/FailedEmailsSection";
 import { CronJobsSection } from "@/components/admin/CronJobsSection";
+import { AdminNotifications } from "@/components/admin/AdminNotifications";
 import { NotificationCenter } from "@/components/admin/NotificationCenter";
 
 interface CabinetType {
