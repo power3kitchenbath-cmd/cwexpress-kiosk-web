@@ -16,6 +16,7 @@ import { OrdersSection } from "@/components/admin/OrdersSection";
 import { ProCustomersSection } from "@/components/admin/ProCustomersSection";
 import { OrderStatistics } from "@/components/admin/OrderStatistics";
 import { FailedEmailsSection } from "@/components/admin/FailedEmailsSection";
+import { CronJobsSection } from "@/components/admin/CronJobsSection";
 
 interface CabinetType {
   id: string;
@@ -255,6 +256,7 @@ const Admin = () => {
 
           <TabsContent value="overview" className="space-y-6">
             <OrderStatistics />
+            <CronJobsSection />
             <FailedEmailsSection />
             <div className="grid gap-6 md:grid-cols-2">
               <OrdersSection />
