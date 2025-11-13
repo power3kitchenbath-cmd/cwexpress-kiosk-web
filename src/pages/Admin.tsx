@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, Pencil, Trash2, FileText, Presentation } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, FileText, Presentation, Package } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import logo from "@/assets/logo.png";
@@ -225,6 +225,10 @@ const Admin = () => {
           <Button onClick={() => navigate("/presentations")}>
             <Presentation className="mr-2 h-4 w-4" />
             Presentations
+          </Button>
+          <Button onClick={() => navigate("/product-manager")}>
+            <Package className="mr-2 h-4 w-4" />
+            Product Manager
           </Button>
           <Button onClick={() => navigate("/estimates")}>
             <FileText className="mr-2 h-4 w-4" />

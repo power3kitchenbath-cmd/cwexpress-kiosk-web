@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, ExternalLink, ShoppingCart, Package } from "lucide-react";
+import { ArrowLeft, ExternalLink, ShoppingCart, Package, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -76,12 +76,27 @@ const OnlineShop = () => {
 
   const getInventoryBadge = (status: string, count: number) => {
     if (status === 'out_of_stock' || count === 0) {
-      return <Badge variant="destructive">Out of Stock</Badge>;
+      return (
+        <Badge variant="destructive" className="gap-1.5 shadow-lg">
+          <AlertCircle className="w-3 h-3" />
+          Out of Stock
+        </Badge>
+      );
     }
     if (status === 'low_stock' || count < 10) {
-      return <Badge variant="secondary" className="bg-yellow-500 text-white">Low Stock ({count})</Badge>;
+      return (
+        <Badge variant="secondary" className="gap-1.5 bg-orange-500 text-white hover:bg-orange-600 shadow-lg">
+          <AlertCircle className="w-3 h-3" />
+          Low Stock ({count})
+        </Badge>
+      );
     }
-    return <Badge variant="default" className="bg-green-600">In Stock ({count})</Badge>;
+    return (
+      <Badge variant="default" className="gap-1.5 bg-green-600 hover:bg-green-700 shadow-lg">
+        <Package className="w-3 h-3" />
+        In Stock ({count})
+      </Badge>
+    );
   };
 
   const handleOrderClick = () => {
