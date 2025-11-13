@@ -2,9 +2,13 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { Mail, MailOpen, XCircle, TrendingUp } from "lucide-react";
+import { Mail, MailOpen, XCircle, TrendingUp, Download, FileText } from "lucide-react";
 import { format, subDays, startOfDay } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface EmailStats {
   total: number;
@@ -35,6 +39,7 @@ const COLORS = {
 };
 
 export const EmailAnalyticsDashboard = () => {
+  const { toast } = useToast();
   const [stats, setStats] = useState<EmailStats | null>(null);
   const [dailyStats, setDailyStats] = useState<DailyStats[]>([]);
   const [loading, setLoading] = useState(true);
@@ -132,6 +137,134 @@ export const EmailAnalyticsDashboard = () => {
     }
   };
 
+  const exportToCSV = () => {
+    if (!stats || dailyStats.length === 0) {
+      toast({
+        title: "No Data",
+        description: "No data available to export",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const csvData = [
+      ["Email Analytics Report"],
+      [`Generated: ${format(new Date(), "PPpp")}`],
+      [`Time Range: ${timeRange}`],
+      [""],
+      ["Overall Statistics"],
+      ["Metric", "Value"],
+      ["Total Emails", stats.total.toString()],
+      ["Delivered", stats.sent.toString()],
+      ["Opened", stats.opened.toString()],
+      ["Failed", stats.failed.toString()],
+      ["Bounced", stats.bounced.toString()],
+      ["Delivery Rate", `${stats.deliveryRate.toFixed(2)}%`],
+      ["Open Rate", `${stats.openRate.toFixed(2)}%`],
+      ["Failure Rate", `${stats.failureRate.toFixed(2)}%`],
+      [""],
+      ["Daily Statistics"],
+      ["Date", "Sent", "Opened", "Failed", "Bounced", "Delivery Rate (%)", "Open Rate (%)"],
+      ...dailyStats.map((day) => [
+        day.date,
+        day.sent.toString(),
+        day.opened.toString(),
+        day.failed.toString(),
+        day.bounced.toString(),
+        day.deliveryRate.toFixed(2),
+        day.openRate.toFixed(2),
+      ]),
+    ];
+
+    const csvContent = csvData.map((row) => row.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute("href", url);
+    link.setAttribute("download", `email-analytics-${format(new Date(), "yyyy-MM-dd")}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({
+      title: "Export Successful",
+      description: "CSV file has been downloaded",
+    });
+  };
+
+  const exportToPDF = () => {
+    if (!stats || dailyStats.length === 0) {
+      toast({
+        title: "No Data",
+        description: "No data available to export",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const doc = new jsPDF();
+    
+    // Title
+    doc.setFontSize(20);
+    doc.text("Email Analytics Report", 14, 20);
+    
+    // Metadata
+    doc.setFontSize(10);
+    doc.text(`Generated: ${format(new Date(), "PPpp")}`, 14, 30);
+    doc.text(`Time Range: ${timeRange}`, 14, 36);
+    
+    // Overall Statistics
+    doc.setFontSize(14);
+    doc.text("Overall Statistics", 14, 50);
+    
+    autoTable(doc, {
+      startY: 55,
+      head: [["Metric", "Value"]],
+      body: [
+        ["Total Emails", stats.total.toString()],
+        ["Delivered", stats.sent.toString()],
+        ["Opened", stats.opened.toString()],
+        ["Failed", stats.failed.toString()],
+        ["Bounced", stats.bounced.toString()],
+        ["Delivery Rate", `${stats.deliveryRate.toFixed(2)}%`],
+        ["Open Rate", `${stats.openRate.toFixed(2)}%`],
+        ["Failure Rate", `${stats.failureRate.toFixed(2)}%`],
+      ],
+      theme: "grid",
+      headStyles: { fillColor: [59, 130, 246] },
+    });
+    
+    // Daily Statistics
+    const finalY = (doc as any).lastAutoTable.finalY || 120;
+    doc.setFontSize(14);
+    doc.text("Daily Statistics", 14, finalY + 10);
+    
+    autoTable(doc, {
+      startY: finalY + 15,
+      head: [["Date", "Sent", "Opened", "Failed", "Bounced", "Delivery %", "Open %"]],
+      body: dailyStats.map((day) => [
+        day.date,
+        day.sent.toString(),
+        day.opened.toString(),
+        day.failed.toString(),
+        day.bounced.toString(),
+        day.deliveryRate.toFixed(1),
+        day.openRate.toFixed(1),
+      ]),
+      theme: "striped",
+      headStyles: { fillColor: [59, 130, 246] },
+    });
+    
+    doc.save(`email-analytics-${format(new Date(), "yyyy-MM-dd")}.pdf`);
+
+    toast({
+      title: "Export Successful",
+      description: "PDF file has been downloaded",
+    });
+  };
+
   if (loading) {
     return (
       <Card>
@@ -163,20 +296,42 @@ export const EmailAnalyticsDashboard = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Email Analytics</h2>
           <p className="text-muted-foreground">
             Comprehensive email delivery and engagement metrics
           </p>
         </div>
-        <Tabs value={timeRange} onValueChange={(v) => setTimeRange(v as typeof timeRange)}>
-          <TabsList>
-            <TabsTrigger value="7d">7 Days</TabsTrigger>
-            <TabsTrigger value="30d">30 Days</TabsTrigger>
-            <TabsTrigger value="90d">90 Days</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <div className="flex items-center gap-4">
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={exportToCSV}
+              disabled={!stats || dailyStats.length === 0}
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              Export CSV
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={exportToPDF}
+              disabled={!stats || dailyStats.length === 0}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Export PDF
+            </Button>
+          </div>
+          <Tabs value={timeRange} onValueChange={(v) => setTimeRange(v as typeof timeRange)}>
+            <TabsList>
+              <TabsTrigger value="7d">7 Days</TabsTrigger>
+              <TabsTrigger value="30d">30 Days</TabsTrigger>
+              <TabsTrigger value="90d">90 Days</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
