@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Printer, Package, User, MapPin, CreditCard, Calendar } from "lucide-react";
+import { Printer, Package, User, MapPin, CreditCard, Calendar, Mail } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -52,6 +52,7 @@ export const OrderDetailsDialog = ({
   const [order, setOrder] = useState<OrderDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [customerEmail, setCustomerEmail] = useState<string>("");
+  const [sendingEmail, setSendingEmail] = useState(false);
   const { toast } = useToast();
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -121,6 +122,36 @@ export const OrderDetailsDialog = ({
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSendReceipt = async () => {
+    if (!order) return;
+
+    setSendingEmail(true);
+    try {
+      const { error } = await supabase.functions.invoke("send-order-receipt", {
+        body: {
+          orderId: order.id,
+          emailType: "manual",
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Receipt sent",
+        description: `Receipt sent to ${customerEmail}`,
+      });
+    } catch (error) {
+      console.error("Error sending receipt:", error);
+      toast({
+        title: "Error",
+        description: "Failed to send receipt email",
+        variant: "destructive",
+      });
+    } finally {
+      setSendingEmail(false);
     }
   };
 
@@ -235,19 +266,41 @@ export const OrderDetailsDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <Package className="h-5 w-5" />
-              Order Details
-            </span>
-            <Button onClick={handlePrint} size="sm" variant="outline">
-              <Printer className="h-4 w-4 mr-2" />
-              Print Receipt
-            </Button>
-          </DialogTitle>
-          <DialogDescription>
-            Complete order information and receipt
-          </DialogDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                Order Details
+              </DialogTitle>
+              <DialogDescription>
+                Order ID: {orderId.slice(0, 8)} • {customerEmail}
+              </DialogDescription>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSendReceipt}
+                disabled={sendingEmail || !customerEmail}
+              >
+                {sendingEmail ? (
+                  <>
+                    <Printer className="h-4 w-4 mr-2 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Mail className="h-4 w-4 mr-2" />
+                    Send Receipt
+                  </>
+                )}
+              </Button>
+              <Button variant="outline" size="sm" onClick={handlePrint}>
+                <Printer className="h-4 w-4 mr-2" />
+                Print
+              </Button>
+            </div>
+          </div>
         </DialogHeader>
 
         {loading ? (

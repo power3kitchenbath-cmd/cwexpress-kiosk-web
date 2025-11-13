@@ -113,9 +113,22 @@ const Checkout = () => {
       // Clear cart
       await clearCart();
 
+      // Send confirmation email (don't block checkout if it fails)
+      try {
+        await supabase.functions.invoke("send-order-receipt", {
+          body: {
+            orderId: order.id,
+            emailType: "confirmation",
+          },
+        });
+      } catch (emailError) {
+        console.error("Error sending confirmation email:", emailError);
+        // Continue anyway - order was successful
+      }
+
       toast({
         title: "Order placed successfully!",
-        description: "Thank you for your order",
+        description: "Thank you for your order. Confirmation email sent.",
       });
 
       navigate("/orders");

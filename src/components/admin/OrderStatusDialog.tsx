@@ -101,19 +101,27 @@ export const OrderStatusDialog = ({
         );
 
         if (emailError) {
-          console.error("Error sending email:", emailError);
-          // Don't fail the entire operation if email fails
-          toast({
-            title: "Status updated",
-            description: `Order status changed to ${newStatus}. Email notification failed.`,
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Status updated",
-            description: `Order status changed to ${newStatus}. Customer notified via email.`,
-          });
+          console.error("Error sending status email:", emailError);
         }
+
+        // If order is delivered, also send receipt
+        if (newStatus === "delivered") {
+          try {
+            await supabase.functions.invoke("send-order-receipt", {
+              body: {
+                orderId,
+                emailType: "delivery",
+              },
+            });
+          } catch (receiptError) {
+            console.error("Error sending delivery receipt:", receiptError);
+          }
+        }
+
+        toast({
+          title: "Status updated",
+          description: `Order status changed to ${newStatus}. Customer notified via email.`,
+        });
       } catch (emailError) {
         console.error("Error sending email:", emailError);
         toast({
