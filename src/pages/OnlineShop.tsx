@@ -1,56 +1,88 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, ExternalLink, ShoppingCart } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, ExternalLink, ShoppingCart, Package } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import logoImg from "@/assets/logo.png";
+
+interface Product {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  price: number;
+  image_url: string | null;
+  specifications: any;
+  inventory_count: number;
+  inventory_status: string;
+  sku: string | null;
+}
 
 const OnlineShop = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const products = [
-    {
-      id: 1,
-      name: "Cabinet Hardware",
-      description: "Premium quality cabinet knobs, pulls, and handles in various finishes",
-      category: "Hardware",
-      image: "https://images.unsplash.com/photo-1556911220-bff31c812dba?w=400&h=300&fit=crop",
-    },
-    {
-      id: 2,
-      name: "Quartz Vanity Tops",
-      description: "Custom-size Quartz Vanity Top with Single Bowl Sink",
-      category: "Countertops",
-      image: "https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=400&h=300&fit=crop",
-    },
-    {
-      id: 3,
-      name: "Kitchen Cabinets",
-      description: "Factory direct RTA kitchen cabinets in multiple styles and finishes",
-      category: "Cabinets",
-      image: "https://images.unsplash.com/photo-1556912167-f556f1f39fdf?w=400&h=300&fit=crop",
-    },
-    {
-      id: 4,
-      name: "Countertop Slabs",
-      description: "Granite, quartz, and marble slabs for kitchen and bathroom",
-      category: "Countertops",
-      image: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=300&fit=crop",
-    },
-    {
-      id: 5,
-      name: "Luxury Vinyl Flooring",
-      description: "Waterproof luxury vinyl plank flooring in wood and stone looks",
-      category: "Flooring",
-      image: "https://images.unsplash.com/photo-1631679706909-1844bbd07221?w=400&h=300&fit=crop",
-    },
-    {
-      id: 6,
-      name: "Bathroom Vanities",
-      description: "Complete bathroom vanity sets with tops and mirrors",
-      category: "Cabinets",
-      image: "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=400&h=300&fit=crop",
-    },
-  ];
+  useEffect(() => {
+    fetchProducts();
+    
+    // Subscribe to real-time updates
+    const channel = supabase
+      .channel('products-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'products'
+        },
+        () => {
+          console.log('Product inventory updated');
+          fetchProducts();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('category', { ascending: true });
+
+      if (error) throw error;
+      
+      setProducts(data || []);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load products. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getInventoryBadge = (status: string, count: number) => {
+    if (status === 'out_of_stock' || count === 0) {
+      return <Badge variant="destructive">Out of Stock</Badge>;
+    }
+    if (status === 'low_stock' || count < 10) {
+      return <Badge variant="secondary" className="bg-yellow-500 text-white">Low Stock ({count})</Badge>;
+    }
+    return <Badge variant="default" className="bg-green-600">In Stock ({count})</Badge>;
+  };
 
   const handleOrderClick = () => {
     window.open("https://thecabinetstore.org/shop", "_blank");
@@ -115,41 +147,88 @@ const OnlineShop = () => {
             Our Product Categories
           </h2>
           <p className="text-muted-foreground text-lg">
-            Explore our full catalog online and order 24/7
+            Real-time pricing and inventory • Order 24/7
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
-          {products.map((product) => (
-            <Card key={product.id} className="overflow-hidden hover:shadow-xl transition-all duration-300">
-              <div className="aspect-[4/3] overflow-hidden">
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                />
-              </div>
-              <div className="p-6 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-primary uppercase tracking-wide">
-                    {product.category}
-                  </span>
+        {loading ? (
+          <div className="text-center py-12">
+            <Package className="w-16 h-16 mx-auto text-muted-foreground animate-pulse mb-4" />
+            <p className="text-muted-foreground">Loading products...</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
+            {products.map((product) => (
+              <Card key={product.id} className="overflow-hidden hover:shadow-xl transition-all duration-300">
+                <div className="aspect-[4/3] overflow-hidden relative">
+                  <img
+                    src={product.image_url || 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=400&h=300&fit=crop'}
+                    alt={product.name}
+                    className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                  />
+                  <div className="absolute top-3 right-3">
+                    {getInventoryBadge(product.inventory_status, product.inventory_count)}
+                  </div>
                 </div>
-                <h3 className="text-xl font-bold text-foreground">{product.name}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {product.description}
-                </p>
-                <Button
-                  onClick={handleOrderClick}
-                  className="w-full bg-primary hover:bg-primary/90 gap-2"
-                >
-                  View on Website
-                  <ExternalLink className="w-4 h-4" />
-                </Button>
-              </div>
-            </Card>
-          ))}
-        </div>
+                <div className="p-6 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-primary uppercase tracking-wide">
+                      {product.category}
+                    </span>
+                    {product.sku && (
+                      <span className="text-xs text-muted-foreground">
+                        SKU: {product.sku}
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="text-xl font-bold text-foreground">{product.name}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {product.description}
+                  </p>
+                  
+                  {/* Pricing */}
+                  <div className="pt-2 border-t">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl font-bold text-primary">
+                        ${product.price.toFixed(2)}
+                      </span>
+                      {product.category === 'Flooring' && (
+                        <span className="text-sm text-muted-foreground">per sq ft</span>
+                      )}
+                      {product.category === 'Hardware' && (
+                        <span className="text-sm text-muted-foreground">each</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Specifications */}
+                  {product.specifications && Object.keys(product.specifications).length > 0 && (
+                    <div className="pt-2 space-y-1">
+                      <p className="text-xs font-semibold text-foreground uppercase">Specifications</p>
+                      <div className="text-xs text-muted-foreground space-y-0.5">
+                        {Object.entries(product.specifications).slice(0, 3).map(([key, value]) => (
+                          <div key={key} className="flex justify-between">
+                            <span className="font-medium">{key}:</span>
+                            <span>{String(value)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <Button
+                    onClick={handleOrderClick}
+                    className="w-full bg-primary hover:bg-primary/90 gap-2"
+                    disabled={product.inventory_status === 'out_of_stock'}
+                  >
+                    {product.inventory_status === 'out_of_stock' ? 'Out of Stock' : 'Order Now'}
+                    {product.inventory_status !== 'out_of_stock' && <ExternalLink className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
 
         {/* Call to Action */}
         <div className="mt-16 text-center">
