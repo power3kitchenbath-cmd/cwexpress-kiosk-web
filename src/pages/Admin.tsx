@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { z } from "zod";
 import { ArrowLeft, Plus, Pencil, Trash2, FileText, Presentation, Package } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -38,6 +39,12 @@ interface FlooringType {
   name: string;
   price_per_sqft: number;
 }
+
+// Validation schemas for pricing inputs
+const pricingSchema = z.object({
+  name: z.string().trim().min(1).max(100).regex(/^[a-zA-Z0-9\s\-\.()]+$/, "Name contains invalid characters"),
+  price: z.number().positive().min(0.01).max(999999.99).multipleOf(0.01)
+});
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -102,20 +109,27 @@ const Admin = () => {
   };
 
   const handleSaveCabinet = async () => {
-    if (!cabinetName || !cabinetPrice) {
+    // Validate inputs with Zod schema
+    const price = parseFloat(cabinetPrice);
+    const validationResult = pricingSchema.safeParse({ name: cabinetName, price });
+    
+    if (!validationResult.success) {
+      const errorMessage = validationResult.error.errors[0].message;
       toast({
-        title: "Error",
-        description: "Please fill in all fields",
+        title: "Invalid input",
+        description: errorMessage,
         variant: "destructive",
       });
       return;
     }
 
     try {
+      const { name, price: validatedPrice } = validationResult.data;
+      
       if (editingCabinet) {
         const { error } = await supabase
           .from("cabinet_types")
-          .update({ name: cabinetName, price_per_unit: parseFloat(cabinetPrice) })
+          .update({ name, price_per_unit: validatedPrice })
           .eq("id", editingCabinet.id);
 
         if (error) throw error;
@@ -123,7 +137,7 @@ const Admin = () => {
       } else {
         const { error } = await supabase
           .from("cabinet_types")
-          .insert({ name: cabinetName, price_per_unit: parseFloat(cabinetPrice) });
+          .insert({ name, price_per_unit: validatedPrice });
 
         if (error) throw error;
         toast({ title: "Success", description: "Cabinet type added" });
@@ -159,20 +173,27 @@ const Admin = () => {
   };
 
   const handleSaveFlooring = async () => {
-    if (!flooringName || !flooringPrice) {
+    // Validate inputs with Zod schema
+    const price = parseFloat(flooringPrice);
+    const validationResult = pricingSchema.safeParse({ name: flooringName, price });
+    
+    if (!validationResult.success) {
+      const errorMessage = validationResult.error.errors[0].message;
       toast({
-        title: "Error",
-        description: "Please fill in all fields",
+        title: "Invalid input",
+        description: errorMessage,
         variant: "destructive",
       });
       return;
     }
 
     try {
+      const { name, price: validatedPrice } = validationResult.data;
+      
       if (editingFlooring) {
         const { error } = await supabase
           .from("flooring_types")
-          .update({ name: flooringName, price_per_sqft: parseFloat(flooringPrice) })
+          .update({ name, price_per_sqft: validatedPrice })
           .eq("id", editingFlooring.id);
 
         if (error) throw error;
@@ -180,7 +201,7 @@ const Admin = () => {
       } else {
         const { error } = await supabase
           .from("flooring_types")
-          .insert({ name: flooringName, price_per_sqft: parseFloat(flooringPrice) });
+          .insert({ name, price_per_sqft: validatedPrice });
 
         if (error) throw error;
         toast({ title: "Success", description: "Flooring type added" });
