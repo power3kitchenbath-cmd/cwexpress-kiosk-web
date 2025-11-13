@@ -1,12 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, ExternalLink, ShoppingCart, Package, AlertCircle } from "lucide-react";
+import { ArrowLeft, ShoppingCart, Package, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import logoImg from "@/assets/logo.png";
+import { useCart } from "@/contexts/CartContext";
+import { CartDrawer } from "@/components/cart/CartDrawer";
 
 interface Product {
   id: string;
@@ -26,6 +28,7 @@ const OnlineShop = () => {
   const { toast } = useToast();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const { totalItems, setIsCartOpen } = useCart();
 
   useEffect(() => {
     fetchProducts();
@@ -99,8 +102,13 @@ const OnlineShop = () => {
     );
   };
 
-  const handleOrderClick = () => {
-    window.open("https://thecabinetstore.org/shop", "_blank");
+  const { addItem } = useCart();
+
+  const handleAddToCart = (product: Product) => {
+    if (product.inventory_status === 'out_of_stock') {
+      return;
+    }
+    addItem(product);
   };
 
   return (
@@ -130,11 +138,17 @@ const OnlineShop = () => {
               className="h-16 w-16"
             />
             <Button
-              onClick={handleOrderClick}
-              className="gap-2 bg-primary hover:bg-primary/90"
+              onClick={() => setIsCartOpen(true)}
+              className="gap-2 relative"
+              variant="outline"
             >
               <ShoppingCart className="w-4 h-4" />
-              Shop Online
+              Cart
+              {totalItems > 0 && (
+                <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                  {totalItems}
+                </span>
+              )}
             </Button>
           </div>
         </div>
@@ -232,12 +246,12 @@ const OnlineShop = () => {
                   )}
 
                   <Button
-                    onClick={handleOrderClick}
-                    className="w-full bg-primary hover:bg-primary/90 gap-2"
+                    onClick={() => handleAddToCart(product)}
+                    className="w-full gap-2"
                     disabled={product.inventory_status === 'out_of_stock'}
                   >
-                    {product.inventory_status === 'out_of_stock' ? 'Out of Stock' : 'Order Now'}
-                    {product.inventory_status !== 'out_of_stock' && <ExternalLink className="w-4 h-4" />}
+                    {product.inventory_status === 'out_of_stock' ? 'Out of Stock' : 'Add to Cart'}
+                    {product.inventory_status !== 'out_of_stock' && <ShoppingCart className="w-4 h-4" />}
                   </Button>
                 </div>
               </Card>
@@ -249,18 +263,18 @@ const OnlineShop = () => {
         <div className="mt-16 text-center">
           <Card className="max-w-2xl mx-auto p-8 bg-gradient-to-br from-primary/5 to-accent/5 border-2">
             <h3 className="text-2xl font-bold text-foreground mb-4">
-              Ready to Start Your Project?
+              Ready to Complete Your Order?
             </h3>
             <p className="text-muted-foreground mb-6">
-              Visit our online store to browse the complete catalog, get detailed specifications, and place your order.
+              Review your cart and proceed to checkout to finalize your purchase.
             </p>
             <Button
-              onClick={handleOrderClick}
+              onClick={() => setIsCartOpen(true)}
               size="lg"
-              className="gap-2 bg-primary hover:bg-primary/90"
+              className="gap-2"
             >
-              <ExternalLink className="w-5 h-5" />
-              Visit TheCabinetStore.org
+              <ShoppingCart className="w-5 h-5" />
+              View Cart {totalItems > 0 && `(${totalItems})`}
             </Button>
           </Card>
         </div>
@@ -277,6 +291,9 @@ const OnlineShop = () => {
           </p>
         </div>
       </footer>
+
+      {/* Cart Drawer */}
+      <CartDrawer />
     </div>
   );
 };

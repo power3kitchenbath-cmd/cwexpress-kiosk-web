@@ -15,6 +15,7 @@ import InvestorDeck from "./pages/InvestorDeck";
 import Presentations from "./pages/Presentations";
 import OnlineShop from "./pages/OnlineShop";
 import ProductManager from "./pages/ProductManager";
+import Checkout from "./pages/Checkout";
 import NotFound from "./pages/NotFound";
 import { ShippingLayout } from "./layouts/ShippingLayout";
 import Dashboard from "./pages/shipping/Dashboard";
@@ -48,6 +49,7 @@ const App = () => (
           <Route path="/presentations" element={<Presentations />} />
           <Route path="/online-shop" element={<OnlineShop />} />
           <Route path="/product-manager" element={<ProductManager />} />
+          <Route path="/checkout" element={<Checkout />} />
           
           {/* CW Express Shipping Platform */}
           <Route path="/shipping" element={<ShippingLayout />}>
