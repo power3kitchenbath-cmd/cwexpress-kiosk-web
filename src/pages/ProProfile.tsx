@@ -15,6 +15,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { z } from "zod";
+
+const profileSchema = z.object({
+  company_name: z.string().trim().min(1, "Company name is required").max(100, "Company name too long"),
+  phone: z.string().regex(/^\+?[1-9]\d{1,14}$/, "Invalid phone number format"),
+  tax_id: z.string().trim().max(50, "Tax ID too long").optional().or(z.literal("")),
+  business_license: z.string().trim().max(50, "Business license too long").optional().or(z.literal("")),
+  years_in_business: z.number().int().min(0, "Years must be positive").max(100, "Years must be less than 100"),
+  billing_address: z.object({
+    street: z.string().trim().min(1, "Street is required").max(200, "Street too long"),
+    city: z.string().trim().min(1, "City is required").max(100, "City too long"),
+    state: z.string().length(2, "State must be 2 characters"),
+    zip: z.string().regex(/^\d{5}(-\d{4})?$/, "Invalid ZIP code format"),
+  }),
+  preferred_payment_method: z.string().trim().optional().or(z.literal("")),
+  business_type: z.string().trim().optional().or(z.literal("")),
+  specialty: z.string().trim().optional().or(z.literal("")),
+});
 
 interface ProfileData {
   company_name: string;
@@ -132,6 +150,20 @@ const ProProfile = () => {
 
     setSaving(true);
     try {
+      // Validate input data
+      const validationResult = profileSchema.safeParse(profile);
+      
+      if (!validationResult.success) {
+        const errors = validationResult.error.errors.map(err => err.message).join(", ");
+        toast({
+          title: "Validation Error",
+          description: errors,
+          variant: "destructive",
+        });
+        setSaving(false);
+        return;
+      }
+
       const { error } = await supabase
         .from("profiles")
         .update({
