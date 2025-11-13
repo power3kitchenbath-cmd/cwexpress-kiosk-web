@@ -3,10 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Mail, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, Mail, RefreshCw, Play } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { Button } from "@/components/ui/button";
 
 interface FailedEmailSummary {
   recipient_email: string;
@@ -20,6 +20,7 @@ interface FailedEmailSummary {
 export const FailedEmailsSection = () => {
   const [failedEmails, setFailedEmails] = useState<FailedEmailSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [retrying, setRetrying] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -76,6 +77,32 @@ export const FailedEmailsSection = () => {
     }
   };
 
+  const handleRetryFailedEmails = async () => {
+    setRetrying(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("retry-failed-emails");
+
+      if (error) throw error;
+
+      toast({
+        title: "Retry process completed",
+        description: `Retried ${data.results.retried} emails. ${data.results.succeeded} succeeded, ${data.results.failed} failed.`,
+      });
+
+      // Refresh the list after retries
+      await fetchFailedEmails();
+    } catch (error) {
+      console.error("Error retrying failed emails:", error);
+      toast({
+        title: "Error",
+        description: "Failed to retry emails",
+        variant: "destructive",
+      });
+    } finally {
+      setRetrying(false);
+    }
+  };
+
   if (loading) {
     return (
       <Card>
@@ -114,13 +141,33 @@ export const FailedEmailsSection = () => {
               Failed Emails ({failedEmails.length})
             </CardTitle>
             <CardDescription>
-              Email addresses with delivery failures or bounces
+              Email addresses with delivery failures or bounces • Auto-retry enabled
             </CardDescription>
           </div>
-          <Button onClick={fetchFailedEmails} variant="outline" size="sm">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleRetryFailedEmails} 
+              variant="default" 
+              size="sm"
+              disabled={retrying || failedEmails.length === 0}
+            >
+              {retrying ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Retrying...
+                </>
+              ) : (
+                <>
+                  <Play className="h-4 w-4 mr-2" />
+                  Retry Failed Now
+                </>
+              )}
+            </Button>
+            <Button onClick={fetchFailedEmails} variant="outline" size="sm">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>

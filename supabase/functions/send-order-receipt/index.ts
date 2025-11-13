@@ -14,6 +14,8 @@ interface OrderReceiptRequest {
   orderId: string;
   emailType: "confirmation" | "manual" | "delivery";
   testEmail?: string; // If provided, send as test email to this address
+  isRetry?: boolean; // If true, this is a retry attempt
+  trackingId?: string; // ID of existing tracking record to update
 }
 
 const generateTrackingToken = () => {
@@ -27,10 +29,10 @@ serve(async (req) => {
   }
 
   try {
-    const { orderId, emailType, testEmail }: OrderReceiptRequest = await req.json();
+    const { orderId, emailType, testEmail, isRetry, trackingId }: OrderReceiptRequest = await req.json();
 
     const isTestEmail = !!testEmail;
-    console.log(`Processing ${isTestEmail ? 'TEST' : ''} ${emailType} receipt for order ${orderId}`);
+    console.log(`Processing ${isTestEmail ? 'TEST' : ''} ${isRetry ? 'RETRY' : ''} ${emailType} receipt for order ${orderId}`);
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -244,8 +246,8 @@ serve(async (req) => {
       // Continue to create tracking record even if send fails
     }
 
-    // Create tracking record (skip for test emails)
-    if (trackingToken) {
+    // Create tracking record (skip for test emails and retries)
+    if (trackingToken && !isRetry) {
       const { error: trackingError } = await supabase
         .from("email_tracking")
         .insert({
@@ -262,6 +264,28 @@ serve(async (req) => {
       if (trackingError) {
         console.error("Error creating tracking record:", trackingError);
         // Don't fail the email send if tracking fails
+      }
+    } else if (isRetry && trackingId) {
+      // Update existing tracking record for retry
+      const updateData: any = {
+        last_attempt_at: new Date().toISOString(),
+      };
+
+      if (emailStatus === 'sent') {
+        updateData.status = 'sent';
+        updateData.failure_reason = null;
+        updateData.failed_at = null;
+      } else if (emailStatus === 'failed') {
+        updateData.failure_reason = failureReason;
+      }
+
+      const { error: updateError } = await supabase
+        .from("email_tracking")
+        .update(updateData)
+        .eq("id", trackingId);
+
+      if (updateError) {
+        console.error("Error updating tracking record:", updateError);
       }
     }
 
