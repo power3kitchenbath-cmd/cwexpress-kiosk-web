@@ -13,6 +13,7 @@ import DesignViewer from "./pages/DesignViewer";
 import LaunchPlan from "./pages/LaunchPlan";
 import InvestorDeck from "./pages/InvestorDeck";
 import Presentations from "./pages/Presentations";
+import OnlineShop from "./pages/OnlineShop";
 import NotFound from "./pages/NotFound";
 import { ShippingLayout } from "./layouts/ShippingLayout";
 import Dashboard from "./pages/shipping/Dashboard";
@@ -44,6 +45,7 @@ const App = () => (
           <Route path="/launch-plan" element={<LaunchPlan />} />
           <Route path="/investor-deck" element={<InvestorDeck />} />
           <Route path="/presentations" element={<Presentations />} />
+          <Route path="/online-shop" element={<OnlineShop />} />
           
           {/* CW Express Shipping Platform */}
           <Route path="/shipping" element={<ShippingLayout />}>

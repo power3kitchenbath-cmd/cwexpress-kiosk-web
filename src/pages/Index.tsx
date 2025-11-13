@@ -17,7 +17,7 @@ const Index = () => {
   };
 
   const handleWebsiteClick = () => {
-    window.open("https://thecabinetstore.org", "_blank");
+    navigate("/online-shop");
   };
 
   return (
