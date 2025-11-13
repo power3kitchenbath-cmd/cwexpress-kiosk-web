@@ -20,6 +20,7 @@ import { CronJobsSection } from "@/components/admin/CronJobsSection";
 import { AdminNotifications } from "@/components/admin/AdminNotifications";
 import { NotificationCenter } from "@/components/admin/NotificationCenter";
 import { EmailActivityFeed } from "@/components/admin/EmailActivityFeed";
+import { EmailAnalyticsDashboard } from "@/components/admin/EmailAnalyticsDashboard";
 
 interface CabinetType {
   id: string;
@@ -249,11 +250,12 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="orders">Orders</TabsTrigger>
             <TabsTrigger value="customers">Pro Customers</TabsTrigger>
             <TabsTrigger value="emails">Email Activity</TabsTrigger>
+            <TabsTrigger value="analytics">Email Analytics</TabsTrigger>
             <TabsTrigger value="cabinets">Cabinet Types</TabsTrigger>
             <TabsTrigger value="flooring">Flooring Types</TabsTrigger>
           </TabsList>
@@ -478,6 +480,10 @@ const Admin = () => {
 
           <TabsContent value="emails">
             <EmailActivityFeed />
+          </TabsContent>
+
+          <TabsContent value="analytics">
+            <EmailAnalyticsDashboard />
           </TabsContent>
         </Tabs>
       </div>
