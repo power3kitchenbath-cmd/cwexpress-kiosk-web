@@ -86,10 +86,41 @@ export const OrderStatusDialog = ({
 
       if (historyError) throw historyError;
 
-      toast({
-        title: "Status updated",
-        description: `Order status changed to ${newStatus}`,
-      });
+      // Send email notification
+      try {
+        const { error: emailError } = await supabase.functions.invoke(
+          "send-order-status-email",
+          {
+            body: {
+              orderId,
+              oldStatus: currentStatus,
+              newStatus,
+              notes: notes.trim() || undefined,
+            },
+          }
+        );
+
+        if (emailError) {
+          console.error("Error sending email:", emailError);
+          // Don't fail the entire operation if email fails
+          toast({
+            title: "Status updated",
+            description: `Order status changed to ${newStatus}. Email notification failed.`,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Status updated",
+            description: `Order status changed to ${newStatus}. Customer notified via email.`,
+          });
+        }
+      } catch (emailError) {
+        console.error("Error sending email:", emailError);
+        toast({
+          title: "Status updated",
+          description: `Order status changed to ${newStatus}. Email notification failed.`,
+        });
+      }
 
       onStatusUpdated();
       onOpenChange(false);
