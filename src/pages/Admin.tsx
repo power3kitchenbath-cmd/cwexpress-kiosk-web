@@ -12,6 +12,9 @@ import { ArrowLeft, Plus, Pencil, Trash2, FileText, Presentation, Package } from
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import logo from "@/assets/logo.png";
+import { OrdersSection } from "@/components/admin/OrdersSection";
+import { ProCustomersSection } from "@/components/admin/ProCustomersSection";
+import { OrderStatistics } from "@/components/admin/OrderStatistics";
 
 interface CabinetType {
   id: string;
@@ -220,7 +223,7 @@ const Admin = () => {
           <img src={logo} alt="Logo" className="h-12" />
           <div className="flex-1">
             <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-            <p className="text-muted-foreground">Manage cabinet and flooring pricing</p>
+            <p className="text-muted-foreground">Manage store operations and view analytics</p>
           </div>
           <Button onClick={() => navigate("/presentations")}>
             <Presentation className="mr-2 h-4 w-4" />
@@ -240,11 +243,30 @@ const Admin = () => {
           </Button>
         </div>
 
-        <Tabs defaultValue="cabinets" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="orders">Orders</TabsTrigger>
+            <TabsTrigger value="customers">Pro Customers</TabsTrigger>
             <TabsTrigger value="cabinets">Cabinet Types</TabsTrigger>
             <TabsTrigger value="flooring">Flooring Types</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="overview" className="space-y-6">
+            <OrderStatistics />
+            <div className="grid gap-6 md:grid-cols-2">
+              <OrdersSection />
+              <ProCustomersSection />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="orders">
+            <OrdersSection />
+          </TabsContent>
+
+          <TabsContent value="customers">
+            <ProCustomersSection />
+          </TabsContent>
 
           <TabsContent value="cabinets">
             <Card>
