@@ -17,12 +17,55 @@ serve(async (req) => {
   }
 
   try {
+    // Verify authentication
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Missing authorization header" }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
     console.log("Starting failed email retry process");
 
-    // Initialize Supabase client
+    // Initialize Supabase client with service role for admin operations
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Get user from JWT token
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: "Invalid authentication token" }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Verify admin role
+    const { data: hasAdminRole, error: roleError } = await supabase
+      .rpc("has_role", { _user_id: user.id, _role: "admin" });
+
+    if (roleError || !hasAdminRole) {
+      console.error("Admin role check failed:", roleError);
+      return new Response(
+        JSON.stringify({ error: "Unauthorized: Admin access required" }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    console.log(`Admin user ${user.id} initiated email retry`);
 
     // Find failed emails that are eligible for retry
     const { data: failedEmails, error: fetchError } = await supabase
