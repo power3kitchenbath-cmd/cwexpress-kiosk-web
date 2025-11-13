@@ -35,12 +35,12 @@ export const AnalyticsReportConfig = () => {
   const fetchConfigs = async () => {
     try {
       const { data, error } = await supabase
-        .from("analytics_report_config")
+        .from("analytics_report_config" as any)
         .select("*")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setConfigs((data || []) as ReportConfig[]);
+      setConfigs((data as unknown as ReportConfig[]) || []);
     } catch (error) {
       console.error("Error fetching report configs:", error);
       toast({
@@ -66,11 +66,11 @@ export const AnalyticsReportConfig = () => {
     try {
       setAdding(true);
       const { error } = await supabase
-        .from("analytics_report_config")
+        .from("analytics_report_config" as any)
         .insert({
           admin_email: newEmail,
           frequency: newFrequency,
-        });
+        } as any);
 
       if (error) throw error;
 
@@ -97,8 +97,8 @@ export const AnalyticsReportConfig = () => {
   const handleUpdateFrequency = async (id: string, frequency: string) => {
     try {
       const { error } = await supabase
-        .from("analytics_report_config")
-        .update({ frequency })
+        .from("analytics_report_config" as any)
+        .update({ frequency } as any)
         .eq("id", id);
 
       if (error) throw error;
@@ -126,7 +126,7 @@ export const AnalyticsReportConfig = () => {
 
     try {
       const { error } = await supabase
-        .from("analytics_report_config")
+        .from("analytics_report_config" as any)
         .delete()
         .eq("id", id);
 
