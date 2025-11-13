@@ -16,6 +16,10 @@ interface OrderReceiptRequest {
   testEmail?: string; // If provided, send as test email to this address
 }
 
+const generateTrackingToken = () => {
+  return crypto.randomUUID();
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -81,6 +85,12 @@ serve(async (req) => {
       : subjects[emailType];
 
     const recipientEmail = testEmail || user.email;
+
+    // Generate tracking token (skip for test emails)
+    const trackingToken = isTestEmail ? null : generateTrackingToken();
+    const trackingPixelUrl = trackingToken 
+      ? `${supabaseUrl}/functions/v1/track-email-open?t=${trackingToken}` 
+      : null;
 
     // Generate order items HTML
     const itemsHtml = order.order_items
@@ -211,11 +221,12 @@ serve(async (req) => {
 
             </div>
           </div>
-        </body>
-      </html>
-    `;
+        ${trackingPixelUrl ? `<img src="${trackingPixelUrl}" width="1" height="1" alt="" style="display:none;" />` : ''}
+      </body>
+    </html>
+  `;
 
-    // Send email via Resend
+  // Send email via Resend
     const { error: emailError } = await resend.emails.send({
       from: "Cabinet Store <onboarding@resend.dev>",
       to: [recipientEmail],
@@ -225,6 +236,23 @@ serve(async (req) => {
 
     if (emailError) {
       throw emailError;
+    }
+
+    // Create tracking record (skip for test emails)
+    if (trackingToken) {
+      const { error: trackingError } = await supabase
+        .from("email_tracking")
+        .insert({
+          order_id: orderId,
+          email_type: emailType,
+          recipient_email: user.email,
+          tracking_token: trackingToken,
+        });
+
+      if (trackingError) {
+        console.error("Error creating tracking record:", trackingError);
+        // Don't fail the email send if tracking fails
+      }
     }
 
     console.log(`Successfully sent ${isTestEmail ? 'TEST' : ''} ${emailType} receipt to ${recipientEmail}`);

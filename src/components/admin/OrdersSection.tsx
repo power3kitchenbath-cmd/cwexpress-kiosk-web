@@ -10,6 +10,7 @@ import { format } from "date-fns";
 import { OrderStatusDialog } from "./OrderStatusDialog";
 import { OrderStatusHistory } from "./OrderStatusHistory";
 import { OrderDetailsDialog } from "./OrderDetailsDialog";
+import { EmailTrackingBadge } from "./EmailTrackingBadge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
@@ -343,6 +344,7 @@ export const OrdersSection = () => {
                 <TableHead>Date</TableHead>
                 <TableHead>Customer</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Email Tracking</TableHead>
                 <TableHead className="text-right">Total</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -350,7 +352,7 @@ export const OrdersSection = () => {
             <TableBody>
               {filteredOrders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground">
                     {hasActiveFilters ? "No orders match your filters" : "No orders found"}
                   </TableCell>
                 </TableRow>
@@ -363,6 +365,9 @@ export const OrdersSection = () => {
                     <TableCell>{format(new Date(order.created_at), "MMM dd, yyyy")}</TableCell>
                     <TableCell>{order.profiles?.company_name || "Individual"}</TableCell>
                     <TableCell>{getStatusBadge(order.status)}</TableCell>
+                    <TableCell>
+                      <EmailTrackingBadge orderId={order.id} />
+                    </TableCell>
                     <TableCell className="text-right font-semibold">
                       ${order.total.toFixed(2)}
                     </TableCell>

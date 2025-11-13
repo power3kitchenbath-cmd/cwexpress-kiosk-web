@@ -100,6 +100,50 @@ export type Database = {
         }
         Relationships: []
       }
+      email_tracking: {
+        Row: {
+          created_at: string
+          email_type: string
+          id: string
+          opened_at: string | null
+          opened_count: number
+          order_id: string
+          recipient_email: string
+          sent_at: string
+          tracking_token: string
+        }
+        Insert: {
+          created_at?: string
+          email_type: string
+          id?: string
+          opened_at?: string | null
+          opened_count?: number
+          order_id: string
+          recipient_email: string
+          sent_at?: string
+          tracking_token: string
+        }
+        Update: {
+          created_at?: string
+          email_type?: string
+          id?: string
+          opened_at?: string | null
+          opened_count?: number
+          order_id?: string
+          recipient_email?: string
+          sent_at?: string
+          tracking_token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_tracking_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       estimates: {
         Row: {
           cabinet_items: Json
