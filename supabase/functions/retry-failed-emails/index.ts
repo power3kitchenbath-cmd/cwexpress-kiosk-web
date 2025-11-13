@@ -144,14 +144,6 @@ serve(async (req) => {
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
--- Add health check to the retry function
-SELECT cron.schedule(
-  'email-health-check-every-30-min',
-  '*/30 * * * *', -- Every 30 minutes
-  $$
-  SELECT public.check_email_delivery_health();
-  $$
-);
     const { data: exhaustedEmails } = await supabase
       .from("email_tracking")
       .select("id, recipient_email")
