@@ -226,16 +226,22 @@ serve(async (req) => {
     </html>
   `;
 
-  // Send email via Resend
-    const { error: emailError } = await resend.emails.send({
+    // Send email via Resend
+    const { data: emailData, error: emailError } = await resend.emails.send({
       from: "Cabinet Store <onboarding@resend.dev>",
       to: [recipientEmail],
       subject: subject,
       html: html,
     });
 
+    let emailStatus = 'sent';
+    let failureReason = null;
+
     if (emailError) {
-      throw emailError;
+      emailStatus = 'failed';
+      failureReason = emailError.message || 'Unknown error';
+      console.error("Email send error:", emailError);
+      // Continue to create tracking record even if send fails
     }
 
     // Create tracking record (skip for test emails)
@@ -247,6 +253,10 @@ serve(async (req) => {
           email_type: emailType,
           recipient_email: user.email,
           tracking_token: trackingToken,
+          status: emailStatus,
+          failure_reason: failureReason,
+          failed_at: emailStatus === 'failed' ? new Date().toISOString() : null,
+          last_attempt_at: new Date().toISOString(),
         });
 
       if (trackingError) {
@@ -255,12 +265,17 @@ serve(async (req) => {
       }
     }
 
+    if (emailError) {
+      throw emailError;
+    }
+
     console.log(`Successfully sent ${isTestEmail ? 'TEST' : ''} ${emailType} receipt to ${recipientEmail}`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: isTestEmail ? "Test email sent successfully" : "Receipt sent successfully" 
+        message: isTestEmail ? "Test email sent successfully" : "Receipt sent successfully",
+        emailStatus: emailStatus 
       }),
       {
         status: 200,

@@ -15,6 +15,7 @@ import logo from "@/assets/logo.png";
 import { OrdersSection } from "@/components/admin/OrdersSection";
 import { ProCustomersSection } from "@/components/admin/ProCustomersSection";
 import { OrderStatistics } from "@/components/admin/OrderStatistics";
+import { FailedEmailsSection } from "@/components/admin/FailedEmailsSection";
 
 interface CabinetType {
   id: string;
@@ -254,6 +255,7 @@ const Admin = () => {
 
           <TabsContent value="overview" className="space-y-6">
             <OrderStatistics />
+            <FailedEmailsSection />
             <div className="grid gap-6 md:grid-cols-2">
               <OrdersSection />
               <ProCustomersSection />

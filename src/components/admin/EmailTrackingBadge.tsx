@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Mail, MailOpen, Eye } from "lucide-react";
+import { Mail, MailOpen, Eye, AlertTriangle, XCircle } from "lucide-react";
 import { format } from "date-fns";
 
 interface EmailTrackingData {
@@ -11,6 +11,11 @@ interface EmailTrackingData {
   sent_at: string;
   opened_at: string | null;
   opened_count: number;
+  status: string;
+  failure_reason: string | null;
+  bounce_type: string | null;
+  failed_at: string | null;
+  retry_count: number;
 }
 
 interface EmailTrackingBadgeProps {
@@ -85,24 +90,35 @@ export const EmailTrackingBadge = ({ orderId }: EmailTrackingBadgeProps) => {
 
   const latestTracking = tracking[0];
   const hasOpened = !!latestTracking.opened_at;
+  const hasFailed = latestTracking.status === 'failed' || latestTracking.status === 'bounced';
 
   return (
     <TooltipProvider>
       <div className="flex flex-wrap gap-1">
         {tracking.map((item) => {
           const isOpened = !!item.opened_at;
+          const isFailed = item.status === 'failed';
+          const isBounced = item.status === 'bounced';
+          const isDelivered = item.status === 'delivered';
+          
+          let variant: "default" | "secondary" | "destructive" | "outline" = "secondary";
+          if (isOpened || isDelivered) variant = "default";
+          if (isFailed || isBounced) variant = "destructive";
+
           return (
             <Tooltip key={item.id}>
               <TooltipTrigger asChild>
                 <Badge
-                  variant={isOpened ? "default" : "secondary"}
+                  variant={variant}
                   className="gap-1 cursor-help"
                 >
-                  {isOpened ? (
+                  {isFailed && <XCircle className="h-3 w-3" />}
+                  {isBounced && <AlertTriangle className="h-3 w-3" />}
+                  {!isFailed && !isBounced && (isOpened ? (
                     <MailOpen className="h-3 w-3" />
                   ) : (
                     <Mail className="h-3 w-3" />
-                  )}
+                  ))}
                   {item.email_type === "confirmation" && "Confirmation"}
                   {item.email_type === "manual" && "Manual"}
                   {item.email_type === "delivery" && "Delivery"}
@@ -112,10 +128,19 @@ export const EmailTrackingBadge = ({ orderId }: EmailTrackingBadgeProps) => {
                       {item.opened_count}
                     </span>
                   )}
+                  {item.retry_count > 0 && (
+                    <span className="text-xs">({item.retry_count} retries)</span>
+                  )}
                 </Badge>
               </TooltipTrigger>
               <TooltipContent>
-                <div className="text-xs space-y-1">
+                <div className="text-xs space-y-1 max-w-xs">
+                  <div>
+                    <strong>Status:</strong>{" "}
+                    <span className={isFailed || isBounced ? "text-destructive" : ""}>
+                      {item.status.toUpperCase()}
+                    </span>
+                  </div>
                   <div>
                     <strong>Sent:</strong>{" "}
                     {format(new Date(item.sent_at), "MMM d, yyyy 'at' h:mm a")}
@@ -130,8 +155,35 @@ export const EmailTrackingBadge = ({ orderId }: EmailTrackingBadgeProps) => {
                         <strong>Opens:</strong> {item.opened_count}
                       </div>
                     </>
-                  ) : (
+                  ) : !isFailed && !isBounced ? (
                     <div className="text-muted-foreground">Not opened yet</div>
+                  ) : null}
+                  {(isFailed || isBounced) && (
+                    <>
+                      {item.failed_at && (
+                        <div>
+                          <strong>Failed:</strong>{" "}
+                          {format(new Date(item.failed_at), "MMM d, yyyy 'at' h:mm a")}
+                        </div>
+                      )}
+                      {item.bounce_type && (
+                        <div>
+                          <strong>Bounce Type:</strong>{" "}
+                          <span className="capitalize">{item.bounce_type}</span>
+                        </div>
+                      )}
+                      {item.failure_reason && (
+                        <div>
+                          <strong>Reason:</strong>{" "}
+                          <span className="text-xs break-words">{item.failure_reason}</span>
+                        </div>
+                      )}
+                      {item.retry_count > 0 && (
+                        <div>
+                          <strong>Retries:</strong> {item.retry_count}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </TooltipContent>
