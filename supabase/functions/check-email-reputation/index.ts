@@ -32,12 +32,81 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Verify authentication
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader) {
+      console.error("Missing authorization header");
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }), 
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    
+    // Create auth client to verify user
+    const authClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    const { data: { user }, error: authError } = await authClient.auth.getUser();
+    if (authError || !user) {
+      console.error("Authentication failed:", authError);
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }), 
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Verify admin role
+    const { data: isAdmin, error: roleError } = await authClient.rpc("has_role", { 
+      _user_id: user.id, 
+      _role: "admin" 
+    });
+    
+    if (roleError || !isAdmin) {
+      console.error("Admin role verification failed:", roleError);
+      return new Response(
+        JSON.stringify({ error: "Forbidden: Admin access required" }), 
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log(`Admin ${user.email} initiating reputation check`);
+
+    // Parse and validate input
     const { domain, ipAddress } = await req.json();
+    
+    // Basic input validation
+    if (!domain && !ipAddress) {
+      return new Response(
+        JSON.stringify({ error: "Either domain or ipAddress must be provided" }), 
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    // Validate domain format if provided
+    if (domain && typeof domain !== 'string') {
+      return new Response(
+        JSON.stringify({ error: "Invalid domain format" }), 
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    // Validate IP format if provided
+    if (ipAddress && !/^(\d{1,3}\.){3}\d{1,3}$/.test(ipAddress)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid IP address format" }), 
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     console.log(`Checking reputation for domain: ${domain}, IP: ${ipAddress}`);
+
+    // Create service role client for database operations
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const results: BlacklistResult[] = [];
     let listedCount = 0;
