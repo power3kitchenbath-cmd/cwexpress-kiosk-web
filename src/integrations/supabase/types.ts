@@ -122,6 +122,51 @@ export type Database = {
         }
         Relationships: []
       }
+      products: {
+        Row: {
+          category: string
+          created_at: string
+          description: string
+          id: string
+          image_url: string | null
+          inventory_count: number
+          inventory_status: string
+          name: string
+          price: number
+          sku: string | null
+          specifications: Json | null
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description: string
+          id?: string
+          image_url?: string | null
+          inventory_count?: number
+          inventory_status?: string
+          name: string
+          price?: number
+          sku?: string | null
+          specifications?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          image_url?: string | null
+          inventory_count?: number
+          inventory_status?: string
+          name?: string
+          price?: number
+          sku?: string | null
+          specifications?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
