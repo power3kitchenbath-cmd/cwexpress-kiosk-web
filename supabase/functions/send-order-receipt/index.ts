@@ -29,15 +29,41 @@ serve(async (req) => {
   }
 
   try {
+    // Authenticate the request
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Missing authorization header" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const { orderId, emailType, testEmail, isRetry, trackingId }: OrderReceiptRequest = await req.json();
 
     const isTestEmail = !!testEmail;
     console.log(`Processing ${isTestEmail ? 'TEST' : ''} ${isRetry ? 'RETRY' : ''} ${emailType} receipt for order ${orderId}`);
 
-    // Initialize Supabase client
+    // Initialize Supabase clients
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    
+    // Client for auth verification
+    const authClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    
+    // Client for admin operations
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Verify the user is authenticated
+    const { data: { user: authUser }, error: authError } = await authClient.auth.getUser();
+    if (authError || !authUser) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Fetch order details with items
     const { data: order, error: orderError } = await supabase
@@ -57,6 +83,20 @@ serve(async (req) => {
 
     if (orderError || !order) {
       throw new Error(`Order not found: ${orderError?.message}`);
+    }
+
+    // Verify user owns the order or is admin
+    const isOwner = order.user_id === authUser.id;
+    const { data: isAdmin } = await authClient.rpc("has_role", {
+      _user_id: authUser.id,
+      _role: "admin",
+    });
+
+    if (!isOwner && !isAdmin) {
+      return new Response(
+        JSON.stringify({ error: "Forbidden: You don't have permission to access this order" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // Fetch customer email
