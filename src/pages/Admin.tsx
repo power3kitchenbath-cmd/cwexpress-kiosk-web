@@ -25,6 +25,7 @@ import { AnalyticsReportConfig } from "@/components/admin/AnalyticsReportConfig"
 import { DeliverabilityInsights } from "@/components/admin/DeliverabilityInsights";
 import { EmailReputationMonitor } from "@/components/admin/EmailReputationMonitor";
 import { EmailWarmupTracker } from "@/components/admin/EmailWarmupTracker";
+import { EmailAuthenticationValidator } from "@/components/admin/EmailAuthenticationValidator";
 
 interface CabinetType {
   id: string;
@@ -491,6 +492,7 @@ const Admin = () => {
               <EmailAnalyticsDashboard />
               <EmailWarmupTracker />
               <EmailReputationMonitor />
+              <EmailAuthenticationValidator />
               <DeliverabilityInsights />
               <AnalyticsReportConfig />
             </div>
