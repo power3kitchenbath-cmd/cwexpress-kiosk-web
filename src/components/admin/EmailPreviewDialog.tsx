@@ -1,12 +1,18 @@
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { Send, Loader2 } from "lucide-react";
 
 interface EmailPreviewDialogProps {
   open: boolean;
@@ -43,6 +49,44 @@ export const EmailPreviewDialog = ({
   customerProfile,
   emailType,
 }: EmailPreviewDialogProps) => {
+  const [sendingTest, setSendingTest] = useState(false);
+  const { toast } = useToast();
+
+  const handleSendTestEmail = async () => {
+    setSendingTest(true);
+    try {
+      // Get current admin user email
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.email) {
+        throw new Error("Admin email not found");
+      }
+
+      const { error } = await supabase.functions.invoke("send-order-receipt", {
+        body: {
+          orderId: order.id,
+          emailType: emailType,
+          testEmail: user.email,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Test email sent",
+        description: `Preview sent to ${user.email}`,
+      });
+    } catch (error) {
+      console.error("Error sending test email:", error);
+      toast({
+        title: "Error",
+        description: "Failed to send test email",
+        variant: "destructive",
+      });
+    } finally {
+      setSendingTest(false);
+    }
+  };
+
   const subjects = {
     confirmation: `Order Confirmation #${order.id.slice(0, 8)}`,
     manual: `Your Receipt for Order #${order.id.slice(0, 8)}`,
@@ -206,14 +250,33 @@ export const EmailPreviewDialog = ({
           </TabsContent>
         </Tabs>
 
-        <div className="flex items-center justify-between text-sm text-muted-foreground pt-4 border-t">
-          <div>
-            <strong>Subject:</strong> {subjects[emailType]}
+        <DialogFooter className="flex items-center justify-between sm:justify-between">
+          <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+            <div>
+              <strong>Subject:</strong> {subjects[emailType]}
+            </div>
+            <div>
+              <strong>To:</strong> {customerEmail}
+            </div>
           </div>
-          <div>
-            <strong>To:</strong> {customerEmail}
-          </div>
-        </div>
+          <Button
+            onClick={handleSendTestEmail}
+            disabled={sendingTest}
+            variant="secondary"
+          >
+            {sendingTest ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Sending Test...
+              </>
+            ) : (
+              <>
+                <Send className="h-4 w-4 mr-2" />
+                Send Test to Me
+              </>
+            )}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

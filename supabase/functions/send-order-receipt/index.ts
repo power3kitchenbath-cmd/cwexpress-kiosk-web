@@ -13,6 +13,7 @@ const corsHeaders = {
 interface OrderReceiptRequest {
   orderId: string;
   emailType: "confirmation" | "manual" | "delivery";
+  testEmail?: string; // If provided, send as test email to this address
 }
 
 serve(async (req) => {
@@ -22,9 +23,10 @@ serve(async (req) => {
   }
 
   try {
-    const { orderId, emailType }: OrderReceiptRequest = await req.json();
+    const { orderId, emailType, testEmail }: OrderReceiptRequest = await req.json();
 
-    console.log(`Processing ${emailType} receipt for order ${orderId}`);
+    const isTestEmail = !!testEmail;
+    console.log(`Processing ${isTestEmail ? 'TEST' : ''} ${emailType} receipt for order ${orderId}`);
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -74,7 +76,11 @@ serve(async (req) => {
       delivery: `Order Delivered - Receipt #${orderId.slice(0, 8)}`,
     };
 
-    const subject = subjects[emailType];
+    const subject = isTestEmail 
+      ? `[TEST EMAIL] ${subjects[emailType]}` 
+      : subjects[emailType];
+
+    const recipientEmail = testEmail || user.email;
 
     // Generate order items HTML
     const itemsHtml = order.order_items
@@ -106,17 +112,23 @@ serve(async (req) => {
           <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
             <div style="background-color: white; border-radius: 8px; padding: 32px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
               
-              <!-- Header -->
-              <div style="text-align: center; margin-bottom: 32px;">
-                <h1 style="margin: 0 0 8px; color: #18181b; font-size: 24px;">${subject}</h1>
-                <p style="margin: 0; color: #71717a; font-size: 14px;">
-                  Order Date: ${new Date(order.created_at).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
-                </p>
-              </div>
+            <!-- Header -->
+            <div style="text-align: center; margin-bottom: 32px;">
+              ${isTestEmail ? `
+                <div style="background-color: #fef3c7; border: 2px solid #fbbf24; border-radius: 6px; padding: 12px; margin-bottom: 16px;">
+                  <strong style="color: #92400e; font-size: 14px;">⚠️ TEST EMAIL - This is a preview sent to ${testEmail}</strong>
+                  <div style="color: #78350f; font-size: 12px; margin-top: 4px;">The actual email will be sent to: ${user.email}</div>
+                </div>
+              ` : ''}
+              <h1 style="margin: 0 0 8px; color: #18181b; font-size: 24px;">${subjects[emailType]}</h1>
+              <p style="margin: 0; color: #71717a; font-size: 14px;">
+                Order Date: ${new Date(order.created_at).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}
+              </p>
+            </div>
 
               <!-- Order Status -->
               <div style="background-color: #f4f4f5; border-radius: 6px; padding: 16px; margin-bottom: 24px;">
@@ -206,7 +218,7 @@ serve(async (req) => {
     // Send email via Resend
     const { error: emailError } = await resend.emails.send({
       from: "Cabinet Store <onboarding@resend.dev>",
-      to: [user.email],
+      to: [recipientEmail],
       subject: subject,
       html: html,
     });
@@ -215,10 +227,13 @@ serve(async (req) => {
       throw emailError;
     }
 
-    console.log(`Successfully sent ${emailType} receipt to ${user.email}`);
+    console.log(`Successfully sent ${isTestEmail ? 'TEST' : ''} ${emailType} receipt to ${recipientEmail}`);
 
     return new Response(
-      JSON.stringify({ success: true, message: "Receipt sent successfully" }),
+      JSON.stringify({ 
+        success: true, 
+        message: isTestEmail ? "Test email sent successfully" : "Receipt sent successfully" 
+      }),
       {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
