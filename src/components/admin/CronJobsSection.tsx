@@ -29,6 +29,7 @@ export const CronJobsSection = () => {
     try {
       setLoading(true);
       
+      // @ts-ignore - get_cron_jobs function will be available after migration
       const { data, error } = await supabase.rpc('get_cron_jobs');
 
       if (error) {
@@ -37,7 +38,7 @@ export const CronJobsSection = () => {
         return;
       }
 
-      setCronJobs(data || []);
+      setCronJobs((data as unknown as CronJob[]) || []);
     } catch (error) {
       console.error("Error in fetchCronJobs:", error);
       toast.error("Failed to fetch cron jobs");
