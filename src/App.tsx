@@ -16,6 +16,8 @@ import Presentations from "./pages/Presentations";
 import OnlineShop from "./pages/OnlineShop";
 import ProductManager from "./pages/ProductManager";
 import Checkout from "./pages/Checkout";
+import Orders from "./pages/Orders";
+import ProProfile from "./pages/ProProfile";
 import NotFound from "./pages/NotFound";
 import { ShippingLayout } from "./layouts/ShippingLayout";
 import Dashboard from "./pages/shipping/Dashboard";
@@ -50,6 +52,8 @@ const App = () => (
           <Route path="/online-shop" element={<OnlineShop />} />
           <Route path="/product-manager" element={<ProductManager />} />
           <Route path="/checkout" element={<Checkout />} />
+          <Route path="/orders" element={<Orders />} />
+          <Route path="/profile" element={<ProProfile />} />
           
           {/* CW Express Shipping Platform */}
           <Route path="/shipping" element={<ShippingLayout />}>

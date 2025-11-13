@@ -11,7 +11,7 @@ const Auth = () => {
     // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate("/estimator");
+        navigate("/online-shop");
       }
     });
 
@@ -20,7 +20,7 @@ const Auth = () => {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_IN" && session) {
-        navigate("/estimator");
+        navigate("/online-shop");
       }
     });
 
@@ -45,6 +45,7 @@ const Auth = () => {
             },
           }}
           providers={[]}
+          redirectTo={`${window.location.origin}/online-shop`}
         />
       </div>
     </div>

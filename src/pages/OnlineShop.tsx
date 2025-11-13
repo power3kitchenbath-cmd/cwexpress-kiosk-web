@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, ShoppingCart, Package, AlertCircle } from "lucide-react";
+import { ArrowLeft, ShoppingCart, Package, AlertCircle, User, LogOut, Building2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +9,14 @@ import { useToast } from "@/hooks/use-toast";
 import logoImg from "@/assets/logo.png";
 import { useCart } from "@/contexts/CartContext";
 import { CartDrawer } from "@/components/cart/CartDrawer";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Product {
   id: string;
@@ -28,7 +36,7 @@ const OnlineShop = () => {
   const { toast } = useToast();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const { totalItems, setIsCartOpen } = useCart();
+  const { totalItems, setIsCartOpen, user } = useCart();
 
   useEffect(() => {
     fetchProducts();
@@ -150,6 +158,46 @@ const OnlineShop = () => {
                 </span>
               )}
             </Button>
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="gap-2">
+                    <User className="w-4 h-4" />
+                    Account
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate("/orders")}>
+                    <Package className="w-4 h-4 mr-2" />
+                    My Orders
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/profile")}>
+                    <Building2 className="w-4 h-4 mr-2" />
+                    Pro Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={async () => {
+                      await supabase.auth.signOut();
+                      toast({
+                        title: "Signed out",
+                        description: "You have been logged out successfully",
+                      });
+                      navigate("/");
+                    }}
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button onClick={() => navigate("/auth")} variant="default">
+                Login
+              </Button>
+            )}
           </div>
         </div>
       </header>

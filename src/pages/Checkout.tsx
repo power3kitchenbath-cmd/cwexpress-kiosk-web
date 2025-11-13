@@ -1,33 +1,144 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ArrowLeft, ShoppingBag } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import logoImg from "@/assets/logo.png";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const { items, totalPrice, clearCart } = useCart();
+  const { items, totalPrice, clearCart, user } = useCart();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [shippingAddress, setShippingAddress] = useState({
+    street: "",
+    city: "",
+    state: "",
+    zip: "",
+    name: "",
+  });
 
   useEffect(() => {
+    // Redirect to auth if not logged in
+    if (!user) {
+      toast({
+        title: "Login required",
+        description: "Please login to complete your order",
+      });
+      navigate("/auth");
+      return;
+    }
+
+    // Redirect if cart is empty
     if (items.length === 0) {
       navigate("/online-shop");
     }
-  }, [items, navigate]);
+  }, [items, navigate, user, toast]);
 
-  const handlePlaceOrder = () => {
-    // In a real app, this would integrate with payment processing
-    window.open("https://thecabinetstore.org/shop", "_blank");
-    clearCart();
-    navigate("/online-shop");
+  const handlePlaceOrder = async () => {
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+
+    // Validate shipping address
+    if (!shippingAddress.name || !shippingAddress.street || !shippingAddress.city || !shippingAddress.state || !shippingAddress.zip) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in all shipping address fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const subtotal = totalPrice;
+      const tax = subtotal * 0.0825;
+      const shipping = subtotal > 2500 ? 0 : 99;
+      const total = subtotal + tax + shipping;
+
+      // Create order
+      const { data: order, error: orderError } = await supabase
+        .from("orders")
+        .insert({
+          user_id: user.id,
+          status: "pending",
+          subtotal,
+          tax,
+          shipping,
+          total,
+          shipping_address: shippingAddress,
+        })
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+
+      // Create order items
+      const orderItems = items.map((item) => ({
+        order_id: order.id,
+        product_id: item.id,
+        quantity: item.quantity,
+        price_at_purchase: item.price,
+        product_name: item.name,
+        product_image_url: item.image_url,
+      }));
+
+      const { error: itemsError } = await supabase
+        .from("order_items")
+        .insert(orderItems);
+
+      if (itemsError) throw itemsError;
+
+      // Update user's order count
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("order_count")
+        .eq("id", user.id)
+        .single();
+
+      await supabase
+        .from("profiles")
+        .update({ order_count: (profile?.order_count || 0) + 1 })
+        .eq("id", user.id);
+
+      // Clear cart
+      await clearCart();
+
+      toast({
+        title: "Order placed successfully!",
+        description: "Thank you for your order",
+      });
+
+      navigate("/orders");
+    } catch (error) {
+      console.error("Error placing order:", error);
+      toast({
+        title: "Order failed",
+        description: "Could not place your order. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const subtotal = totalPrice;
   const tax = subtotal * 0.0825; // 8.25% tax
   const shipping = subtotal > 2500 ? 0 : 99; // Free shipping over $2500
   const total = subtotal + tax + shipping;
+
+  if (!user) {
+    return null; // Will redirect in useEffect
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -58,8 +169,78 @@ const Checkout = () => {
         <h1 className="text-3xl font-bold text-foreground mb-8">Checkout</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Order Items */}
-          <div className="lg:col-span-2 space-y-4">
+          {/* Order Items & Shipping */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Shipping Address */}
+            <Card className="p-6">
+              <h2 className="text-xl font-bold text-foreground mb-4">Shipping Address</h2>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input
+                    id="name"
+                    value={shippingAddress.name}
+                    onChange={(e) =>
+                      setShippingAddress({ ...shippingAddress, name: e.target.value })
+                    }
+                    placeholder="John Doe"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="street">Street Address</Label>
+                  <Input
+                    id="street"
+                    value={shippingAddress.street}
+                    onChange={(e) =>
+                      setShippingAddress({ ...shippingAddress, street: e.target.value })
+                    }
+                    placeholder="123 Main St"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="city">City</Label>
+                    <Input
+                      id="city"
+                      value={shippingAddress.city}
+                      onChange={(e) =>
+                        setShippingAddress({ ...shippingAddress, city: e.target.value })
+                      }
+                      placeholder="City"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="state">State</Label>
+                    <Input
+                      id="state"
+                      value={shippingAddress.state}
+                      onChange={(e) =>
+                        setShippingAddress({ ...shippingAddress, state: e.target.value })
+                      }
+                      placeholder="ST"
+                      maxLength={2}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="zip">ZIP Code</Label>
+                    <Input
+                      id="zip"
+                      value={shippingAddress.zip}
+                      onChange={(e) =>
+                        setShippingAddress({ ...shippingAddress, zip: e.target.value })
+                      }
+                      placeholder="12345"
+                    />
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            {/* Order Items */}
             <Card className="p-6">
               <h2 className="text-xl font-bold text-foreground mb-4">Order Items</h2>
               <div className="space-y-4">
@@ -132,13 +313,14 @@ const Checkout = () => {
                   onClick={handlePlaceOrder}
                   className="w-full gap-2"
                   size="lg"
+                  disabled={loading}
                 >
                   <ShoppingBag className="w-4 h-4" />
-                  Complete Order
+                  {loading ? "Processing..." : "Place Order"}
                 </Button>
                 
                 <p className="text-xs text-center text-muted-foreground">
-                  You'll be redirected to complete your purchase
+                  By placing this order, you agree to our terms and conditions
                 </p>
               </div>
 
