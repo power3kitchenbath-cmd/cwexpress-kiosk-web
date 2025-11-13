@@ -4,11 +4,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Download, Package, Edit, History, Search, Filter, X, Calendar as CalendarIcon } from "lucide-react";
+import { Download, Package, Edit, History, Search, Filter, X, Calendar as CalendarIcon, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { OrderStatusDialog } from "./OrderStatusDialog";
 import { OrderStatusHistory } from "./OrderStatusHistory";
+import { OrderDetailsDialog } from "./OrderDetailsDialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
@@ -39,6 +40,7 @@ export const OrdersSection = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const { toast } = useToast();
   
   // Filter states
@@ -192,6 +194,11 @@ export const OrdersSection = () => {
   const handleViewHistory = (order: Order) => {
     setSelectedOrder(order);
     setHistoryDialogOpen(true);
+  };
+
+  const handleViewDetails = (order: Order) => {
+    setSelectedOrder(order);
+    setDetailsDialogOpen(true);
   };
 
   if (loading) {
@@ -364,7 +371,16 @@ export const OrdersSection = () => {
                         <Button
                           size="sm"
                           variant="outline"
+                          onClick={() => handleViewDetails(order)}
+                          title="View Details"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
                           onClick={() => handleUpdateStatus(order)}
+                          title="Update Status"
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -372,6 +388,7 @@ export const OrdersSection = () => {
                           size="sm"
                           variant="ghost"
                           onClick={() => handleViewHistory(order)}
+                          title="View History"
                         >
                           <History className="h-4 w-4" />
                         </Button>
@@ -398,6 +415,11 @@ export const OrdersSection = () => {
             orderId={selectedOrder.id}
             open={historyDialogOpen}
             onOpenChange={setHistoryDialogOpen}
+          />
+          <OrderDetailsDialog
+            orderId={selectedOrder.id}
+            open={detailsDialogOpen}
+            onOpenChange={setDetailsDialogOpen}
           />
         </>
       )}
