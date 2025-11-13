@@ -23,6 +23,7 @@ import { EmailActivityFeed } from "@/components/admin/EmailActivityFeed";
 import { EmailAnalyticsDashboard } from "@/components/admin/EmailAnalyticsDashboard";
 import { AnalyticsReportConfig } from "@/components/admin/AnalyticsReportConfig";
 import { DeliverabilityInsights } from "@/components/admin/DeliverabilityInsights";
+import { EmailReputationMonitor } from "@/components/admin/EmailReputationMonitor";
 
 interface CabinetType {
   id: string;
@@ -487,6 +488,7 @@ const Admin = () => {
           <TabsContent value="analytics">
             <div className="space-y-6">
               <EmailAnalyticsDashboard />
+              <EmailReputationMonitor />
               <DeliverabilityInsights />
               <AnalyticsReportConfig />
             </div>
