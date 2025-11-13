@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { Resend } from "https://esm.sh/resend@4.0.0";
+import { z } from "https://esm.sh/zod@3.23.8";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -39,24 +40,55 @@ const getStatusMessage = (status: string): string => {
   return messages[status] || "Your order status has been updated.";
 };
 
+// Validation schema for request payload
+const StatusEnum = ["pending","processing","shipped","delivered","cancelled"] as const;
+const requestSchema = z.object({
+  orderId: z.string().uuid(),
+  oldStatus: z.string().trim().optional().nullable().refine(v => v == null || (StatusEnum as readonly string[]).includes(v), { message: "Invalid oldStatus" }),
+  newStatus: z.enum(StatusEnum),
+  notes: z.string().trim().max(500).optional(),
+});
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      {
-        global: {
-          headers: { Authorization: req.headers.get("Authorization")! },
-        },
-      }
-    );
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Missing authorization header" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-    const { orderId, oldStatus, newStatus, notes }: OrderStatusEmailRequest =
-      await req.json();
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+
+    const supabaseClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const serviceClient = createClient(supabaseUrl, serviceKey);
+
+    // Authenticate and authorize
+    const { data: { user: authUser }, error: authError } = await supabaseClient.auth.getUser();
+    if (authError || !authUser) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const { data: isAdmin, error: roleError } = await supabaseClient.rpc("has_role", { _user_id: authUser.id, _role: "admin" });
+    if (roleError || !isAdmin) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // Validate request body
+    const body: unknown = await req.json();
+    const parsed = requestSchema.safeParse(body);
+    if (!parsed.success) {
+      return new Response(JSON.stringify({ error: "Invalid request", details: parsed.error.flatten() }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const { orderId, oldStatus, newStatus, notes } = parsed.data;
 
     console.log("Processing status email for order:", orderId);
 
@@ -79,8 +111,8 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Order not found");
     }
 
-    // Get user email from auth
-    const { data: { user }, error: userError } = await supabaseClient.auth.admin.getUserById(
+    // Get user email from auth (requires service role)
+    const { data: { user }, error: userError } = await serviceClient.auth.admin.getUserById(
       order.user_id
     );
 

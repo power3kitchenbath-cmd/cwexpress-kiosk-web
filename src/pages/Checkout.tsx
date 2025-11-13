@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import logoImg from "@/assets/logo.png";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { z } from "zod";
 
 const Checkout = () => {
   const navigate = useNavigate();
