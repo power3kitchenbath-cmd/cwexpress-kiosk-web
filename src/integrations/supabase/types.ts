@@ -102,36 +102,54 @@ export type Database = {
       }
       email_tracking: {
         Row: {
+          bounce_type: string | null
           created_at: string
           email_type: string
+          failed_at: string | null
+          failure_reason: string | null
           id: string
+          last_attempt_at: string | null
           opened_at: string | null
           opened_count: number
           order_id: string
           recipient_email: string
+          retry_count: number
           sent_at: string
+          status: string
           tracking_token: string
         }
         Insert: {
+          bounce_type?: string | null
           created_at?: string
           email_type: string
+          failed_at?: string | null
+          failure_reason?: string | null
           id?: string
+          last_attempt_at?: string | null
           opened_at?: string | null
           opened_count?: number
           order_id: string
           recipient_email: string
+          retry_count?: number
           sent_at?: string
+          status?: string
           tracking_token: string
         }
         Update: {
+          bounce_type?: string | null
           created_at?: string
           email_type?: string
+          failed_at?: string | null
+          failure_reason?: string | null
           id?: string
+          last_attempt_at?: string | null
           opened_at?: string | null
           opened_count?: number
           order_id?: string
           recipient_email?: string
+          retry_count?: number
           sent_at?: string
+          status?: string
           tracking_token?: string
         }
         Relationships: [
@@ -442,7 +460,17 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      failed_emails_summary: {
+        Row: {
+          affected_orders: string[] | null
+          bounce_types: string[] | null
+          failure_count: number | null
+          failure_reasons: string[] | null
+          last_failure: string | null
+          recipient_email: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
