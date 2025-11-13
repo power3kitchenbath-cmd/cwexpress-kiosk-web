@@ -10,9 +10,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Printer, Package, User, MapPin, CreditCard, Calendar, Mail } from "lucide-react";
+import { Printer, Package, User, MapPin, CreditCard, Calendar, Mail, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { EmailPreviewDialog } from "./EmailPreviewDialog";
 
 interface OrderDetailsDialogProps {
   orderId: string;
@@ -53,6 +54,7 @@ export const OrderDetailsDialog = ({
   const [loading, setLoading] = useState(true);
   const [customerEmail, setCustomerEmail] = useState<string>("");
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const { toast } = useToast();
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -280,6 +282,15 @@ export const OrderDetailsDialog = ({
               <Button
                 variant="outline"
                 size="sm"
+                onClick={() => setShowPreview(true)}
+                disabled={!order}
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                Preview Email
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={handleSendReceipt}
                 disabled={sendingEmail || !customerEmail}
               >
@@ -479,6 +490,18 @@ export const OrderDetailsDialog = ({
           </div>
         )}
       </DialogContent>
+
+      {/* Email Preview Dialog */}
+      {order && (
+        <EmailPreviewDialog
+          open={showPreview}
+          onOpenChange={setShowPreview}
+          order={order}
+          customerEmail={customerEmail}
+          customerProfile={order.profiles}
+          emailType="manual"
+        />
+      )}
     </Dialog>
   );
 };
