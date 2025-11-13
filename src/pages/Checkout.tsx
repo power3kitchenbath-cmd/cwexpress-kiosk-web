@@ -12,6 +12,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 
+// Shipping address validation schema
+const shippingSchema = z.object({
+  name: z.string().trim().min(1, "Name is required").max(100, "Name must be less than 100 characters"),
+  street: z.string().trim().min(1, "Street address is required").max(200, "Street address must be less than 200 characters"),
+  city: z.string().trim().min(1, "City is required").max(100, "City must be less than 100 characters"),
+  state: z.string().trim().length(2, "State must be 2 characters").toUpperCase(),
+  zip: z.string().trim().regex(/^\d{5}(-\d{4})?$/, "Invalid ZIP code format (use 12345 or 12345-6789)"),
+});
+
 const Checkout = () => {
   const navigate = useNavigate();
   const { items, totalPrice, clearCart, user } = useCart();
@@ -48,11 +57,13 @@ const Checkout = () => {
       return;
     }
 
-    // Validate shipping address
-    if (!shippingAddress.name || !shippingAddress.street || !shippingAddress.city || !shippingAddress.state || !shippingAddress.zip) {
+    // Validate shipping address with Zod schema
+    const validationResult = shippingSchema.safeParse(shippingAddress);
+    if (!validationResult.success) {
+      const errorMessages = validationResult.error.errors.map(err => err.message).join(", ");
       toast({
-        title: "Missing information",
-        description: "Please fill in all shipping address fields",
+        title: "Invalid shipping information",
+        description: errorMessages,
         variant: "destructive",
       });
       return;
