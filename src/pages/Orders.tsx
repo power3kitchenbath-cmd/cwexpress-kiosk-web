@@ -6,8 +6,9 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Package, ShoppingBag } from "lucide-react";
+import { ArrowLeft, Package, ShoppingBag, History } from "lucide-react";
 import { format } from "date-fns";
+import { OrderStatusHistory } from "@/components/admin/OrderStatusHistory";
 
 interface OrderItem {
   id: string;
@@ -36,6 +37,8 @@ const Orders = () => {
   const [loading, setLoading] = useState(true);
   const [showProPrompt, setShowProPrompt] = useState(false);
   const [orderCount, setOrderCount] = useState(0);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -166,6 +169,11 @@ const Orders = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleViewHistory = (orderId: string) => {
+    setSelectedOrderId(orderId);
+    setHistoryDialogOpen(true);
   };
 
   if (loading) {
@@ -305,12 +313,29 @@ const Orders = () => {
                   >
                     Reorder
                   </Button>
+                  
+                  <Button
+                    variant="ghost"
+                    className="w-full"
+                    onClick={() => handleViewHistory(order.id)}
+                  >
+                    <History className="mr-2 h-4 w-4" />
+                    View Status History
+                  </Button>
                 </div>
               </Card>
             ))}
           </div>
         )}
       </main>
+
+      {selectedOrderId && (
+        <OrderStatusHistory
+          orderId={selectedOrderId}
+          open={historyDialogOpen}
+          onOpenChange={setHistoryDialogOpen}
+        />
+      )}
     </div>
   );
 };

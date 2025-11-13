@@ -4,9 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Download, Package } from "lucide-react";
+import { Download, Package, Edit, History } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { OrderStatusDialog } from "./OrderStatusDialog";
+import { OrderStatusHistory } from "./OrderStatusHistory";
 
 interface Order {
   id: string;
@@ -25,6 +27,9 @@ interface Order {
 export const OrdersSection = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -109,6 +114,16 @@ export const OrdersSection = () => {
     );
   };
 
+  const handleUpdateStatus = (order: Order) => {
+    setSelectedOrder(order);
+    setStatusDialogOpen(true);
+  };
+
+  const handleViewHistory = (order: Order) => {
+    setSelectedOrder(order);
+    setHistoryDialogOpen(true);
+  };
+
   if (loading) {
     return <div>Loading orders...</div>;
   }
@@ -140,12 +155,13 @@ export const OrdersSection = () => {
                 <TableHead>Customer</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Total</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {orders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center text-muted-foreground">
                     No orders found
                   </TableCell>
                 </TableRow>
@@ -161,6 +177,24 @@ export const OrdersSection = () => {
                     <TableCell className="text-right font-semibold">
                       ${order.total.toFixed(2)}
                     </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleUpdateStatus(order)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleViewHistory(order)}
+                        >
+                          <History className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))
               )}
@@ -168,6 +202,23 @@ export const OrdersSection = () => {
           </Table>
         </div>
       </CardContent>
+
+      {selectedOrder && (
+        <>
+          <OrderStatusDialog
+            orderId={selectedOrder.id}
+            currentStatus={selectedOrder.status}
+            open={statusDialogOpen}
+            onOpenChange={setStatusDialogOpen}
+            onStatusUpdated={fetchOrders}
+          />
+          <OrderStatusHistory
+            orderId={selectedOrder.id}
+            open={historyDialogOpen}
+            onOpenChange={setHistoryDialogOpen}
+          />
+        </>
+      )}
     </Card>
   );
 };
