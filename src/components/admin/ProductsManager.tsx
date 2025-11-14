@@ -10,6 +10,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
+import { compressImage, formatFileSize, shouldCompressImage } from "@/utils/imageCompression";
+import { Badge } from "@/components/ui/badge";
 
 interface Product {
   id: string;
@@ -30,6 +32,9 @@ interface BulkUploadItem {
   uploading: boolean;
   uploaded: boolean;
   error: string | null;
+  originalSize?: number;
+  compressedSize?: number;
+  compressionRatio?: number;
 }
 
 export const ProductsManager = () => {
@@ -46,6 +51,8 @@ export const ProductsManager = () => {
   const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
   const [bulkItems, setBulkItems] = useState<BulkUploadItem[]>([]);
   const [bulkUploading, setBulkUploading] = useState(false);
+  const [compressing, setCompressing] = useState(false);
+  const [compressionStats, setCompressionStats] = useState<{ original: number; compressed: number } | null>(null);
 
   useEffect(() => {
     fetchProducts();
@@ -72,7 +79,7 @@ export const ProductsManager = () => {
     }
   };
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -86,24 +93,56 @@ export const ProductsManager = () => {
       return;
     }
 
-    // Validate file size (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
+    // Validate file size (10MB max before compression)
+    if (file.size > 10 * 1024 * 1024) {
       toast({
         title: "File too large",
-        description: "Image must be less than 5MB",
+        description: "Image must be less than 10MB",
         variant: "destructive",
       });
       return;
     }
 
-    setSelectedFile(file);
-    
-    // Create preview
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setImagePreview(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+    try {
+      setCompressing(true);
+      
+      // Compress image if needed
+      let finalFile = file;
+      let stats = null;
+      
+      if (shouldCompressImage(file)) {
+        const result = await compressImage(file);
+        finalFile = result.file;
+        stats = {
+          original: result.originalSize,
+          compressed: result.compressedSize
+        };
+        
+        toast({
+          title: "Image compressed",
+          description: `Reduced from ${formatFileSize(result.originalSize)} to ${formatFileSize(result.compressedSize)} (${result.compressionRatio.toFixed(1)}% savings)`,
+        });
+      }
+      
+      setSelectedFile(finalFile);
+      setCompressionStats(stats);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(finalFile);
+    } catch (error) {
+      console.error('Error processing image:', error);
+      toast({
+        title: "Error",
+        description: "Failed to process image",
+        variant: "destructive",
+      });
+    } finally {
+      setCompressing(false);
+    }
   };
 
   const uploadImage = async (productId: string): Promise<string | null> => {
@@ -244,7 +283,7 @@ export const ProductsManager = () => {
     return null;
   };
 
-  const handleBulkImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBulkImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
@@ -257,10 +296,10 @@ export const ProductsManager = () => {
         });
         return false;
       }
-      if (file.size > 5 * 1024 * 1024) {
+      if (file.size > 10 * 1024 * 1024) {
         toast({
           title: "File too large",
-          description: `${file.name} exceeds 5MB`,
+          description: `${file.name} exceeds 10MB`,
           variant: "destructive",
         });
         return false;
@@ -268,21 +307,75 @@ export const ProductsManager = () => {
       return true;
     });
 
-    const newItems: BulkUploadItem[] = validFiles.map(file => {
-      const preview = URL.createObjectURL(file);
-      const matchedProductId = autoMatchProduct(file.name);
-      
-      return {
-        file,
-        preview,
-        matchedProductId,
-        uploading: false,
-        uploaded: false,
-        error: null,
-      };
+    if (validFiles.length === 0) return;
+
+    setCompressing(true);
+    toast({
+      title: "Compressing images...",
+      description: `Processing ${validFiles.length} image(s)`,
     });
 
-    setBulkItems(prev => [...prev, ...newItems]);
+    try {
+      const processedItems: BulkUploadItem[] = [];
+      
+      for (const file of validFiles) {
+        let finalFile = file;
+        let originalSize = file.size;
+        let compressedSize = file.size;
+        let compressionRatio = 0;
+        
+        // Compress if needed
+        if (shouldCompressImage(file)) {
+          try {
+            const result = await compressImage(file);
+            finalFile = result.file;
+            originalSize = result.originalSize;
+            compressedSize = result.compressedSize;
+            compressionRatio = result.compressionRatio;
+          } catch (error) {
+            console.error(`Error compressing ${file.name}:`, error);
+            // Continue with original file if compression fails
+          }
+        }
+        
+        const preview = URL.createObjectURL(finalFile);
+        const matchedProductId = autoMatchProduct(file.name);
+        
+        processedItems.push({
+          file: finalFile,
+          preview,
+          matchedProductId,
+          uploading: false,
+          uploaded: false,
+          error: null,
+          originalSize,
+          compressedSize,
+          compressionRatio,
+        });
+      }
+
+      setBulkItems(prev => [...prev, ...processedItems]);
+      
+      const totalOriginal = processedItems.reduce((sum, item) => sum + (item.originalSize || 0), 0);
+      const totalCompressed = processedItems.reduce((sum, item) => sum + (item.compressedSize || 0), 0);
+      const totalSavings = ((totalOriginal - totalCompressed) / totalOriginal) * 100;
+      
+      if (totalSavings > 0) {
+        toast({
+          title: "Compression complete",
+          description: `Reduced total size from ${formatFileSize(totalOriginal)} to ${formatFileSize(totalCompressed)} (${totalSavings.toFixed(1)}% savings)`,
+        });
+      }
+    } catch (error) {
+      console.error('Error processing images:', error);
+      toast({
+        title: "Error",
+        description: "Failed to process some images",
+        variant: "destructive",
+      });
+    } finally {
+      setCompressing(false);
+    }
   };
 
   const updateBulkItemProduct = (index: number, productId: string) => {
@@ -473,13 +566,24 @@ export const ProductsManager = () => {
               <div className="space-y-2">
                 <Label>Product Image</Label>
                 <div className="border-2 border-dashed rounded-lg p-4 text-center space-y-3">
-                  {imagePreview ? (
+                  {compressing ? (
+                    <div className="py-8">
+                      <Upload className="w-12 h-12 mx-auto text-muted-foreground mb-2 animate-pulse" />
+                      <p className="text-sm text-muted-foreground">Compressing image...</p>
+                    </div>
+                  ) : imagePreview ? (
                     <div className="relative">
                       <img
                         src={imagePreview}
                         alt="Preview"
                         className="max-h-64 mx-auto rounded-lg"
                       />
+                      {compressionStats && (
+                        <Badge variant="secondary" className="mt-2">
+                          Compressed: {formatFileSize(compressionStats.compressed)} 
+                          {' '}(was {formatFileSize(compressionStats.original)})
+                        </Badge>
+                      )}
                       <Button
                         type="button"
                         variant="outline"
@@ -488,6 +592,7 @@ export const ProductsManager = () => {
                         onClick={() => {
                           setImagePreview(null);
                           setSelectedFile(null);
+                          setCompressionStats(null);
                         }}
                       >
                         Remove
@@ -500,7 +605,7 @@ export const ProductsManager = () => {
                         Click to upload or drag and drop
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        PNG, JPG, WEBP up to 5MB
+                        PNG, JPG, WEBP up to 10MB (auto-compressed)
                       </p>
                     </div>
                   )}
@@ -509,6 +614,7 @@ export const ProductsManager = () => {
                     accept="image/*"
                     onChange={handleImageSelect}
                     className="cursor-pointer"
+                    disabled={compressing}
                   />
                 </div>
               </div>
@@ -595,11 +701,16 @@ export const ProductsManager = () => {
           <div className="space-y-4">
             {/* Upload Zone */}
             <div className="border-2 border-dashed rounded-lg p-6 text-center space-y-3">
-              <Upload className="w-12 h-12 mx-auto text-muted-foreground" />
+              <Upload className={`w-12 h-12 mx-auto text-muted-foreground ${compressing ? 'animate-pulse' : ''}`} />
               <div>
-                <p className="text-sm font-medium">Upload multiple product images</p>
+                <p className="text-sm font-medium">
+                  {compressing ? 'Compressing images...' : 'Upload multiple product images'}
+                </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Images will be auto-matched by SKU or product name
+                  {compressing 
+                    ? 'Please wait while we optimize your images'
+                    : 'Images will be auto-compressed and matched by SKU or product name'
+                  }
                 </p>
               </div>
               <Input
@@ -607,7 +718,7 @@ export const ProductsManager = () => {
                 accept="image/*"
                 multiple
                 onChange={handleBulkImageSelect}
-                disabled={bulkUploading}
+                disabled={bulkUploading || compressing}
                 className="cursor-pointer"
               />
             </div>
@@ -638,11 +749,18 @@ export const ProductsManager = () => {
                         {/* Details */}
                         <div className="flex-1 space-y-2">
                           <div className="flex items-start justify-between">
-                            <div>
+                            <div className="flex-1">
                               <p className="font-medium text-sm">{item.file.name}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {(item.file.size / 1024).toFixed(1)} KB
-                              </p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <p className="text-xs text-muted-foreground">
+                                  {formatFileSize(item.file.size)}
+                                </p>
+                                {item.compressionRatio && item.compressionRatio > 0 && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    -{item.compressionRatio.toFixed(0)}%
+                                  </Badge>
+                                )}
+                              </div>
                             </div>
                             {!item.uploading && !item.uploaded && (
                               <Button
