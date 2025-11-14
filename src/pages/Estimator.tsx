@@ -766,7 +766,7 @@ export default function Estimator() {
 
           <div className="grid md:grid-cols-2 gap-6 mb-8">
             {/* Cabinet Calculator */}
-            <Card>
+            <Card className={editingItem.type === 'cabinet' ? 'ring-2 ring-primary shadow-lg transition-all duration-200' : 'transition-all duration-200'}>
               <CardHeader>
                 <CardTitle>Cabinets</CardTitle>
                 <CardDescription>Add cabinets to your estimate</CardDescription>
@@ -883,7 +883,7 @@ export default function Estimator() {
             </Card>
 
             {/* Flooring Calculator */}
-            <Card>
+            <Card className={editingItem.type === 'flooring' ? 'ring-2 ring-primary shadow-lg transition-all duration-200' : 'transition-all duration-200'}>
               <CardHeader>
                 <CardTitle>Flooring</CardTitle>
                 <CardDescription>Add flooring to your estimate</CardDescription>
@@ -1003,7 +1003,7 @@ export default function Estimator() {
             </Card>
 
             {/* Countertop Calculator */}
-            <Card>
+            <Card className={editingItem.type === 'countertop' ? 'ring-2 ring-primary shadow-lg transition-all duration-200' : 'transition-all duration-200'}>
               <CardHeader>
                 <CardTitle>Countertops</CardTitle>
                 <CardDescription>Add countertops to your estimate</CardDescription>
