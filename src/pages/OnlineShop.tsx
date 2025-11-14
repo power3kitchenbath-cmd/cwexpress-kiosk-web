@@ -40,6 +40,7 @@ const OnlineShop = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const { totalItems, setIsCartOpen, user } = useCart();
+  const { cartBadgePulse } = useCart();
 
   useEffect(() => {
     fetchProducts();
@@ -156,7 +157,7 @@ const OnlineShop = () => {
               <ShoppingCart className="w-4 h-4" />
               Cart
               {totalItems > 0 && (
-                <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                <span className={`absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center ${cartBadgePulse ? 'animate-bounce' : ''}`}>
                   {totalItems}
                 </span>
               )}
