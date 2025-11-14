@@ -99,6 +99,12 @@ export default function Estimator() {
     type: 'cabinet' | 'flooring' | 'countertop' | null;
   }>({ open: false, type: null });
 
+  const [undoState, setUndoState] = useState<{
+    action: 'remove' | 'clear' | null;
+    type: 'cabinet' | 'flooring' | 'countertop' | null;
+    data: CabinetItem[] | FlooringItem[] | CountertopItem[] | null;
+  }>({ action: null, type: null, data: null });
+
   useEffect(() => {
     checkAuth();
     fetchPrices();
@@ -340,11 +346,32 @@ export default function Estimator() {
 
   const handleDeleteConfirm = () => {
     if (deleteDialog.type === 'cabinet') {
+      const removedItem = cabinets[deleteDialog.index];
+      setUndoState({ action: 'remove', type: 'cabinet', data: [removedItem] });
       setCabinets(cabinets.filter((_, i) => i !== deleteDialog.index));
+      toast({
+        title: "Item Removed",
+        description: "Cabinet removed from estimate",
+        action: <Button variant="outline" size="sm" onClick={handleUndo}>Undo</Button>
+      });
     } else if (deleteDialog.type === 'flooring') {
+      const removedItem = flooring[deleteDialog.index];
+      setUndoState({ action: 'remove', type: 'flooring', data: [removedItem] });
       setFlooring(flooring.filter((_, i) => i !== deleteDialog.index));
+      toast({
+        title: "Item Removed",
+        description: "Flooring removed from estimate",
+        action: <Button variant="outline" size="sm" onClick={handleUndo}>Undo</Button>
+      });
     } else if (deleteDialog.type === 'countertop') {
+      const removedItem = countertops[deleteDialog.index];
+      setUndoState({ action: 'remove', type: 'countertop', data: [removedItem] });
       setCountertops(countertops.filter((_, i) => i !== deleteDialog.index));
+      toast({
+        title: "Item Removed",
+        description: "Countertop removed from estimate",
+        action: <Button variant="outline" size="sm" onClick={handleUndo}>Undo</Button>
+      });
     }
     setDeleteDialog({ open: false, type: null, index: -1, itemName: '' });
   };
@@ -359,17 +386,73 @@ export default function Estimator() {
 
   const handleClearAllConfirm = () => {
     if (clearAllDialog.type === 'cabinet') {
+      setUndoState({ action: 'clear', type: 'cabinet', data: [...cabinets] });
       setCabinets([]);
+      toast({
+        title: "Cabinets Cleared",
+        description: `Removed ${cabinets.length} cabinet item(s)`,
+        action: <Button variant="outline" size="sm" onClick={handleUndo}>Undo</Button>
+      });
     } else if (clearAllDialog.type === 'flooring') {
+      setUndoState({ action: 'clear', type: 'flooring', data: [...flooring] });
       setFlooring([]);
+      toast({
+        title: "Flooring Cleared",
+        description: `Removed ${flooring.length} flooring item(s)`,
+        action: <Button variant="outline" size="sm" onClick={handleUndo}>Undo</Button>
+      });
     } else if (clearAllDialog.type === 'countertop') {
+      setUndoState({ action: 'clear', type: 'countertop', data: [...countertops] });
       setCountertops([]);
+      toast({
+        title: "Countertops Cleared",
+        description: `Removed ${countertops.length} countertop item(s)`,
+        action: <Button variant="outline" size="sm" onClick={handleUndo}>Undo</Button>
+      });
     }
     setClearAllDialog({ open: false, type: null });
   };
 
   const handleClearAllCancel = () => {
     setClearAllDialog({ open: false, type: null });
+  };
+
+  const handleUndo = () => {
+    if (!undoState.action || !undoState.type || !undoState.data) return;
+
+    if (undoState.type === 'cabinet') {
+      if (undoState.action === 'remove') {
+        setCabinets([...cabinets, ...(undoState.data as CabinetItem[])]);
+      } else if (undoState.action === 'clear') {
+        setCabinets(undoState.data as CabinetItem[]);
+      }
+      toast({
+        title: "Undo Successful",
+        description: "Cabinet items restored"
+      });
+    } else if (undoState.type === 'flooring') {
+      if (undoState.action === 'remove') {
+        setFlooring([...flooring, ...(undoState.data as FlooringItem[])]);
+      } else if (undoState.action === 'clear') {
+        setFlooring(undoState.data as FlooringItem[]);
+      }
+      toast({
+        title: "Undo Successful",
+        description: "Flooring items restored"
+      });
+    } else if (undoState.type === 'countertop') {
+      if (undoState.action === 'remove') {
+        setCountertops([...countertops, ...(undoState.data as CountertopItem[])]);
+      } else if (undoState.action === 'clear') {
+        setCountertops(undoState.data as CountertopItem[]);
+      }
+      toast({
+        title: "Undo Successful",
+        description: "Countertop items restored"
+      });
+    }
+
+    setUndoState({ action: null, type: null, data: null });
   };
 
   const cabinetTotal = cabinets.reduce((sum, item) => sum + (item.quantity * item.pricePerUnit), 0);
