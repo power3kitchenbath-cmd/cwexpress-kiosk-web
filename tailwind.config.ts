@@ -104,6 +104,38 @@ export default {
             opacity: "0",
           },
         },
+        slideInRight: {
+          "0%": {
+            transform: "translateX(100%)",
+          },
+          "100%": {
+            transform: "translateX(0)",
+          },
+        },
+        slideOutRight: {
+          "0%": {
+            transform: "translateX(0)",
+          },
+          "100%": {
+            transform: "translateX(100%)",
+          },
+        },
+        fadeIn: {
+          "0%": {
+            opacity: "0",
+          },
+          "100%": {
+            opacity: "1",
+          },
+        },
+        fadeOut: {
+          "0%": {
+            opacity: "1",
+          },
+          "100%": {
+            opacity: "0",
+          },
+        },
         bounce: {
           "0%, 100%": {
             transform: "scale(1)",
@@ -126,6 +158,10 @@ export default {
     fadeInUp: "fadeInUp 0.5s ease-out forwards",
     ripple: "ripple 600ms ease-out",
     bounce: "bounce 600ms ease-in-out",
+    slideInRight: "slideInRight 300ms ease-out",
+    slideOutRight: "slideOutRight 200ms ease-in",
+    fadeIn: "fadeIn 400ms ease-out forwards",
+    fadeOut: "fadeOut 200ms ease-in forwards",
   },
     },
   },

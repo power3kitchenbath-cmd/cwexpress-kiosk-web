@@ -17,8 +17,8 @@ export const CartDrawer = () => {
 
   return (
     <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}>
-      <SheetContent className="w-full sm:max-w-lg flex flex-col">
-        <SheetHeader>
+      <SheetContent className="w-full sm:max-w-lg flex flex-col data-[state=open]:animate-[slideInRight_300ms_ease-out] data-[state=closed]:animate-[slideOutRight_200ms_ease-in]">
+        <SheetHeader className="opacity-0 data-[state=open]:animate-[fadeIn_400ms_ease-out_100ms_forwards]">
           <SheetTitle className="flex items-center gap-2 text-foreground">
             <ShoppingCart className="w-5 h-5" />
             Shopping Cart ({items.length} {items.length === 1 ? 'item' : 'items'})
@@ -26,7 +26,7 @@ export const CartDrawer = () => {
         </SheetHeader>
 
         {items.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center text-center py-12">
+          <div className="flex-1 flex flex-col items-center justify-center text-center py-12 opacity-0 animate-[fadeIn_400ms_ease-out_200ms_forwards]">
             <ShoppingCart className="w-16 h-16 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold text-foreground mb-2">Your cart is empty</h3>
             <p className="text-muted-foreground mb-6">Add products to get started</p>
@@ -36,15 +36,21 @@ export const CartDrawer = () => {
           </div>
         ) : (
           <>
-            <div className="flex-1 overflow-auto py-4">
+            <div className="flex-1 overflow-auto py-4 opacity-0 animate-[fadeIn_400ms_ease-out_150ms_forwards]">
               <div className="space-y-4">
-                {items.map((item) => (
-                  <CartItem key={item.id} item={item} />
+                {items.map((item, index) => (
+                  <div 
+                    key={item.id}
+                    className="opacity-0 animate-[fadeInUp_400ms_ease-out_forwards]"
+                    style={{ animationDelay: `${200 + (index * 50)}ms` }}
+                  >
+                    <CartItem item={item} />
+                  </div>
                 ))}
               </div>
             </div>
 
-            <div className="border-t pt-4 space-y-4">
+            <div className="border-t pt-4 space-y-4 opacity-0 animate-[fadeIn_400ms_ease-out_250ms_forwards]">
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Subtotal</span>
