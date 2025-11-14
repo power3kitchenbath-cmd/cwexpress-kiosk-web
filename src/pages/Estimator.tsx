@@ -499,6 +499,71 @@ export default function Estimator() {
         saveEdit();
         setTimeout(() => startEditing(editingItem.type!, newIndex), 50);
       }
+    } else if (e.key === 'Tab') {
+      e.preventDefault();
+      saveEdit();
+      
+      if (e.shiftKey) {
+        // Navigate backwards
+        if (editingItem.type === 'cabinet') {
+          const newIndex = currentIndex - 1;
+          if (newIndex >= 0) {
+            setTimeout(() => startEditing('cabinet', newIndex), 50);
+          } else if (countertops.length > 0) {
+            setTimeout(() => startEditing('countertop', countertops.length - 1), 50);
+          } else if (flooring.length > 0) {
+            setTimeout(() => startEditing('flooring', flooring.length - 1), 50);
+          }
+        } else if (editingItem.type === 'flooring') {
+          const newIndex = currentIndex - 1;
+          if (newIndex >= 0) {
+            setTimeout(() => startEditing('flooring', newIndex), 50);
+          } else if (cabinets.length > 0) {
+            setTimeout(() => startEditing('cabinet', cabinets.length - 1), 50);
+          } else if (countertops.length > 0) {
+            setTimeout(() => startEditing('countertop', countertops.length - 1), 50);
+          }
+        } else if (editingItem.type === 'countertop') {
+          const newIndex = currentIndex - 1;
+          if (newIndex >= 0) {
+            setTimeout(() => startEditing('countertop', newIndex), 50);
+          } else if (flooring.length > 0) {
+            setTimeout(() => startEditing('flooring', flooring.length - 1), 50);
+          } else if (cabinets.length > 0) {
+            setTimeout(() => startEditing('cabinet', cabinets.length - 1), 50);
+          }
+        }
+      } else {
+        // Navigate forwards
+        if (editingItem.type === 'cabinet') {
+          const newIndex = currentIndex + 1;
+          if (newIndex < cabinets.length) {
+            setTimeout(() => startEditing('cabinet', newIndex), 50);
+          } else if (flooring.length > 0) {
+            setTimeout(() => startEditing('flooring', 0), 50);
+          } else if (countertops.length > 0) {
+            setTimeout(() => startEditing('countertop', 0), 50);
+          }
+        } else if (editingItem.type === 'flooring') {
+          const newIndex = currentIndex + 1;
+          if (newIndex < flooring.length) {
+            setTimeout(() => startEditing('flooring', newIndex), 50);
+          } else if (countertops.length > 0) {
+            setTimeout(() => startEditing('countertop', 0), 50);
+          } else if (cabinets.length > 0) {
+            setTimeout(() => startEditing('cabinet', 0), 50);
+          }
+        } else if (editingItem.type === 'countertop') {
+          const newIndex = currentIndex + 1;
+          if (newIndex < countertops.length) {
+            setTimeout(() => startEditing('countertop', newIndex), 50);
+          } else if (cabinets.length > 0) {
+            setTimeout(() => startEditing('cabinet', 0), 50);
+          } else if (flooring.length > 0) {
+            setTimeout(() => startEditing('flooring', 0), 50);
+          }
+        }
+      }
     }
   };
 
