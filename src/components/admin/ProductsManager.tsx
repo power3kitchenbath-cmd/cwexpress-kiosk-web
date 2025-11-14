@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { compressImage, formatFileSize, shouldCompressImage, getOptimalFormat, getFormatName } from "@/utils/imageCompression";
+import { compressImage, formatFileSize, shouldCompressImage, getOptimalFormat, getFormatName, generateThumbnailAndFullSize } from "@/utils/imageCompression";
 import { Badge } from "@/components/ui/badge";
 
 interface Product {
@@ -20,6 +20,7 @@ interface Product {
   price: number;
   description: string;
   image_url: string | null;
+  thumbnail_url?: string | null;
   inventory_count: number;
   inventory_status: string;
   sku: string | null;
@@ -152,27 +153,54 @@ export const ProductsManager = () => {
     try {
       setUploading(true);
       
-      // Generate unique filename
-      const fileExt = selectedFile.name.split('.').pop();
-      const fileName = `${productId}-${Date.now()}.${fileExt}`;
-      const filePath = fileName;
-
-      // Upload to storage
-      const { error: uploadError } = await supabase.storage
+      // Generate thumbnail and full-size optimized images
+      const result = await generateThumbnailAndFullSize(selectedFile);
+      
+      // Upload thumbnail
+      const thumbnailExt = 'webp';
+      const thumbnailFileName = `${productId}-thumb-${Date.now()}.${thumbnailExt}`;
+      const { error: thumbUploadError } = await supabase.storage
         .from('product-images')
-        .upload(filePath, selectedFile, {
+        .upload(thumbnailFileName, result.thumbnail, {
           cacheControl: '3600',
           upsert: true
         });
 
-      if (uploadError) throw uploadError;
+      if (thumbUploadError) throw thumbUploadError;
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
+      // Upload full-size image
+      const fullSizeExt = result.fullSize.name.split('.').pop();
+      const fullSizeFileName = `${productId}-${Date.now()}.${fullSizeExt}`;
+      const { error: fullUploadError } = await supabase.storage
         .from('product-images')
-        .getPublicUrl(filePath);
+        .upload(fullSizeFileName, result.fullSize, {
+          cacheControl: '3600',
+          upsert: true
+        });
 
-      return publicUrl;
+      if (fullUploadError) throw fullUploadError;
+
+      // Get public URLs
+      const { data: { publicUrl: thumbnailUrl } } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(thumbnailFileName);
+
+      const { data: { publicUrl: fullSizeUrl } } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(fullSizeFileName);
+
+      // Update product with both URLs
+      const { error: updateError } = await supabase
+        .from('products')
+        .update({ 
+          image_url: fullSizeUrl,
+          thumbnail_url: thumbnailUrl
+        })
+        .eq('id', productId);
+
+      if (updateError) throw updateError;
+
+      return fullSizeUrl;
     } catch (error) {
       console.error('Error uploading image:', error);
       toast({
@@ -186,21 +214,33 @@ export const ProductsManager = () => {
     }
   };
 
-  const deleteOldImage = async (imageUrl: string | null) => {
-    if (!imageUrl || !imageUrl.includes('product-images')) return;
+  const deleteOldImage = async (imageUrl: string | null, thumbnailUrl?: string | null) => {
+    const urlsToDelete: string[] = [];
+    
+    // Extract and queue full-size image for deletion
+    if (imageUrl && imageUrl.includes('product-images')) {
+      const urlParts = imageUrl.split('/product-images/');
+      if (urlParts.length >= 2) {
+        urlsToDelete.push(urlParts[1]);
+      }
+    }
+    
+    // Extract and queue thumbnail for deletion
+    if (thumbnailUrl && thumbnailUrl.includes('product-images')) {
+      const urlParts = thumbnailUrl.split('/product-images/');
+      if (urlParts.length >= 2) {
+        urlsToDelete.push(urlParts[1]);
+      }
+    }
+
+    if (urlsToDelete.length === 0) return;
 
     try {
-      // Extract file path from URL
-      const urlParts = imageUrl.split('/product-images/');
-      if (urlParts.length < 2) return;
-      
-      const filePath = urlParts[1];
-      
       await supabase.storage
         .from('product-images')
-        .remove([filePath]);
+        .remove(urlsToDelete);
     } catch (error) {
-      console.error('Error deleting old image:', error);
+      console.error('Error deleting old images:', error);
     }
   };
 
@@ -214,13 +254,15 @@ export const ProductsManager = () => {
       if (selectedFile) {
         const uploadedUrl = await uploadImage(editingProduct.id);
         if (uploadedUrl) {
-          // Delete old image if it exists
-          await deleteOldImage(editingProduct.image_url);
+          // Delete old images (both full-size and thumbnail)
+          const product = products.find(p => p.id === editingProduct.id);
+          await deleteOldImage(editingProduct.image_url, product?.thumbnail_url);
           newImageUrl = uploadedUrl;
         }
       }
 
-      // Update product
+      // Note: thumbnail_url is already updated in uploadImage function
+      // Update other product fields
       const { error } = await supabase
         .from('products')
         .update({
@@ -229,7 +271,7 @@ export const ProductsManager = () => {
           price: editingProduct.price,
           description: editingProduct.description,
           sku: editingProduct.sku,
-          image_url: newImageUrl,
+          ...(newImageUrl !== editingProduct.image_url && { image_url: newImageUrl })
         })
         .eq('id', editingProduct.id);
 
@@ -421,38 +463,51 @@ export const ProductsManager = () => {
         const product = products.find(p => p.id === item.matchedProductId);
         if (!product) throw new Error("Product not found");
 
-        // Upload image
-        const fileExt = item.file.name.split('.').pop();
-        const fileName = `${product.id}-${Date.now()}.${fileExt}`;
+        // Generate thumbnail and full-size images
+        const result = await generateThumbnailAndFullSize(item.file);
 
-        const { error: uploadError } = await supabase.storage
+        // Upload thumbnail
+        const thumbnailFileName = `${product.id}-thumb-${Date.now()}.webp`;
+        const { error: thumbUploadError } = await supabase.storage
           .from('product-images')
-          .upload(fileName, item.file, {
+          .upload(thumbnailFileName, result.thumbnail, {
             cacheControl: '3600',
             upsert: true
           });
 
-        if (uploadError) throw uploadError;
+        if (thumbUploadError) throw thumbUploadError;
 
-        // Get public URL
-        const { data: { publicUrl } } = supabase.storage
+        // Upload full-size image
+        const fullSizeExt = result.fullSize.name.split('.').pop();
+        const fullSizeFileName = `${product.id}-${Date.now()}.${fullSizeExt}`;
+        const { error: fullUploadError } = await supabase.storage
           .from('product-images')
-          .getPublicUrl(fileName);
+          .upload(fullSizeFileName, result.fullSize, {
+            cacheControl: '3600',
+            upsert: true
+          });
 
-        // Delete old image if exists
-        if (product.image_url && product.image_url.includes('product-images')) {
-          const urlParts = product.image_url.split('/product-images/');
-          if (urlParts.length >= 2) {
-            await supabase.storage
-              .from('product-images')
-              .remove([urlParts[1]]);
-          }
-        }
+        if (fullUploadError) throw fullUploadError;
+
+        // Get public URLs
+        const { data: { publicUrl: thumbnailUrl } } = supabase.storage
+          .from('product-images')
+          .getPublicUrl(thumbnailFileName);
+
+        const { data: { publicUrl: fullSizeUrl } } = supabase.storage
+          .from('product-images')
+          .getPublicUrl(fullSizeFileName);
+
+        // Delete old images if they exist
+        await deleteOldImage(product.image_url, product.thumbnail_url);
 
         // Update product
         const { error: updateError } = await supabase
           .from('products')
-          .update({ image_url: publicUrl })
+          .update({ 
+            image_url: fullSizeUrl,
+            thumbnail_url: thumbnailUrl
+          })
           .eq('id', product.id);
 
         if (updateError) throw updateError;
@@ -513,19 +568,20 @@ export const ProductsManager = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {products.map((product) => (
             <Card key={product.id} className="overflow-hidden">
-              <div className="aspect-square bg-muted relative">
-                {product.image_url ? (
-                  <img
-                    src={product.image_url}
-                    alt={product.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Package className="w-16 h-16 text-muted-foreground" />
-                  </div>
-                )}
-              </div>
+            <div className="aspect-square bg-muted relative">
+              {product.thumbnail_url || product.image_url ? (
+                <img
+                  src={product.thumbnail_url || product.image_url}
+                  alt={product.name}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <Package className="w-16 h-16 text-muted-foreground" />
+                </div>
+              )}
+            </div>
               
               <div className="p-4 space-y-3">
                 <div>
@@ -607,7 +663,7 @@ export const ProductsManager = () => {
                         Click to upload or drag and drop
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        PNG, JPG, WEBP up to 10MB (optimized to WebP)
+                        PNG, JPG, WEBP up to 10MB (optimized to WebP + thumbnail)
                       </p>
                     </div>
                   )}
@@ -710,8 +766,8 @@ export const ProductsManager = () => {
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
                   {compressing 
-                    ? 'Please wait while we optimize your images to WebP format'
-                    : 'Images will be auto-converted to WebP and matched by SKU or product name'
+                    ? 'Generating thumbnails and optimizing images to WebP format'
+                    : 'Images will be auto-converted to WebP with thumbnails and matched by SKU or product name'
                   }
                 </p>
               </div>

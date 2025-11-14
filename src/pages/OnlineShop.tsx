@@ -25,6 +25,7 @@ interface Product {
   category: string;
   price: number;
   image_url: string | null;
+  thumbnail_url?: string | null;
   specifications: any;
   inventory_count: number;
   inventory_status: string;
@@ -239,9 +240,10 @@ const OnlineShop = () => {
               <Card key={product.id} className="overflow-hidden hover:shadow-xl transition-all duration-300">
                 <div className="aspect-[4/3] overflow-hidden relative">
                   <img
-                    src={product.image_url || 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=400&h=300&fit=crop'}
+                    src={product.thumbnail_url || product.image_url || 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=400&h=300&fit=crop'}
                     alt={product.name}
                     className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                    loading="lazy"
                   />
                   <div className="absolute top-3 right-3">
                     {getInventoryBadge(product.inventory_status, product.inventory_count)}
