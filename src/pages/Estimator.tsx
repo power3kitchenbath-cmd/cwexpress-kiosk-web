@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -112,6 +113,11 @@ export default function Estimator() {
     index: number;
     value: string;
   }>({ type: null, index: -1, value: '' });
+
+  const [emailDialog, setEmailDialog] = useState(false);
+  const [recipientEmail, setRecipientEmail] = useState('');
+  const [recipientName, setRecipientName] = useState('');
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -655,7 +661,7 @@ export default function Estimator() {
     return type.charAt(0).toUpperCase() + type.slice(1);
   };
 
-  const exportToPDF = () => {
+  const generatePDF = (): jsPDF => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     
@@ -801,13 +807,66 @@ export default function Estimator() {
     const disclaimer = '* This is an estimate. Final pricing may vary based on specific requirements and installation.';
     doc.text(disclaimer, pageWidth / 2, yPosition, { align: 'center', maxWidth: pageWidth - 30 });
     
-    // Save PDF
+    return doc;
+  };
+
+  const exportToPDF = () => {
+    const doc = generatePDF();
     doc.save(`estimate-${new Date().toISOString().split('T')[0]}.pdf`);
     
     toast({
       title: "PDF Exported",
       description: "Your estimate has been downloaded successfully"
     });
+  };
+
+  const handleEmailEstimate = async () => {
+    if (!recipientEmail) {
+      toast({
+        title: "Email Required",
+        description: "Please enter a recipient email address",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsSendingEmail(true);
+
+    try {
+      // Generate PDF and convert to base64
+      const doc = generatePDF();
+      const pdfBase64 = doc.output('datauristring').split(',')[1];
+
+      const { data, error } = await supabase.functions.invoke('send-estimate-email', {
+        body: {
+          recipientEmail,
+          recipientName: recipientName || undefined,
+          pdfBase64,
+          estimateDate: new Date().toLocaleDateString(),
+          grandTotal
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Email Sent",
+        description: `Estimate has been sent to ${recipientEmail}`
+      });
+
+      setEmailDialog(false);
+      setRecipientEmail('');
+      setRecipientName('');
+    } catch (error: any) {
+      console.error('Error sending estimate:', error);
+      toast({
+        title: "Failed to Send",
+        description: error.message || "Could not send estimate email. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSendingEmail(false);
+    }
   };
 
   const saveEstimate = async () => {
@@ -1323,14 +1382,24 @@ export default function Estimator() {
                 >
                   {editId ? "Update Estimate" : "Save Estimate"}
                 </Button>
-                <Button 
-                  onClick={exportToPDF} 
-                  className="mt-3 w-full"
-                  variant="outline"
-                  disabled={cabinets.length === 0 && flooring.length === 0 && countertops.length === 0}
-                >
-                  Export to PDF
-                </Button>
+                <div className="flex gap-2 mt-3">
+                  <Button 
+                    onClick={exportToPDF} 
+                    className="flex-1"
+                    variant="outline"
+                    disabled={cabinets.length === 0 && flooring.length === 0 && countertops.length === 0}
+                  >
+                    Export to PDF
+                  </Button>
+                  <Button 
+                    onClick={() => setEmailDialog(true)} 
+                    className="flex-1"
+                    variant="outline"
+                    disabled={cabinets.length === 0 && flooring.length === 0 && countertops.length === 0}
+                  >
+                    Email Estimate
+                  </Button>
+                </div>
                 <p className="text-sm text-muted-foreground mt-4">
                   * This is an estimate. Final pricing may vary based on specific requirements and installation.
                 </p>
@@ -1375,6 +1444,48 @@ export default function Estimator() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Email Dialog */}
+      <Dialog open={emailDialog} onOpenChange={setEmailDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Email Estimate</DialogTitle>
+            <DialogDescription>
+              Send this estimate as a PDF attachment to your client
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="recipientName">Client Name (Optional)</Label>
+              <Input
+                id="recipientName"
+                placeholder="John Doe"
+                value={recipientName}
+                onChange={(e) => setRecipientName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="recipientEmail">Client Email *</Label>
+              <Input
+                id="recipientEmail"
+                type="email"
+                placeholder="client@example.com"
+                value={recipientEmail}
+                onChange={(e) => setRecipientEmail(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEmailDialog(false)} disabled={isSendingEmail}>
+              Cancel
+            </Button>
+            <Button onClick={handleEmailEstimate} disabled={isSendingEmail}>
+              {isSendingEmail ? "Sending..." : "Send Email"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
