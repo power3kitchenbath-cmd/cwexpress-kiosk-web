@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { compressImage, formatFileSize, shouldCompressImage } from "@/utils/imageCompression";
+import { compressImage, formatFileSize, shouldCompressImage, getOptimalFormat, getFormatName } from "@/utils/imageCompression";
 import { Badge } from "@/components/ui/badge";
 
 interface Product {
@@ -111,7 +111,8 @@ export const ProductsManager = () => {
       let stats = null;
       
       if (shouldCompressImage(file)) {
-        const result = await compressImage(file);
+        const optimalFormat = getOptimalFormat(file);
+        const result = await compressImage(file, { outputFormat: optimalFormat });
         finalFile = result.file;
         stats = {
           original: result.originalSize,
@@ -119,8 +120,8 @@ export const ProductsManager = () => {
         };
         
         toast({
-          title: "Image compressed",
-          description: `Reduced from ${formatFileSize(result.originalSize)} to ${formatFileSize(result.compressedSize)} (${result.compressionRatio.toFixed(1)}% savings)`,
+          title: "Image optimized",
+          description: `Converted to ${getFormatName(optimalFormat)} • Reduced from ${formatFileSize(result.originalSize)} to ${formatFileSize(result.compressedSize)} (${result.compressionRatio.toFixed(1)}% savings)`,
         });
       }
       
@@ -327,7 +328,8 @@ export const ProductsManager = () => {
         // Compress if needed
         if (shouldCompressImage(file)) {
           try {
-            const result = await compressImage(file);
+            const optimalFormat = getOptimalFormat(file);
+            const result = await compressImage(file, { outputFormat: optimalFormat });
             finalFile = result.file;
             originalSize = result.originalSize;
             compressedSize = result.compressedSize;
@@ -605,7 +607,7 @@ export const ProductsManager = () => {
                         Click to upload or drag and drop
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        PNG, JPG, WEBP up to 10MB (auto-compressed)
+                        PNG, JPG, WEBP up to 10MB (optimized to WebP)
                       </p>
                     </div>
                   )}
@@ -708,8 +710,8 @@ export const ProductsManager = () => {
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
                   {compressing 
-                    ? 'Please wait while we optimize your images'
-                    : 'Images will be auto-compressed and matched by SKU or product name'
+                    ? 'Please wait while we optimize your images to WebP format'
+                    : 'Images will be auto-converted to WebP and matched by SKU or product name'
                   }
                 </p>
               </div>

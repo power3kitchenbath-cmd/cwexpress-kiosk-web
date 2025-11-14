@@ -13,7 +13,19 @@ interface CompressionOptions {
 }
 
 /**
+ * Checks if the browser supports WebP format
+ */
+const supportsWebP = (() => {
+  const elem = document.createElement('canvas');
+  if (elem.getContext && elem.getContext('2d')) {
+    return elem.toDataURL('image/webp').indexOf('data:image/webp') === 0;
+  }
+  return false;
+})();
+
+/**
  * Compresses an image file by resizing and reducing quality
+ * Uses WebP format by default for best compression, falls back to JPEG if unsupported
  * @param file - The original image file
  * @param options - Compression options
  * @returns Promise with the compressed file and compression stats
@@ -22,11 +34,14 @@ export const compressImage = async (
   file: File,
   options: CompressionOptions = {}
 ): Promise<CompressionResult> => {
+  // Default to WebP for best compression, fallback to JPEG if not supported
+  const defaultFormat = supportsWebP ? 'image/webp' : 'image/jpeg';
+  
   const {
     maxWidth = 1200,
     maxHeight = 1200,
     quality = 0.85,
-    outputFormat = 'image/jpeg'
+    outputFormat = defaultFormat
   } = options;
 
   return new Promise((resolve, reject) => {
@@ -77,7 +92,7 @@ export const compressImage = async (
         // Draw the image
         ctx.drawImage(img, 0, 0, width, height);
 
-        // Convert canvas to blob
+        // Convert canvas to blob with specified format
         canvas.toBlob(
           (blob) => {
             if (!blob) {
@@ -85,9 +100,10 @@ export const compressImage = async (
               return;
             }
 
-            // Create new file from blob
+            // Create new file from blob with appropriate extension
             const fileExtension = outputFormat.split('/')[1];
-            const fileName = file.name.replace(/\.[^.]+$/, `.${fileExtension}`);
+            const baseName = file.name.replace(/\.[^.]+$/, '');
+            const fileName = `${baseName}.${fileExtension}`;
             
             const compressedFile = new File([blob], fileName, {
               type: outputFormat,
@@ -138,4 +154,34 @@ export const formatFileSize = (bytes: number): string => {
  */
 export const shouldCompressImage = (file: File, maxSize: number = 500 * 1024): boolean => {
   return file.size > maxSize;
+};
+
+/**
+ * Returns the optimal output format based on browser support and input type
+ */
+export const getOptimalFormat = (inputFile: File): 'image/webp' | 'image/jpeg' | 'image/png' => {
+  // Use WebP if supported (best compression)
+  if (supportsWebP) {
+    return 'image/webp';
+  }
+  
+  // For PNG with transparency, keep as PNG if WebP not supported
+  if (inputFile.type === 'image/png') {
+    return 'image/png';
+  }
+  
+  // Default to JPEG
+  return 'image/jpeg';
+};
+
+/**
+ * Gets the format name for display
+ */
+export const getFormatName = (format: string): string => {
+  const formatMap: Record<string, string> = {
+    'image/webp': 'WebP',
+    'image/jpeg': 'JPEG',
+    'image/png': 'PNG',
+  };
+  return formatMap[format] || format;
 };
