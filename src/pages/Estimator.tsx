@@ -12,6 +12,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/use-user-role";
 import { z } from "zod";
 import logo from "@/assets/logo.png";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const cabinetSchema = z.object({
   quantity: z.number().int().min(1, "Quantity must be at least 1").max(1000, "Quantity cannot exceed 1000")
@@ -653,6 +655,161 @@ export default function Estimator() {
     return type.charAt(0).toUpperCase() + type.slice(1);
   };
 
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    // Add logo
+    try {
+      doc.addImage(logo, 'PNG', 15, 10, 40, 20);
+    } catch (error) {
+      console.error('Error adding logo:', error);
+    }
+    
+    // Add title and date
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Price Estimate', pageWidth - 15, 20, { align: 'right' });
+    
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Date: ${new Date().toLocaleDateString()}`, pageWidth - 15, 27, { align: 'right' });
+    
+    let yPosition = 45;
+    
+    // Cabinets section
+    if (cabinets.length > 0) {
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Cabinets', 15, yPosition);
+      yPosition += 7;
+      
+      const cabinetRows = cabinets.map(item => [
+        formatName(item.type),
+        item.quantity.toString(),
+        `$${item.pricePerUnit.toFixed(2)}`,
+        `$${(item.quantity * item.pricePerUnit).toFixed(2)}`
+      ]);
+      
+      autoTable(doc, {
+        startY: yPosition,
+        head: [['Type', 'Quantity', 'Unit Price', 'Total']],
+        body: cabinetRows,
+        theme: 'striped',
+        headStyles: { fillColor: [79, 70, 229] },
+        margin: { left: 15, right: 15 }
+      });
+      
+      yPosition = (doc as any).lastAutoTable.finalY + 5;
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Cabinets Subtotal: $${cabinetTotal.toFixed(2)}`, pageWidth - 15, yPosition, { align: 'right' });
+      yPosition += 10;
+    }
+    
+    // Flooring section
+    if (flooring.length > 0) {
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Flooring', 15, yPosition);
+      yPosition += 7;
+      
+      const flooringRows = flooring.map(item => [
+        formatName(item.type),
+        `${item.squareFeet} sq ft`,
+        `$${item.pricePerSqFt.toFixed(2)}/sq ft`,
+        `$${(item.squareFeet * item.pricePerSqFt).toFixed(2)}`
+      ]);
+      
+      autoTable(doc, {
+        startY: yPosition,
+        head: [['Type', 'Area', 'Unit Price', 'Total']],
+        body: flooringRows,
+        theme: 'striped',
+        headStyles: { fillColor: [79, 70, 229] },
+        margin: { left: 15, right: 15 }
+      });
+      
+      yPosition = (doc as any).lastAutoTable.finalY + 5;
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Flooring Subtotal: $${flooringTotal.toFixed(2)}`, pageWidth - 15, yPosition, { align: 'right' });
+      yPosition += 10;
+    }
+    
+    // Countertops section
+    if (countertops.length > 0) {
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Countertops', 15, yPosition);
+      yPosition += 7;
+      
+      const countertopRows = countertops.map(item => [
+        formatName(item.type),
+        `${item.linearFeet} linear ft`,
+        `$${item.pricePerLinearFt.toFixed(2)}/linear ft`,
+        `$${(item.linearFeet * item.pricePerLinearFt).toFixed(2)}`
+      ]);
+      
+      autoTable(doc, {
+        startY: yPosition,
+        head: [['Type', 'Length', 'Unit Price', 'Total']],
+        body: countertopRows,
+        theme: 'striped',
+        headStyles: { fillColor: [79, 70, 229] },
+        margin: { left: 15, right: 15 }
+      });
+      
+      yPosition = (doc as any).lastAutoTable.finalY + 5;
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Countertops Subtotal: $${countertopTotal.toFixed(2)}`, pageWidth - 15, yPosition, { align: 'right' });
+      yPosition += 10;
+    }
+    
+    // Total summary
+    yPosition += 5;
+    doc.setDrawColor(79, 70, 229);
+    doc.line(15, yPosition, pageWidth - 15, yPosition);
+    yPosition += 8;
+    
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Subtotal:', 15, yPosition);
+    doc.text(`$${subtotal.toFixed(2)}`, pageWidth - 15, yPosition, { align: 'right' });
+    yPosition += 7;
+    
+    if (markupPercentage > 0) {
+      doc.setTextColor(217, 119, 6);
+      doc.text(`${markupLabel}:`, 15, yPosition);
+      doc.text(`$${markupAmount.toFixed(2)}`, pageWidth - 15, yPosition, { align: 'right' });
+      yPosition += 7;
+      doc.setTextColor(0, 0, 0);
+    }
+    
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Grand Total:', 15, yPosition);
+    doc.setTextColor(79, 70, 229);
+    doc.text(`$${grandTotal.toFixed(2)}`, pageWidth - 15, yPosition, { align: 'right' });
+    
+    // Disclaimer
+    yPosition += 15;
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'italic');
+    doc.setTextColor(100, 100, 100);
+    const disclaimer = '* This is an estimate. Final pricing may vary based on specific requirements and installation.';
+    doc.text(disclaimer, pageWidth / 2, yPosition, { align: 'center', maxWidth: pageWidth - 30 });
+    
+    // Save PDF
+    doc.save(`estimate-${new Date().toISOString().split('T')[0]}.pdf`);
+    
+    toast({
+      title: "PDF Exported",
+      description: "Your estimate has been downloaded successfully"
+    });
+  };
+
   const saveEstimate = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -1165,6 +1322,14 @@ export default function Estimator() {
                   disabled={cabinets.length === 0 && flooring.length === 0 && countertops.length === 0}
                 >
                   {editId ? "Update Estimate" : "Save Estimate"}
+                </Button>
+                <Button 
+                  onClick={exportToPDF} 
+                  className="mt-3 w-full"
+                  variant="outline"
+                  disabled={cabinets.length === 0 && flooring.length === 0 && countertops.length === 0}
+                >
+                  Export to PDF
                 </Button>
                 <p className="text-sm text-muted-foreground mt-4">
                   * This is an estimate. Final pricing may vary based on specific requirements and installation.
