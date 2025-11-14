@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -85,6 +86,13 @@ export default function Estimator() {
   const [countertopType, setCountertopType] = useState("");
   const [countertopLinearFeet, setCountertopLinearFeet] = useState("");
   const [countertops, setCountertops] = useState<CountertopItem[]>([]);
+  
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    type: 'cabinet' | 'flooring' | 'countertop' | null;
+    index: number;
+    itemName: string;
+  }>({ open: false, type: null, index: -1, itemName: '' });
 
   useEffect(() => {
     checkAuth();
@@ -295,16 +303,49 @@ export default function Estimator() {
     }
   };
 
-  const removeCabinet = (index: number) => {
-    setCabinets(cabinets.filter((_, i) => i !== index));
+  const confirmRemoveCabinet = (index: number) => {
+    const item = cabinets[index];
+    setDeleteDialog({
+      open: true,
+      type: 'cabinet',
+      index,
+      itemName: `${formatName(item.type)} x${item.quantity}`
+    });
   };
 
-  const removeFlooring = (index: number) => {
-    setFlooring(flooring.filter((_, i) => i !== index));
+  const confirmRemoveFlooring = (index: number) => {
+    const item = flooring[index];
+    setDeleteDialog({
+      open: true,
+      type: 'flooring',
+      index,
+      itemName: `${formatName(item.type)} - ${item.squareFeet} sq ft`
+    });
   };
 
-  const removeCountertop = (index: number) => {
-    setCountertops(countertops.filter((_, i) => i !== index));
+  const confirmRemoveCountertop = (index: number) => {
+    const item = countertops[index];
+    setDeleteDialog({
+      open: true,
+      type: 'countertop',
+      index,
+      itemName: `${formatName(item.type)} - ${item.linearFeet} linear ft`
+    });
+  };
+
+  const handleDeleteConfirm = () => {
+    if (deleteDialog.type === 'cabinet') {
+      setCabinets(cabinets.filter((_, i) => i !== deleteDialog.index));
+    } else if (deleteDialog.type === 'flooring') {
+      setFlooring(flooring.filter((_, i) => i !== deleteDialog.index));
+    } else if (deleteDialog.type === 'countertop') {
+      setCountertops(countertops.filter((_, i) => i !== deleteDialog.index));
+    }
+    setDeleteDialog({ open: false, type: null, index: -1, itemName: '' });
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialog({ open: false, type: null, index: -1, itemName: '' });
   };
 
   const cabinetTotal = cabinets.reduce((sum, item) => sum + (item.quantity * item.pricePerUnit), 0);
@@ -494,7 +535,7 @@ export default function Estimator() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => removeCabinet(index)}
+                          onClick={() => confirmRemoveCabinet(index)}
                           className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -560,7 +601,7 @@ export default function Estimator() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => removeFlooring(index)}
+                          onClick={() => confirmRemoveFlooring(index)}
                           className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -626,7 +667,7 @@ export default function Estimator() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => removeCountertop(index)}
+                          onClick={() => confirmRemoveCountertop(index)}
                           className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -694,6 +735,24 @@ export default function Estimator() {
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialog.open} onOpenChange={(open) => !open && handleDeleteCancel()}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Item</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove <strong>{deleteDialog.itemName}</strong> from your estimate? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleDeleteCancel}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
