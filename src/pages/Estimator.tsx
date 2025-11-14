@@ -94,6 +94,11 @@ export default function Estimator() {
     itemName: string;
   }>({ open: false, type: null, index: -1, itemName: '' });
 
+  const [clearAllDialog, setClearAllDialog] = useState<{
+    open: boolean;
+    type: 'cabinet' | 'flooring' | 'countertop' | null;
+  }>({ open: false, type: null });
+
   useEffect(() => {
     checkAuth();
     fetchPrices();
@@ -348,6 +353,25 @@ export default function Estimator() {
     setDeleteDialog({ open: false, type: null, index: -1, itemName: '' });
   };
 
+  const confirmClearAll = (type: 'cabinet' | 'flooring' | 'countertop') => {
+    setClearAllDialog({ open: true, type });
+  };
+
+  const handleClearAllConfirm = () => {
+    if (clearAllDialog.type === 'cabinet') {
+      setCabinets([]);
+    } else if (clearAllDialog.type === 'flooring') {
+      setFlooring([]);
+    } else if (clearAllDialog.type === 'countertop') {
+      setCountertops([]);
+    }
+    setClearAllDialog({ open: false, type: null });
+  };
+
+  const handleClearAllCancel = () => {
+    setClearAllDialog({ open: false, type: null });
+  };
+
   const cabinetTotal = cabinets.reduce((sum, item) => sum + (item.quantity * item.pricePerUnit), 0);
   const flooringTotal = flooring.reduce((sum, item) => sum + (item.squareFeet * item.pricePerSqFt), 0);
   const countertopTotal = countertops.reduce((sum, item) => sum + (item.linearFeet * item.pricePerLinearFt), 0);
@@ -527,7 +551,17 @@ export default function Estimator() {
 
                 {cabinets.length > 0 && (
                   <div className="space-y-2 pt-4 border-t">
-                    <h4 className="font-semibold">Added Cabinets:</h4>
+                    <div className="flex justify-between items-center mb-2">
+                      <h4 className="font-semibold">Added Cabinets:</h4>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => confirmClearAll('cabinet')}
+                        className="h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        Clear All
+                      </Button>
+                    </div>
                     {cabinets.map((item, index) => (
                       <div key={index} className="flex justify-between items-center text-sm gap-2">
                         <span className="flex-1">{formatName(item.type)} x{item.quantity}</span>
@@ -593,7 +627,17 @@ export default function Estimator() {
 
                 {flooring.length > 0 && (
                   <div className="space-y-2 pt-4 border-t">
-                    <h4 className="font-semibold">Added Flooring:</h4>
+                    <div className="flex justify-between items-center mb-2">
+                      <h4 className="font-semibold">Added Flooring:</h4>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => confirmClearAll('flooring')}
+                        className="h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        Clear All
+                      </Button>
+                    </div>
                     {flooring.map((item, index) => (
                       <div key={index} className="flex justify-between items-center text-sm gap-2">
                         <span className="flex-1">{formatName(item.type)} - {item.squareFeet} sq ft</span>
@@ -659,7 +703,17 @@ export default function Estimator() {
 
                 {countertops.length > 0 && (
                   <div className="space-y-2 pt-4 border-t">
-                    <h4 className="font-semibold">Added Countertops:</h4>
+                    <div className="flex justify-between items-center mb-2">
+                      <h4 className="font-semibold">Added Countertops:</h4>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => confirmClearAll('countertop')}
+                        className="h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        Clear All
+                      </Button>
+                    </div>
                     {countertops.map((item, index) => (
                       <div key={index} className="flex justify-between items-center text-sm gap-2">
                         <span className="flex-1">{formatName(item.type)} - {item.linearFeet} linear ft</span>
@@ -749,6 +803,24 @@ export default function Estimator() {
             <AlertDialogCancel onClick={handleDeleteCancel}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Clear All Confirmation Dialog */}
+      <AlertDialog open={clearAllDialog.open} onOpenChange={(open) => !open && handleClearAllCancel()}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear All {clearAllDialog.type === 'cabinet' ? 'Cabinets' : clearAllDialog.type === 'flooring' ? 'Flooring' : 'Countertops'}</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove all {clearAllDialog.type === 'cabinet' ? 'cabinet' : clearAllDialog.type === 'flooring' ? 'flooring' : 'countertop'} items from your estimate? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleClearAllCancel}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleClearAllConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Clear All
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
