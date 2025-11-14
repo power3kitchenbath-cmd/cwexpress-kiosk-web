@@ -5,6 +5,14 @@ interface CompressionResult {
   compressionRatio: number;
 }
 
+interface ThumbnailResult {
+  thumbnail: File;
+  fullSize: File;
+  originalSize: number;
+  thumbnailSize: number;
+  fullSizeSize: number;
+}
+
 interface CompressionOptions {
   maxWidth?: number;
   maxHeight?: number;
@@ -184,4 +192,40 @@ export const getFormatName = (format: string): string => {
     'image/png': 'PNG',
   };
   return formatMap[format] || format;
+};
+
+/**
+ * Generates a thumbnail (200x200px) and full-size optimized image
+ * @param file - The original image file
+ * @returns Promise with both thumbnail and full-size files
+ */
+export const generateThumbnailAndFullSize = async (
+  file: File
+): Promise<ThumbnailResult> => {
+  const originalSize = file.size;
+  const optimalFormat = getOptimalFormat(file);
+
+  // Generate thumbnail (200x200px)
+  const thumbnailResult = await compressImage(file, {
+    maxWidth: 200,
+    maxHeight: 200,
+    quality: 0.8,
+    outputFormat: 'image/webp' // Always use WebP for thumbnails
+  });
+
+  // Generate full-size optimized image (1200px max)
+  const fullSizeResult = await compressImage(file, {
+    maxWidth: 1200,
+    maxHeight: 1200,
+    quality: 0.85,
+    outputFormat: optimalFormat
+  });
+
+  return {
+    thumbnail: thumbnailResult.file,
+    fullSize: fullSizeResult.file,
+    originalSize,
+    thumbnailSize: thumbnailResult.file.size,
+    fullSizeSize: fullSizeResult.file.size,
+  };
 };
