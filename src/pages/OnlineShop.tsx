@@ -238,7 +238,7 @@ const OnlineShop = () => {
             {products.map((product, index) => (
               <Card 
                 key={product.id} 
-                className="overflow-hidden hover:shadow-xl transition-all duration-300 group opacity-0 animate-[fadeInUp_0.5s_ease-out_forwards]"
+                className="overflow-hidden transition-all duration-300 group opacity-0 animate-[fadeInUp_0.5s_ease-out_forwards] hover:shadow-2xl hover:-translate-y-2 cursor-pointer"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 <div className="overflow-hidden relative">
@@ -301,7 +301,7 @@ const OnlineShop = () => {
 
                   <Button
                     onClick={() => handleAddToCart(product)}
-                    className="w-full gap-2"
+                    className="w-full gap-2 transition-all duration-300 hover:scale-105 active:scale-95"
                     disabled={product.inventory_status === 'out_of_stock'}
                   >
                     {product.inventory_status === 'out_of_stock' ? 'Out of Stock' : 'Add to Cart'}

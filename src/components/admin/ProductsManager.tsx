@@ -568,7 +568,7 @@ export const ProductsManager = () => {
           {products.map((product, index) => (
             <Card 
               key={product.id} 
-              className="overflow-hidden group opacity-0 animate-[fadeInUp_0.5s_ease-out_forwards]"
+              className="overflow-hidden group opacity-0 animate-[fadeInUp_0.5s_ease-out_forwards] transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer"
               style={{ animationDelay: `${index * 80}ms` }}
             >
               <ProgressiveImage
@@ -596,7 +596,7 @@ export const ProductsManager = () => {
 
                 <Button
                   onClick={() => openEditDialog(product)}
-                  className="w-full gap-2"
+                  className="w-full gap-2 transition-all duration-300 hover:scale-105 active:scale-95"
                   variant="outline"
                 >
                   <Pencil className="w-4 h-4" />
