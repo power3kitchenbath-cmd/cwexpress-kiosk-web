@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import { compressImage, formatFileSize, shouldCompressImage, getOptimalFormat, getFormatName, generateThumbnailAndFullSize } from "@/utils/imageCompression";
 import { Badge } from "@/components/ui/badge";
+import { ProgressiveImage } from "@/components/ui/progressive-image";
 
 interface Product {
   id: string;
@@ -567,21 +568,14 @@ export const ProductsManager = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {products.map((product) => (
-            <Card key={product.id} className="overflow-hidden">
-            <div className="aspect-square bg-muted relative">
-              {product.thumbnail_url || product.image_url ? (
-                <img
-                  src={product.thumbnail_url || product.image_url}
-                  alt={product.name}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <Package className="w-16 h-16 text-muted-foreground" />
-                </div>
-              )}
-            </div>
+            <Card key={product.id} className="overflow-hidden group">
+              <ProgressiveImage
+                src={product.image_url || 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=800&h=600&fit=crop'}
+                thumbnailSrc={product.thumbnail_url || undefined}
+                alt={product.name}
+                aspectRatio="aspect-square"
+                className="group-hover:scale-105 transition-transform duration-500"
+              />
               
               <div className="p-4 space-y-3">
                 <div>
