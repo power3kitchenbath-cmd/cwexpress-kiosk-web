@@ -105,6 +105,12 @@ export default function Estimator() {
     data: CabinetItem[] | FlooringItem[] | CountertopItem[] | null;
   }>({ action: null, type: null, data: null });
 
+  const [editingItem, setEditingItem] = useState<{
+    type: 'cabinet' | 'flooring' | 'countertop' | null;
+    index: number;
+    value: string;
+  }>({ type: null, index: -1, value: '' });
+
   useEffect(() => {
     checkAuth();
     fetchPrices();
@@ -455,6 +461,80 @@ export default function Estimator() {
     setUndoState({ action: null, type: null, data: null });
   };
 
+  const startEditing = (type: 'cabinet' | 'flooring' | 'countertop', index: number) => {
+    if (type === 'cabinet') {
+      setEditingItem({ type, index, value: cabinets[index].quantity.toString() });
+    } else if (type === 'flooring') {
+      setEditingItem({ type, index, value: flooring[index].squareFeet.toString() });
+    } else if (type === 'countertop') {
+      setEditingItem({ type, index, value: countertops[index].linearFeet.toString() });
+    }
+  };
+
+  const cancelEditing = () => {
+    setEditingItem({ type: null, index: -1, value: '' });
+  };
+
+  const saveEdit = () => {
+    if (!editingItem.type || editingItem.index === -1) return;
+
+    try {
+      if (editingItem.type === 'cabinet') {
+        const quantity = parseInt(editingItem.value);
+        cabinetSchema.parse({ quantity });
+        
+        const updatedCabinets = [...cabinets];
+        updatedCabinets[editingItem.index] = {
+          ...updatedCabinets[editingItem.index],
+          quantity
+        };
+        setCabinets(updatedCabinets);
+        toast({
+          title: "Updated",
+          description: "Cabinet quantity updated successfully"
+        });
+      } else if (editingItem.type === 'flooring') {
+        const squareFeet = parseFloat(editingItem.value);
+        flooringSchema.parse({ squareFeet });
+        
+        const updatedFlooring = [...flooring];
+        updatedFlooring[editingItem.index] = {
+          ...updatedFlooring[editingItem.index],
+          squareFeet
+        };
+        setFlooring(updatedFlooring);
+        toast({
+          title: "Updated",
+          description: "Flooring measurement updated successfully"
+        });
+      } else if (editingItem.type === 'countertop') {
+        const linearFeet = parseFloat(editingItem.value);
+        countertopSchema.parse({ linearFeet });
+        
+        const updatedCountertops = [...countertops];
+        updatedCountertops[editingItem.index] = {
+          ...updatedCountertops[editingItem.index],
+          linearFeet
+        };
+        setCountertops(updatedCountertops);
+        toast({
+          title: "Updated",
+          description: "Countertop measurement updated successfully"
+        });
+      }
+      
+      cancelEditing();
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast({
+          title: "Invalid Input",
+          description: error.errors[0].message,
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
   const cabinetTotal = cabinets.reduce((sum, item) => sum + (item.quantity * item.pricePerUnit), 0);
   const flooringTotal = flooring.reduce((sum, item) => sum + (item.squareFeet * item.pricePerSqFt), 0);
   const countertopTotal = countertops.reduce((sum, item) => sum + (item.linearFeet * item.pricePerLinearFt), 0);
@@ -647,7 +727,48 @@ export default function Estimator() {
                     </div>
                     {cabinets.map((item, index) => (
                       <div key={index} className="flex justify-between items-center text-sm gap-2">
-                        <span className="flex-1">{formatName(item.type)} x{item.quantity}</span>
+                        {editingItem.type === 'cabinet' && editingItem.index === index ? (
+                          <div className="flex-1 flex items-center gap-2">
+                            <span>{formatName(item.type)} x</span>
+                            <Input
+                              type="number"
+                              min="1"
+                              max="1000"
+                              value={editingItem.value}
+                              onChange={(e) => setEditingItem({ ...editingItem, value: e.target.value })}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') saveEdit();
+                                if (e.key === 'Escape') cancelEditing();
+                              }}
+                              className="h-7 w-20"
+                              autoFocus
+                            />
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={saveEdit}
+                              className="h-7 px-2 text-xs"
+                            >
+                              Save
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={cancelEditing}
+                              className="h-7 px-2 text-xs"
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        ) : (
+                          <span 
+                            className="flex-1 cursor-pointer hover:bg-muted/50 px-2 py-1 rounded transition-colors"
+                            onClick={() => startEditing('cabinet', index)}
+                            title="Click to edit quantity"
+                          >
+                            {formatName(item.type)} x{item.quantity}
+                          </span>
+                        )}
                         <span className="font-semibold">${(item.quantity * item.pricePerUnit).toFixed(2)}</span>
                         <Button
                           variant="ghost"
@@ -723,7 +844,50 @@ export default function Estimator() {
                     </div>
                     {flooring.map((item, index) => (
                       <div key={index} className="flex justify-between items-center text-sm gap-2">
-                        <span className="flex-1">{formatName(item.type)} - {item.squareFeet} sq ft</span>
+                        {editingItem.type === 'flooring' && editingItem.index === index ? (
+                          <div className="flex-1 flex items-center gap-2">
+                            <span>{formatName(item.type)} -</span>
+                            <Input
+                              type="number"
+                              min="0.1"
+                              max="100000"
+                              step="0.1"
+                              value={editingItem.value}
+                              onChange={(e) => setEditingItem({ ...editingItem, value: e.target.value })}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') saveEdit();
+                                if (e.key === 'Escape') cancelEditing();
+                              }}
+                              className="h-7 w-24"
+                              autoFocus
+                            />
+                            <span className="text-xs">sq ft</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={saveEdit}
+                              className="h-7 px-2 text-xs"
+                            >
+                              Save
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={cancelEditing}
+                              className="h-7 px-2 text-xs"
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        ) : (
+                          <span 
+                            className="flex-1 cursor-pointer hover:bg-muted/50 px-2 py-1 rounded transition-colors"
+                            onClick={() => startEditing('flooring', index)}
+                            title="Click to edit square feet"
+                          >
+                            {formatName(item.type)} - {item.squareFeet} sq ft
+                          </span>
+                        )}
                         <span className="font-semibold">${(item.squareFeet * item.pricePerSqFt).toFixed(2)}</span>
                         <Button
                           variant="ghost"
@@ -799,7 +963,50 @@ export default function Estimator() {
                     </div>
                     {countertops.map((item, index) => (
                       <div key={index} className="flex justify-between items-center text-sm gap-2">
-                        <span className="flex-1">{formatName(item.type)} - {item.linearFeet} linear ft</span>
+                        {editingItem.type === 'countertop' && editingItem.index === index ? (
+                          <div className="flex-1 flex items-center gap-2">
+                            <span>{formatName(item.type)} -</span>
+                            <Input
+                              type="number"
+                              min="0.1"
+                              max="10000"
+                              step="0.1"
+                              value={editingItem.value}
+                              onChange={(e) => setEditingItem({ ...editingItem, value: e.target.value })}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') saveEdit();
+                                if (e.key === 'Escape') cancelEditing();
+                              }}
+                              className="h-7 w-24"
+                              autoFocus
+                            />
+                            <span className="text-xs">linear ft</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={saveEdit}
+                              className="h-7 px-2 text-xs"
+                            >
+                              Save
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={cancelEditing}
+                              className="h-7 px-2 text-xs"
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        ) : (
+                          <span 
+                            className="flex-1 cursor-pointer hover:bg-muted/50 px-2 py-1 rounded transition-colors"
+                            onClick={() => startEditing('countertop', index)}
+                            title="Click to edit linear feet"
+                          >
+                            {formatName(item.type)} - {item.linearFeet} linear ft
+                          </span>
+                        )}
                         <span className="font-semibold">${(item.linearFeet * item.pricePerLinearFt).toFixed(2)}</span>
                         <Button
                           variant="ghost"
