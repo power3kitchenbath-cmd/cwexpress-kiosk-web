@@ -235,8 +235,12 @@ const OnlineShop = () => {
           <ProductGridSkeleton count={6} />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
-            {products.map((product) => (
-              <Card key={product.id} className="overflow-hidden hover:shadow-xl transition-all duration-300 group">
+            {products.map((product, index) => (
+              <Card 
+                key={product.id} 
+                className="overflow-hidden hover:shadow-xl transition-all duration-300 group opacity-0 animate-[fadeInUp_0.5s_ease-out_forwards]"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
                 <div className="overflow-hidden relative">
                   <ProgressiveImage
                     src={product.image_url || 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=800&h=600&fit=crop'}

@@ -565,8 +565,12 @@ export const ProductsManager = () => {
         <AdminProductGridSkeleton count={6} />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {products.map((product) => (
-            <Card key={product.id} className="overflow-hidden group">
+          {products.map((product, index) => (
+            <Card 
+              key={product.id} 
+              className="overflow-hidden group opacity-0 animate-[fadeInUp_0.5s_ease-out_forwards]"
+              style={{ animationDelay: `${index * 80}ms` }}
+            >
               <ProgressiveImage
                 src={product.image_url || 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=800&h=600&fit=crop'}
                 thumbnailSrc={product.thumbnail_url || undefined}
