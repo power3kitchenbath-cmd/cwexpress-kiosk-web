@@ -27,6 +27,7 @@ import { DeliverabilityInsights } from "@/components/admin/DeliverabilityInsight
 import { EmailReputationMonitor } from "@/components/admin/EmailReputationMonitor";
 import { EmailWarmupTracker } from "@/components/admin/EmailWarmupTracker";
 import { EmailAuthenticationValidator } from "@/components/admin/EmailAuthenticationValidator";
+import { ProductsManager } from "@/components/admin/ProductsManager";
 
 interface CabinetType {
   id: string;
@@ -276,10 +277,11 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="orders">Orders</TabsTrigger>
             <TabsTrigger value="customers">Pro Customers</TabsTrigger>
+            <TabsTrigger value="products">Products</TabsTrigger>
             <TabsTrigger value="emails">Email Activity</TabsTrigger>
             <TabsTrigger value="analytics">Email Analytics</TabsTrigger>
             <TabsTrigger value="cabinets">Cabinet Types</TabsTrigger>
@@ -302,6 +304,10 @@ const Admin = () => {
 
           <TabsContent value="customers">
             <ProCustomersSection />
+          </TabsContent>
+
+          <TabsContent value="products">
+            <ProductsManager />
           </TabsContent>
 
           <TabsContent value="cabinets">
