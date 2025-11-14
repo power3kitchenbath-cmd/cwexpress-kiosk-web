@@ -475,6 +475,33 @@ export default function Estimator() {
     setEditingItem({ type: null, index: -1, value: '' });
   };
 
+  const handleKeyNavigation = (e: React.KeyboardEvent, currentIndex: number) => {
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const newIndex = currentIndex - 1;
+      if (newIndex >= 0) {
+        saveEdit();
+        setTimeout(() => startEditing(editingItem.type!, newIndex), 50);
+      }
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      let maxIndex = 0;
+      if (editingItem.type === 'cabinet') {
+        maxIndex = cabinets.length - 1;
+      } else if (editingItem.type === 'flooring') {
+        maxIndex = flooring.length - 1;
+      } else if (editingItem.type === 'countertop') {
+        maxIndex = countertops.length - 1;
+      }
+      
+      const newIndex = currentIndex + 1;
+      if (newIndex <= maxIndex) {
+        saveEdit();
+        setTimeout(() => startEditing(editingItem.type!, newIndex), 50);
+      }
+    }
+  };
+
   const saveEdit = () => {
     if (!editingItem.type || editingItem.index === -1) return;
 
@@ -739,6 +766,7 @@ export default function Estimator() {
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') saveEdit();
                                 if (e.key === 'Escape') cancelEditing();
+                                handleKeyNavigation(e, index);
                               }}
                               className="h-7 w-20"
                               autoFocus
@@ -857,6 +885,7 @@ export default function Estimator() {
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') saveEdit();
                                 if (e.key === 'Escape') cancelEditing();
+                                handleKeyNavigation(e, index);
                               }}
                               className="h-7 w-24"
                               autoFocus
@@ -976,6 +1005,7 @@ export default function Estimator() {
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') saveEdit();
                                 if (e.key === 'Escape') cancelEditing();
+                                handleKeyNavigation(e, index);
                               }}
                               className="h-7 w-24"
                               autoFocus
