@@ -20,6 +20,10 @@ const flooringSchema = z.object({
   squareFeet: z.number().min(0.1, "Square feet must be at least 0.1").max(100000, "Square feet cannot exceed 100,000")
 });
 
+const countertopSchema = z.object({
+  linearFeet: z.number().min(0.1, "Linear feet must be at least 0.1").max(10000, "Linear feet cannot exceed 10,000")
+});
+
 interface CabinetItem {
   type: string;
   quantity: number;
@@ -44,6 +48,18 @@ interface FlooringType {
   price_per_sqft: number;
 }
 
+interface CountertopItem {
+  type: string;
+  linearFeet: number;
+  pricePerLinearFt: number;
+}
+
+interface CountertopType {
+  id: string;
+  name: string;
+  price_per_linear_ft: number;
+}
+
 export default function Estimator() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -64,6 +80,11 @@ export default function Estimator() {
   const [flooringType, setFlooringType] = useState("");
   const [flooringSquareFeet, setFlooringSquareFeet] = useState("");
   const [flooring, setFlooring] = useState<FlooringItem[]>([]);
+  
+  const [countertopTypes, setCountertopTypes] = useState<CountertopType[]>([]);
+  const [countertopType, setCountertopType] = useState("");
+  const [countertopLinearFeet, setCountertopLinearFeet] = useState("");
+  const [countertops, setCountertops] = useState<CountertopItem[]>([]);
 
   useEffect(() => {
     checkAuth();
@@ -97,6 +118,11 @@ export default function Estimator() {
       .from("flooring_types")
       .select("*")
       .order("name");
+    
+    const { data: countertopData } = await supabase
+      .from("countertop_types")
+      .select("*")
+      .order("name");
 
     if (cabinetData) {
       setCabinetTypes(cabinetData);
@@ -109,6 +135,13 @@ export default function Estimator() {
       setFlooringTypes(flooringData);
       if (flooringData.length > 0 && !flooringType) {
         setFlooringType(flooringData[0].name);
+      }
+    }
+    
+    if (countertopData) {
+      setCountertopTypes(countertopData);
+      if (countertopData.length > 0 && !countertopType) {
+        setCountertopType(countertopData[0].name);
       }
     }
   };
@@ -131,6 +164,7 @@ export default function Estimator() {
 
     setCabinets((data.cabinet_items as unknown) as CabinetItem[]);
     setFlooring((data.flooring_items as unknown) as FlooringItem[]);
+    setCountertops((data.countertop_items as unknown) as CountertopItem[]);
   };
 
   const loadImportedCabinets = (importedCabinets: any[]) => {
@@ -233,10 +267,39 @@ export default function Estimator() {
     }
   };
 
+  const addCountertop = () => {
+    if (countertopType && countertopLinearFeet) {
+      const linearFt = parseFloat(countertopLinearFeet);
+      
+      try {
+        countertopSchema.parse({ linearFeet: linearFt });
+        
+        const selectedType = countertopTypes.find(c => c.name === countertopType);
+        if (selectedType) {
+          setCountertops([...countertops, {
+            type: countertopType,
+            linearFeet: linearFt,
+            pricePerLinearFt: selectedType.price_per_linear_ft,
+          }]);
+          setCountertopLinearFeet("");
+        }
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          toast({
+            title: "Invalid Input",
+            description: error.errors[0].message,
+            variant: "destructive",
+          });
+        }
+      }
+    }
+  };
+
   const cabinetTotal = cabinets.reduce((sum, item) => sum + (item.quantity * item.pricePerUnit), 0);
   const flooringTotal = flooring.reduce((sum, item) => sum + (item.squareFeet * item.pricePerSqFt), 0);
+  const countertopTotal = countertops.reduce((sum, item) => sum + (item.linearFeet * item.pricePerLinearFt), 0);
   const totalCabinetQuantity = cabinets.reduce((sum, item) => sum + item.quantity, 0);
-  const subtotal = cabinetTotal + flooringTotal;
+  const subtotal = cabinetTotal + flooringTotal + countertopTotal;
   
   let markupPercentage = 0;
   let markupLabel = "";
@@ -269,8 +332,10 @@ export default function Estimator() {
         .update({
           cabinet_items: cabinets as any,
           flooring_items: flooring as any,
+          countertop_items: countertops as any,
           cabinet_total: cabinetTotal,
           flooring_total: flooringTotal,
+          countertop_total: countertopTotal,
           grand_total: grandTotal,
         })
         .eq("id", editId);
@@ -294,8 +359,10 @@ export default function Estimator() {
         user_id: user.id,
         cabinet_items: cabinets as any,
         flooring_items: flooring as any,
+        countertop_items: countertops as any,
         cabinet_total: cabinetTotal,
         flooring_total: flooringTotal,
+        countertop_total: countertopTotal,
         grand_total: grandTotal,
       });
 
@@ -480,10 +547,68 @@ export default function Estimator() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Countertop Calculator */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Countertops</CardTitle>
+                <CardDescription>Add countertops to your estimate</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Countertop Type</Label>
+                  <Select value={countertopType} onValueChange={setCountertopType}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select countertop type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {countertopTypes.map((countertop) => (
+                        <SelectItem key={countertop.id} value={countertop.name}>
+                          {formatName(countertop.name)} - ${countertop.price_per_linear_ft}/linear ft
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Linear Feet</Label>
+                  <Input
+                    type="number"
+                    min="0.1"
+                    max="10000"
+                    step="0.1"
+                    placeholder="Enter linear feet (0.1-10,000)"
+                    value={countertopLinearFeet}
+                    onChange={(e) => setCountertopLinearFeet(e.target.value)}
+                  />
+                </div>
+
+                <Button onClick={addCountertop} className="w-full" variant="kiosk">
+                  Add Countertop
+                </Button>
+
+                {countertops.length > 0 && (
+                  <div className="space-y-2 pt-4 border-t">
+                    <h4 className="font-semibold">Added Countertops:</h4>
+                    {countertops.map((item, index) => (
+                      <div key={index} className="flex justify-between text-sm">
+                        <span>{formatName(item.type)} - {item.linearFeet} linear ft</span>
+                        <span className="font-semibold">${(item.linearFeet * item.pricePerLinearFt).toFixed(2)}</span>
+                      </div>
+                    ))}
+                    <div className="flex justify-between font-bold pt-2 border-t">
+                      <span>Factory Price:</span>
+                      <span>${countertopTotal.toFixed(2)}</span>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
           {/* Total Summary */}
-          {(cabinets.length > 0 || flooring.length > 0) && (
+          {(cabinets.length > 0 || flooring.length > 0 || countertops.length > 0) && (
             <Card className="border-accent border-2">
               <CardHeader>
                 <CardTitle className="text-2xl">Total Estimate</CardTitle>
@@ -497,6 +622,10 @@ export default function Estimator() {
                   <div className="flex justify-between">
                     <span>Flooring:</span>
                     <span className="font-semibold">${flooringTotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Countertops:</span>
+                    <span className="font-semibold">${countertopTotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between pt-2 border-t">
                     <span>Subtotal:</span>
@@ -517,7 +646,7 @@ export default function Estimator() {
                   onClick={saveEstimate} 
                   className="mt-6 w-full"
                   variant="kiosk"
-                  disabled={cabinets.length === 0 && flooring.length === 0}
+                  disabled={cabinets.length === 0 && flooring.length === 0 && countertops.length === 0}
                 >
                   {editId ? "Update Estimate" : "Save Estimate"}
                 </Button>
