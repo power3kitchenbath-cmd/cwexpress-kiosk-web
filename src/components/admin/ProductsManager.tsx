@@ -13,6 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { compressImage, formatFileSize, shouldCompressImage, getOptimalFormat, getFormatName, generateThumbnailAndFullSize } from "@/utils/imageCompression";
 import { Badge } from "@/components/ui/badge";
 import { ProgressiveImage } from "@/components/ui/progressive-image";
+import { AdminProductGridSkeleton } from "@/components/admin/AdminProductCardSkeleton";
 
 interface Product {
   id: string;
@@ -561,10 +562,7 @@ export const ProductsManager = () => {
       </div>
 
       {loading ? (
-        <div className="text-center py-12">
-          <Package className="w-16 h-16 mx-auto text-muted-foreground animate-pulse mb-4" />
-          <p className="text-muted-foreground">Loading products...</p>
-        </div>
+        <AdminProductGridSkeleton count={6} />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {products.map((product) => (

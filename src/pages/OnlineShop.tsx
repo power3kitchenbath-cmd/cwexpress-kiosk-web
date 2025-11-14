@@ -10,6 +10,7 @@ import logoImg from "@/assets/logo.png";
 import { useCart } from "@/contexts/CartContext";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { ProgressiveImage } from "@/components/ui/progressive-image";
+import { ProductGridSkeleton } from "@/components/ui/product-card-skeleton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -231,10 +232,7 @@ const OnlineShop = () => {
         </div>
 
         {loading ? (
-          <div className="text-center py-12">
-            <Package className="w-16 h-16 mx-auto text-muted-foreground animate-pulse mb-4" />
-            <p className="text-muted-foreground">Loading products...</p>
-          </div>
+          <ProductGridSkeleton count={6} />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
             {products.map((product) => (
