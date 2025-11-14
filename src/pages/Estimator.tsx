@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Calculator, Shield } from "lucide-react";
+import { ArrowLeft, Calculator, Shield, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/use-user-role";
@@ -120,7 +120,7 @@ export default function Estimator() {
       .order("name");
     
     const { data: countertopData } = await supabase
-      .from("countertop_types")
+      .from("countertop_types" as any)
       .select("*")
       .order("name");
 
@@ -139,9 +139,9 @@ export default function Estimator() {
     }
     
     if (countertopData) {
-      setCountertopTypes(countertopData);
+      setCountertopTypes(countertopData as unknown as CountertopType[]);
       if (countertopData.length > 0 && !countertopType) {
-        setCountertopType(countertopData[0].name);
+        setCountertopType((countertopData[0] as any).name);
       }
     }
   };
@@ -164,7 +164,7 @@ export default function Estimator() {
 
     setCabinets((data.cabinet_items as unknown) as CabinetItem[]);
     setFlooring((data.flooring_items as unknown) as FlooringItem[]);
-    setCountertops((data.countertop_items as unknown) as CountertopItem[]);
+    setCountertops(((data as any).countertop_items as unknown) as CountertopItem[]);
   };
 
   const loadImportedCabinets = (importedCabinets: any[]) => {
@@ -295,6 +295,18 @@ export default function Estimator() {
     }
   };
 
+  const removeCabinet = (index: number) => {
+    setCabinets(cabinets.filter((_, i) => i !== index));
+  };
+
+  const removeFlooring = (index: number) => {
+    setFlooring(flooring.filter((_, i) => i !== index));
+  };
+
+  const removeCountertop = (index: number) => {
+    setCountertops(countertops.filter((_, i) => i !== index));
+  };
+
   const cabinetTotal = cabinets.reduce((sum, item) => sum + (item.quantity * item.pricePerUnit), 0);
   const flooringTotal = flooring.reduce((sum, item) => sum + (item.squareFeet * item.pricePerSqFt), 0);
   const countertopTotal = countertops.reduce((sum, item) => sum + (item.linearFeet * item.pricePerLinearFt), 0);
@@ -337,7 +349,7 @@ export default function Estimator() {
           flooring_total: flooringTotal,
           countertop_total: countertopTotal,
           grand_total: grandTotal,
-        })
+        } as any)
         .eq("id", editId);
 
       if (error) {
@@ -364,7 +376,7 @@ export default function Estimator() {
         flooring_total: flooringTotal,
         countertop_total: countertopTotal,
         grand_total: grandTotal,
-      });
+      } as any);
 
       if (error) {
         toast({
@@ -476,9 +488,17 @@ export default function Estimator() {
                   <div className="space-y-2 pt-4 border-t">
                     <h4 className="font-semibold">Added Cabinets:</h4>
                     {cabinets.map((item, index) => (
-                      <div key={index} className="flex justify-between text-sm">
-                        <span>{formatName(item.type)} x{item.quantity}</span>
+                      <div key={index} className="flex justify-between items-center text-sm gap-2">
+                        <span className="flex-1">{formatName(item.type)} x{item.quantity}</span>
                         <span className="font-semibold">${(item.quantity * item.pricePerUnit).toFixed(2)}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeCabinet(index)}
+                          className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     ))}
                     <div className="flex justify-between font-bold pt-2 border-t">
@@ -534,9 +554,17 @@ export default function Estimator() {
                   <div className="space-y-2 pt-4 border-t">
                     <h4 className="font-semibold">Added Flooring:</h4>
                     {flooring.map((item, index) => (
-                      <div key={index} className="flex justify-between text-sm">
-                        <span>{formatName(item.type)} - {item.squareFeet} sq ft</span>
+                      <div key={index} className="flex justify-between items-center text-sm gap-2">
+                        <span className="flex-1">{formatName(item.type)} - {item.squareFeet} sq ft</span>
                         <span className="font-semibold">${(item.squareFeet * item.pricePerSqFt).toFixed(2)}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeFlooring(index)}
+                          className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     ))}
                     <div className="flex justify-between font-bold pt-2 border-t">
@@ -592,9 +620,17 @@ export default function Estimator() {
                   <div className="space-y-2 pt-4 border-t">
                     <h4 className="font-semibold">Added Countertops:</h4>
                     {countertops.map((item, index) => (
-                      <div key={index} className="flex justify-between text-sm">
-                        <span>{formatName(item.type)} - {item.linearFeet} linear ft</span>
+                      <div key={index} className="flex justify-between items-center text-sm gap-2">
+                        <span className="flex-1">{formatName(item.type)} - {item.linearFeet} linear ft</span>
                         <span className="font-semibold">${(item.linearFeet * item.pricePerLinearFt).toFixed(2)}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeCountertop(index)}
+                          className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     ))}
                     <div className="flex justify-between font-bold pt-2 border-t">
