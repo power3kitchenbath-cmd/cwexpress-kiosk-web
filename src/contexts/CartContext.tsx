@@ -24,6 +24,7 @@ interface CartContextType {
   isCartOpen: boolean;
   setIsCartOpen: (open: boolean) => void;
   user: User | null;
+  cartBadgePulse: boolean;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -33,6 +34,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
+  const [cartBadgePulse, setCartBadgePulse] = useState(false);
   const { toast } = useToast();
 
   // Load cart from localStorage on mount (for guest users)
@@ -233,6 +235,10 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         )
       );
       
+      // Trigger badge pulse animation
+      setCartBadgePulse(true);
+      setTimeout(() => setCartBadgePulse(false), 600);
+      
       toast({
         title: "Updated cart",
         description: `${product.name} quantity increased`,
@@ -271,6 +277,10 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       }
       
       setItems(currentItems => [...currentItems, newItem]);
+      
+      // Trigger badge pulse animation
+      setCartBadgePulse(true);
+      setTimeout(() => setCartBadgePulse(false), 600);
       
       toast({
         title: "Added to cart",
@@ -380,6 +390,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         isCartOpen,
         setIsCartOpen,
         user,
+        cartBadgePulse,
       }}
     >
       {children}
