@@ -5,9 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Package, Upload, Pencil, Trash2, Plus } from "lucide-react";
+import { Package, Upload, Pencil, Trash2, Plus, Images } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress";
 
 interface Product {
   id: string;
@@ -21,6 +23,15 @@ interface Product {
   sku: string | null;
 }
 
+interface BulkUploadItem {
+  file: File;
+  preview: string;
+  matchedProductId: string | null;
+  uploading: boolean;
+  uploaded: boolean;
+  error: string | null;
+}
+
 export const ProductsManager = () => {
   const { toast } = useToast();
   const [products, setProducts] = useState<Product[]>([]);
@@ -30,6 +41,11 @@ export const ProductsManager = () => {
   const [uploading, setUploading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  
+  // Bulk upload states
+  const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
+  const [bulkItems, setBulkItems] = useState<BulkUploadItem[]>([]);
+  const [bulkUploading, setBulkUploading] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -206,6 +222,180 @@ export const ProductsManager = () => {
     setIsDialogOpen(true);
   };
 
+  // Auto-match image to product by filename
+  const autoMatchProduct = (filename: string): string | null => {
+    const nameLower = filename.toLowerCase();
+    
+    // Try to match by SKU first
+    for (const product of products) {
+      if (product.sku && nameLower.includes(product.sku.toLowerCase())) {
+        return product.id;
+      }
+    }
+    
+    // Try to match by product name
+    for (const product of products) {
+      const productNameParts = product.name.toLowerCase().split(' ');
+      if (productNameParts.some(part => part.length > 3 && nameLower.includes(part))) {
+        return product.id;
+      }
+    }
+    
+    return null;
+  };
+
+  const handleBulkImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const validFiles = files.filter(file => {
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Invalid file",
+          description: `${file.name} is not an image`,
+          variant: "destructive",
+        });
+        return false;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: `${file.name} exceeds 5MB`,
+          variant: "destructive",
+        });
+        return false;
+      }
+      return true;
+    });
+
+    const newItems: BulkUploadItem[] = validFiles.map(file => {
+      const preview = URL.createObjectURL(file);
+      const matchedProductId = autoMatchProduct(file.name);
+      
+      return {
+        file,
+        preview,
+        matchedProductId,
+        uploading: false,
+        uploaded: false,
+        error: null,
+      };
+    });
+
+    setBulkItems(prev => [...prev, ...newItems]);
+  };
+
+  const updateBulkItemProduct = (index: number, productId: string) => {
+    setBulkItems(prev => prev.map((item, i) => 
+      i === index ? { ...item, matchedProductId: productId } : item
+    ));
+  };
+
+  const removeBulkItem = (index: number) => {
+    setBulkItems(prev => {
+      URL.revokeObjectURL(prev[index].preview);
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
+  const handleBulkUpload = async () => {
+    const itemsToUpload = bulkItems.filter(item => item.matchedProductId && !item.uploaded);
+    
+    if (itemsToUpload.length === 0) {
+      toast({
+        title: "No items to upload",
+        description: "Please assign products to all images",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setBulkUploading(true);
+
+    for (let i = 0; i < bulkItems.length; i++) {
+      const item = bulkItems[i];
+      if (!item.matchedProductId || item.uploaded) continue;
+
+      // Update item status to uploading
+      setBulkItems(prev => prev.map((itm, idx) => 
+        idx === i ? { ...itm, uploading: true } : itm
+      ));
+
+      try {
+        // Get product
+        const product = products.find(p => p.id === item.matchedProductId);
+        if (!product) throw new Error("Product not found");
+
+        // Upload image
+        const fileExt = item.file.name.split('.').pop();
+        const fileName = `${product.id}-${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('product-images')
+          .upload(fileName, item.file, {
+            cacheControl: '3600',
+            upsert: true
+          });
+
+        if (uploadError) throw uploadError;
+
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('product-images')
+          .getPublicUrl(fileName);
+
+        // Delete old image if exists
+        if (product.image_url && product.image_url.includes('product-images')) {
+          const urlParts = product.image_url.split('/product-images/');
+          if (urlParts.length >= 2) {
+            await supabase.storage
+              .from('product-images')
+              .remove([urlParts[1]]);
+          }
+        }
+
+        // Update product
+        const { error: updateError } = await supabase
+          .from('products')
+          .update({ image_url: publicUrl })
+          .eq('id', product.id);
+
+        if (updateError) throw updateError;
+
+        // Mark as uploaded
+        setBulkItems(prev => prev.map((itm, idx) => 
+          idx === i ? { ...itm, uploading: false, uploaded: true } : itm
+        ));
+
+      } catch (error) {
+        console.error('Error uploading image:', error);
+        setBulkItems(prev => prev.map((itm, idx) => 
+          idx === i ? { 
+            ...itm, 
+            uploading: false, 
+            error: error instanceof Error ? error.message : 'Upload failed' 
+          } : itm
+        ));
+      }
+    }
+
+    setBulkUploading(false);
+    
+    const successCount = bulkItems.filter(item => item.uploaded).length;
+    toast({
+      title: "Bulk upload complete",
+      description: `Successfully uploaded ${successCount} image(s)`,
+    });
+
+    fetchProducts();
+  };
+
+  const closeBulkUpload = () => {
+    bulkItems.forEach(item => URL.revokeObjectURL(item.preview));
+    setBulkItems([]);
+    setBulkUploadOpen(false);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -213,6 +403,10 @@ export const ProductsManager = () => {
           <h2 className="text-2xl font-bold text-foreground">Product Management</h2>
           <p className="text-muted-foreground">Manage product images and details</p>
         </div>
+        <Button onClick={() => setBulkUploadOpen(true)} className="gap-2">
+          <Images className="w-4 h-4" />
+          Bulk Upload Images
+        </Button>
       </div>
 
       {loading ? (
@@ -388,6 +582,136 @@ export const ProductsManager = () => {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Upload Dialog */}
+      <Dialog open={bulkUploadOpen} onOpenChange={(open) => !bulkUploading && (open ? setBulkUploadOpen(true) : closeBulkUpload())}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Bulk Upload Product Images</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Upload Zone */}
+            <div className="border-2 border-dashed rounded-lg p-6 text-center space-y-3">
+              <Upload className="w-12 h-12 mx-auto text-muted-foreground" />
+              <div>
+                <p className="text-sm font-medium">Upload multiple product images</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Images will be auto-matched by SKU or product name
+                </p>
+              </div>
+              <Input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleBulkImageSelect}
+                disabled={bulkUploading}
+                className="cursor-pointer"
+              />
+            </div>
+
+            {/* Items List */}
+            {bulkItems.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold">Images to Upload ({bulkItems.length})</h3>
+                  {bulkUploading && (
+                    <div className="text-sm text-muted-foreground">
+                      {bulkItems.filter(i => i.uploaded).length} / {bulkItems.length} uploaded
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {bulkItems.map((item, index) => (
+                    <Card key={index} className="p-3">
+                      <div className="flex gap-3 items-start">
+                        {/* Preview */}
+                        <img
+                          src={item.preview}
+                          alt={item.file.name}
+                          className="w-20 h-20 object-cover rounded"
+                        />
+
+                        {/* Details */}
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="font-medium text-sm">{item.file.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {(item.file.size / 1024).toFixed(1)} KB
+                              </p>
+                            </div>
+                            {!item.uploading && !item.uploaded && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeBulkItem(index)}
+                                disabled={bulkUploading}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+
+                          {/* Product Selection */}
+                          <Select
+                            value={item.matchedProductId || ""}
+                            onValueChange={(value) => updateBulkItemProduct(index, value)}
+                            disabled={item.uploading || item.uploaded || bulkUploading}
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select product..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {products.map((product) => (
+                                <SelectItem key={product.id} value={product.id}>
+                                  {product.name} {product.sku && `(${product.sku})`}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+
+                          {/* Status */}
+                          {item.uploading && (
+                            <div className="space-y-1">
+                              <Progress value={50} className="h-1" />
+                              <p className="text-xs text-muted-foreground">Uploading...</p>
+                            </div>
+                          )}
+                          {item.uploaded && (
+                            <p className="text-xs text-green-600 font-medium">✓ Uploaded successfully</p>
+                          )}
+                          {item.error && (
+                            <p className="text-xs text-destructive">{item.error}</p>
+                          )}
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={closeBulkUpload}
+                disabled={bulkUploading}
+              >
+                {bulkItems.some(i => i.uploaded) ? 'Close' : 'Cancel'}
+              </Button>
+              <Button
+                onClick={handleBulkUpload}
+                disabled={bulkUploading || bulkItems.length === 0 || bulkItems.every(i => i.uploaded)}
+              >
+                {bulkUploading ? 'Uploading...' : `Upload ${bulkItems.filter(i => !i.uploaded && i.matchedProductId).length} Image(s)`}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
