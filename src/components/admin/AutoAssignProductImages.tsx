@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Image, Eye, Check, Search, Filter, ListChecks, ArrowRight, Minus, Download, Package, TrendingUp, TrendingDown, Save, FolderOpen, Trash2, ArrowUpDown, ArrowUp, ArrowDown, Maximize2, Keyboard, Upload } from "lucide-react";
+import { Loader2, Image, Eye, Check, Search, Filter, ListChecks, ArrowRight, Minus, Download, Package, TrendingUp, TrendingDown, Save, FolderOpen, Trash2, ArrowUpDown, ArrowUp, ArrowDown, Maximize2, Keyboard, Upload, Undo } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -38,6 +38,16 @@ interface SelectionPreset {
   createdAt: string;
 }
 
+interface UndoState {
+  products: Array<{
+    id: string;
+    name: string;
+    previousImageUrl: string | null;
+    previousThumbnailUrl: string | null;
+  }>;
+  timestamp: string;
+}
+
 export const AutoAssignProductImages = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
@@ -60,6 +70,8 @@ export const AutoAssignProductImages = () => {
   const [csvImportDialogOpen, setCsvImportDialogOpen] = useState(false);
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [csvError, setCsvError] = useState<string>("");
+  const [undoState, setUndoState] = useState<UndoState | null>(null);
+  const [isUndoing, setIsUndoing] = useState(false);
   const { toast } = useToast();
 
   // Load presets from localStorage on mount
@@ -543,6 +555,52 @@ export const AutoAssignProductImages = () => {
     }
   };
 
+  const handleUndo = async () => {
+    if (!undoState) return;
+
+    setIsUndoing(true);
+
+    try {
+      let restoredCount = 0;
+      let failedCount = 0;
+
+      for (const product of undoState.products) {
+        const { error: updateError } = await supabase
+          .from("products")
+          .update({
+            image_url: product.previousImageUrl,
+            thumbnail_url: product.previousThumbnailUrl,
+          })
+          .eq("id", product.id);
+
+        if (updateError) {
+          console.error(`Failed to restore product ${product.name}:`, updateError);
+          failedCount++;
+        } else {
+          restoredCount++;
+        }
+      }
+
+      toast({
+        title: "Undo Complete",
+        description: `Restored ${restoredCount} products to their previous state. ${failedCount > 0 ? `${failedCount} failed.` : ''}`,
+      });
+
+      // Clear undo state after successful undo
+      setUndoState(null);
+
+    } catch (error) {
+      console.error("Error during undo:", error);
+      toast({
+        title: "Undo Failed",
+        description: "Failed to restore previous state. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUndoing(false);
+    }
+  };
+
   const handleExportCSV = () => {
     // Prepare CSV content
     const headers = ['Product Name', 'Model Prefix', 'Current Image', 'Proposed Image', 'Status', 'Selected'];
@@ -615,6 +673,17 @@ export const AutoAssignProductImages = () => {
           description: `Simulation complete. Would update ${updatedCount} products without any errors. No actual changes were made.`,
         });
       } else {
+        // Store undo state before making changes
+        const undoData: UndoState = {
+          products: selectedItems.map(item => ({
+            id: item.id,
+            name: item.name,
+            previousImageUrl: item.currentImage,
+            previousThumbnailUrl: item.currentImage,
+          })),
+          timestamp: new Date().toISOString(),
+        };
+
         // Normal mode: actually update database
         for (let i = 0; i < selectedItems.length; i++) {
           const item = selectedItems[i];
@@ -635,6 +704,11 @@ export const AutoAssignProductImages = () => {
           } else {
             updatedCount++;
           }
+        }
+
+        // Save undo state only if updates were successful
+        if (updatedCount > 0) {
+          setUndoState(undoData);
         }
 
         toast({
@@ -678,6 +752,38 @@ export const AutoAssignProductImages = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Undo Button */}
+        {undoState && !showPreview && (
+          <div className="rounded-lg border border-primary/50 bg-primary/5 p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-sm font-medium">Last Update Available to Undo</p>
+                <p className="text-xs text-muted-foreground">
+                  {undoState.products.length} products updated at {new Date(undoState.timestamp).toLocaleTimeString()}
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                onClick={handleUndo}
+                disabled={isUndoing}
+                className="gap-2"
+              >
+                {isUndoing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Undoing...
+                  </>
+                ) : (
+                  <>
+                    <Undo className="h-4 w-4" />
+                    Undo Last Update
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
+
         {!showPreview ? (
           <div className="space-y-3">
             <Button 
