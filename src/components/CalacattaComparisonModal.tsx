@@ -1,6 +1,8 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { X, TrendingUp, DollarSign } from "lucide-react";
+import * as React from "react";
 
 interface CalacattaImage {
   src: string;
@@ -39,6 +41,20 @@ export const CalacattaComparisonModal = ({
     return pricing[normalizedName] || 0;
   };
 
+  const priceRange = React.useMemo(() => {
+    const prices = selectedImages
+      .map(img => getPriceForCountertop(img.name))
+      .filter(price => price > 0);
+    
+    if (prices.length === 0) return null;
+    
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+    const avg = prices.reduce((sum, p) => sum + p, 0) / prices.length;
+    
+    return { min, max, avg };
+  }, [selectedImages, pricing]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
@@ -58,6 +74,53 @@ export const CalacattaComparisonModal = ({
             Compare up to {selectedImages.length} selected Calacatta countertops side by side
           </DialogDescription>
         </DialogHeader>
+
+        {priceRange && (
+          <div className="bg-accent/10 border-2 border-accent/30 rounded-lg p-4 mb-4">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <DollarSign className="w-5 h-5 text-accent" />
+                <h3 className="font-semibold text-foreground">Price Range</h3>
+              </div>
+              
+              <div className="flex items-center gap-6">
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground mb-1">Lowest</p>
+                  <p className="text-xl font-bold text-accent">${priceRange.min}</p>
+                </div>
+                
+                <TrendingUp className="w-5 h-5 text-muted-foreground" />
+                
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground mb-1">Highest</p>
+                  <p className="text-xl font-bold text-accent">${priceRange.max}</p>
+                </div>
+                
+                {priceRange.min !== priceRange.max && (
+                  <>
+                    <div className="h-8 w-px bg-border" />
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground mb-1">Average</p>
+                      <p className="text-lg font-semibold text-foreground">${priceRange.avg.toFixed(2)}</p>
+                    </div>
+                  </>
+                )}
+              </div>
+              
+              <Badge variant="secondary" className="bg-accent/20 text-accent-foreground border-accent/40">
+                per linear ft
+              </Badge>
+            </div>
+            
+            {priceRange.min !== priceRange.max && (
+              <div className="mt-3 pt-3 border-t border-accent/20">
+                <p className="text-xs text-muted-foreground text-center">
+                  Price difference: <span className="font-semibold text-foreground">${(priceRange.max - priceRange.min).toFixed(2)}</span> per linear ft
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className={`grid gap-6 ${
           selectedImages.length === 2 ? 'grid-cols-2' : 
