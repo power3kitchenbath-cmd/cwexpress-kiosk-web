@@ -21,6 +21,7 @@ import ProProfile from "./pages/ProProfile";
 import NotFound from "./pages/NotFound";
 import ImageOrganizer from "./pages/ImageOrganizer";
 import CalacattaCollection from "./pages/CalacattaCollection";
+import FlooringVisualizer from "./pages/FlooringVisualizer";
 import { ShippingLayout } from "./layouts/ShippingLayout";
 import Dashboard from "./pages/shipping/Dashboard";
 import ShipNow from "./pages/shipping/ShipNow";
@@ -58,6 +59,7 @@ const App = () => (
           <Route path="/profile" element={<ProProfile />} />
           <Route path="/image-organizer" element={<ImageOrganizer />} />
           <Route path="/collections/calacatta" element={<CalacattaCollection />} />
+          <Route path="/flooring-visualizer" element={<FlooringVisualizer />} />
           
           {/* CW Express Shipping Platform */}
           <Route path="/shipping" element={<ShippingLayout />}>
