@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Image, Eye, Check, Search, Filter, ListChecks, ArrowRight, Minus, Download, Package, TrendingUp, TrendingDown, Save, FolderOpen, Trash2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Loader2, Image, Eye, Check, Search, Filter, ListChecks, ArrowRight, Minus, Download, Package, TrendingUp, TrendingDown, Save, FolderOpen, Trash2, ArrowUpDown, ArrowUp, ArrowDown, Maximize2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -54,6 +54,8 @@ export const AutoAssignProductImages = () => {
   const [isDryRun, setIsDryRun] = useState(false);
   const [sortColumn, setSortColumn] = useState<'name' | 'model' | 'status' | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [comparisonItem, setComparisonItem] = useState<PreviewItem | null>(null);
+  const [comparisonDialogOpen, setComparisonDialogOpen] = useState(false);
   const { toast } = useToast();
 
   // Load presets from localStorage on mount
@@ -372,6 +374,11 @@ export const AutoAssignProductImages = () => {
         <Icon className={`h-4 w-4 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
       </button>
     );
+  };
+
+  const handleOpenComparison = (item: PreviewItem) => {
+    setComparisonItem(item);
+    setComparisonDialogOpen(true);
   };
 
   const handleExportCSV = () => {
@@ -820,6 +827,7 @@ export const AutoAssignProductImages = () => {
                     </TableHead>
                     <TableHead>Current Image</TableHead>
                     <TableHead>Proposed Image</TableHead>
+                    <TableHead className="w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -907,6 +915,27 @@ export const AutoAssignProductImages = () => {
                               </Tooltip>
                             </TooltipProvider>
                           </TableCell>
+                          <TableCell>
+                            {hasChange && (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => handleOpenComparison(item)}
+                                      className="h-8 w-8 p-0"
+                                    >
+                                      <Maximize2 className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Compare images</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                          </TableCell>
                         </TableRow>
                       );
                     })
@@ -983,6 +1012,82 @@ export const AutoAssignProductImages = () => {
                 </Button>
               </div>
             </div>
+
+            {/* Image Comparison Dialog */}
+            <Dialog open={comparisonDialogOpen} onOpenChange={setComparisonDialogOpen}>
+              <DialogContent className="bg-background max-w-5xl">
+                <DialogHeader>
+                  <DialogTitle>Image Comparison</DialogTitle>
+                  <DialogDescription>
+                    {comparisonItem?.name}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid md:grid-cols-2 gap-6 py-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                        Current Image
+                      </h3>
+                      {comparisonItem?.currentImage && (
+                        <Badge variant="secondary" className="text-xs">
+                          {comparisonItem.currentImage.split('/').pop()}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="rounded-lg border overflow-hidden bg-muted/30 aspect-square flex items-center justify-center">
+                      {comparisonItem?.currentImage ? (
+                        <img
+                          src={comparisonItem.currentImage}
+                          alt="Current product image"
+                          className="w-full h-full object-contain"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            const parent = e.currentTarget.parentElement;
+                            if (parent) {
+                              parent.innerHTML = '<p class="text-sm text-muted-foreground">Image not found</p>';
+                            }
+                          }}
+                        />
+                      ) : (
+                        <p className="text-sm text-muted-foreground italic">No current image</p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-semibold text-primary uppercase tracking-wide">
+                        Proposed Image
+                      </h3>
+                      <Badge variant="default" className="text-xs">
+                        {comparisonItem?.proposedImage.split('/').pop()}
+                      </Badge>
+                    </div>
+                    <div className="rounded-lg border border-primary/50 overflow-hidden bg-primary/5 aspect-square flex items-center justify-center">
+                      {comparisonItem?.proposedImage && (
+                        <img
+                          src={comparisonItem.proposedImage}
+                          alt="Proposed product image"
+                          className="w-full h-full object-contain"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            const parent = e.currentTarget.parentElement;
+                            if (parent) {
+                              parent.innerHTML = '<p class="text-sm text-muted-foreground">Image not found</p>';
+                            }
+                          }}
+                        />
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setComparisonDialogOpen(false)}>
+                    Close
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </>
         )}
       </CardContent>
