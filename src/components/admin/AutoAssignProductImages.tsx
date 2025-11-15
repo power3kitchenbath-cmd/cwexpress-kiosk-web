@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Image, Eye, Check, Search, Filter, ListChecks } from "lucide-react";
+import { Loader2, Image, Eye, Check, Search, Filter, ListChecks, ArrowRight, Minus } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -409,6 +409,7 @@ export const AutoAssignProductImages = () => {
                         disabled={filteredPreviewData.length === 0}
                       />
                     </TableHead>
+                    <TableHead className="w-24">Status</TableHead>
                     <TableHead>Product Name</TableHead>
                     <TableHead>Model</TableHead>
                     <TableHead>Current Image</TableHead>
@@ -418,41 +419,57 @@ export const AutoAssignProductImages = () => {
                 <TableBody>
                   {filteredPreviewData.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                         No products match your filters
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredPreviewData.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell>
-                          <input
-                            type="checkbox"
-                            checked={selectedIds.has(item.id)}
-                            onChange={() => handleToggleItem(item.id)}
-                            className="h-4 w-4 cursor-pointer"
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium">{item.name}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{item.modelPrefix}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          {item.currentImage ? (
-                            <span className="text-sm text-muted-foreground truncate max-w-[150px] block">
-                              {item.currentImage.split('/').pop()}
+                    filteredPreviewData.map((item) => {
+                      const hasChange = item.currentImage !== item.proposedImage;
+                      return (
+                        <TableRow key={item.id} className={hasChange ? "bg-primary/5" : ""}>
+                          <TableCell>
+                            <input
+                              type="checkbox"
+                              checked={selectedIds.has(item.id)}
+                              onChange={() => handleToggleItem(item.id)}
+                              className="h-4 w-4 cursor-pointer"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            {hasChange ? (
+                              <Badge variant="default" className="gap-1">
+                                <ArrowRight className="h-3 w-3" />
+                                Will Change
+                              </Badge>
+                            ) : (
+                              <Badge variant="secondary" className="gap-1">
+                                <Minus className="h-3 w-3" />
+                                No Change
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="font-medium">{item.name}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{item.modelPrefix}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            {item.currentImage ? (
+                              <span className="text-sm text-muted-foreground truncate max-w-[150px] block">
+                                {item.currentImage.split('/').pop()}
+                              </span>
+                            ) : (
+                              <span className="text-sm text-muted-foreground italic">None</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <span className={`text-sm font-medium ${hasChange ? 'text-primary' : 'text-muted-foreground'}`}>
+                              {item.proposedImage.split('/').pop()}
                             </span>
-                          ) : (
-                            <span className="text-sm text-muted-foreground italic">None</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm font-medium text-primary">
-                            {item.proposedImage.split('/').pop()}
-                          </span>
-                        </TableCell>
-                      </TableRow>
-                    ))
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
                   )}
                 </TableBody>
               </Table>
