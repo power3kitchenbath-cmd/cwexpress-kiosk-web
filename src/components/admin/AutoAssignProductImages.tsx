@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Image, Eye, Check, Search, Filter, ListChecks, ArrowRight, Minus, Download, Package, TrendingUp, TrendingDown, Save, FolderOpen, Trash2 } from "lucide-react";
+import { Loader2, Image, Eye, Check, Search, Filter, ListChecks, ArrowRight, Minus, Download, Package, TrendingUp, TrendingDown, Save, FolderOpen, Trash2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -52,6 +52,8 @@ export const AutoAssignProductImages = () => {
   const [savePresetDialogOpen, setSavePresetDialogOpen] = useState(false);
   const [newPresetName, setNewPresetName] = useState("");
   const [isDryRun, setIsDryRun] = useState(false);
+  const [sortColumn, setSortColumn] = useState<'name' | 'model' | 'status' | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const { toast } = useToast();
 
   // Load presets from localStorage on mount
@@ -146,9 +148,9 @@ export const AutoAssignProductImages = () => {
     return Array.from(models).sort();
   }, [previewData]);
 
-  // Filter preview data based on search and filters
+  // Filter and sort preview data
   const filteredPreviewData = useMemo(() => {
-    return previewData.filter(item => {
+    let filtered = previewData.filter(item => {
       // Search filter
       const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
       
@@ -163,7 +165,32 @@ export const AutoAssignProductImages = () => {
       
       return matchesSearch && matchesModel && matchesChange;
     });
-  }, [previewData, searchQuery, modelFilter, changeFilter]);
+
+    // Apply sorting
+    if (sortColumn) {
+      filtered = [...filtered].sort((a, b) => {
+        let compareResult = 0;
+        
+        switch (sortColumn) {
+          case 'name':
+            compareResult = a.name.localeCompare(b.name);
+            break;
+          case 'model':
+            compareResult = a.modelPrefix.localeCompare(b.modelPrefix);
+            break;
+          case 'status':
+            const aHasChange = a.currentImage !== a.proposedImage;
+            const bHasChange = b.currentImage !== b.proposedImage;
+            compareResult = (aHasChange === bHasChange) ? 0 : aHasChange ? -1 : 1;
+            break;
+        }
+        
+        return sortDirection === 'asc' ? compareResult : -compareResult;
+      });
+    }
+
+    return filtered;
+  }, [previewData, searchQuery, modelFilter, changeFilter, sortColumn, sortDirection]);
 
   // Check if all filtered items are selected
   const allFilteredSelected = useMemo(() => {
@@ -319,6 +346,32 @@ export const AutoAssignProductImages = () => {
       title: "Preset Deleted",
       description: `Deleted preset "${presetName}".`,
     });
+  };
+
+  const handleSort = (column: 'name' | 'model' | 'status') => {
+    if (sortColumn === column) {
+      // Toggle direction if same column
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // New column, default to ascending
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const SortableHeader = ({ column, children }: { column: 'name' | 'model' | 'status', children: React.ReactNode }) => {
+    const isActive = sortColumn === column;
+    const Icon = isActive ? (sortDirection === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
+    
+    return (
+      <button
+        onClick={() => handleSort(column)}
+        className="flex items-center gap-2 hover:text-foreground transition-colors font-medium"
+      >
+        {children}
+        <Icon className={`h-4 w-4 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
+      </button>
+    );
   };
 
   const handleExportCSV = () => {
@@ -756,9 +809,15 @@ export const AutoAssignProductImages = () => {
                         disabled={filteredPreviewData.length === 0}
                       />
                     </TableHead>
-                    <TableHead className="w-24">Status</TableHead>
-                    <TableHead>Product Name</TableHead>
-                    <TableHead>Model</TableHead>
+                    <TableHead className="w-24">
+                      <SortableHeader column="status">Status</SortableHeader>
+                    </TableHead>
+                    <TableHead>
+                      <SortableHeader column="name">Product Name</SortableHeader>
+                    </TableHead>
+                    <TableHead>
+                      <SortableHeader column="model">Model</SortableHeader>
+                    </TableHead>
                     <TableHead>Current Image</TableHead>
                     <TableHead>Proposed Image</TableHead>
                   </TableRow>
