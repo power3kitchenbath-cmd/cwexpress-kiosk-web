@@ -29,6 +29,7 @@ import { EmailWarmupTracker } from "@/components/admin/EmailWarmupTracker";
 import { EmailAuthenticationValidator } from "@/components/admin/EmailAuthenticationValidator";
 import { ProductsManager } from "@/components/admin/ProductsManager";
 import { AutoAssignProductImages } from "@/components/admin/AutoAssignProductImages";
+import { CalacattaBannerAnalytics } from "@/components/admin/CalacattaBannerAnalytics";
 
 interface CabinetType {
   id: string;
@@ -282,11 +283,12 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-8">
+          <TabsList className="grid w-full grid-cols-9">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="orders">Orders</TabsTrigger>
             <TabsTrigger value="customers">Pro Customers</TabsTrigger>
             <TabsTrigger value="products">Products</TabsTrigger>
+            <TabsTrigger value="banner-analytics">Banner Analytics</TabsTrigger>
             <TabsTrigger value="emails">Email Activity</TabsTrigger>
             <TabsTrigger value="analytics">Email Analytics</TabsTrigger>
             <TabsTrigger value="cabinets">Cabinet Types</TabsTrigger>
@@ -314,6 +316,10 @@ const Admin = () => {
           <TabsContent value="products" className="space-y-4">
             <AutoAssignProductImages />
             <ProductsManager />
+          </TabsContent>
+
+          <TabsContent value="banner-analytics">
+            <CalacattaBannerAnalytics />
           </TabsContent>
 
           <TabsContent value="cabinets">
