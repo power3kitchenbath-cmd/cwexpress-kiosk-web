@@ -17,6 +17,7 @@ import logo from "@/assets/logo.png";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { CalacattaHero } from "@/components/CalacattaHero";
+import { CalacattaComparisonModal } from "@/components/CalacattaComparisonModal";
 
 const cabinetSchema = z.object({
   quantity: z.number().int().min(1, "Quantity must be at least 1").max(1000, "Quantity cannot exceed 1000")
@@ -108,6 +109,8 @@ export default function Estimator() {
   const [countertopLinearFeet, setCountertopLinearFeet] = useState("");
   const [countertops, setCountertops] = useState<CountertopItem[]>([]);
   const [calacattaFilter, setCalacattaFilter] = useState(false);
+  const [comparisonOpen, setComparisonOpen] = useState(false);
+  const [comparisonImages, setComparisonImages] = useState<{ src: string; name: string }[]>([]);
   
   const [hardwareType, setHardwareType] = useState("");
   const [hardwareQuantity, setHardwareQuantity] = useState("");
@@ -1106,6 +1109,25 @@ export default function Estimator() {
           <CalacattaHero 
             onFilterCalacatta={() => setCalacattaFilter(true)}
             onSelectCountertop={(name) => setCountertopType(name)}
+            onCompare={(images) => {
+              setComparisonImages(images);
+              setComparisonOpen(true);
+            }}
+          />
+
+          <CalacattaComparisonModal
+            open={comparisonOpen}
+            onOpenChange={setComparisonOpen}
+            selectedImages={comparisonImages}
+            onSelectCountertop={(name) => {
+              setCalacattaFilter(true);
+              setCountertopType(name);
+              setTimeout(() => {
+                const countertopSection = document.querySelector('[data-section="countertops"]');
+                countertopSection?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }, 100);
+            }}
+            onClearComparison={() => setComparisonImages([])}
           />
 
           <div className="grid md:grid-cols-2 gap-6 mb-8">
