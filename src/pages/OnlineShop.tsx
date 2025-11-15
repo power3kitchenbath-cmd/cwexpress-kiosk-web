@@ -123,6 +123,25 @@ const OnlineShop = () => {
     addItem(product);
   };
 
+  const trackEvent = async (eventType: string, eventLabel: string, eventValue?: number) => {
+    try {
+      await supabase.from('analytics_events').insert({
+        event_type: eventType,
+        event_category: 'calacatta_banner',
+        event_label: eventLabel,
+        event_value: eventValue,
+        user_id: user?.id || null,
+        page_path: window.location.pathname,
+        metadata: {
+          timestamp: new Date().toISOString(),
+          referrer: document.referrer
+        }
+      });
+    } catch (error) {
+      console.error('Analytics tracking error:', error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Promotional Banner */}
@@ -225,7 +244,10 @@ const OnlineShop = () => {
       <section className="container mx-auto px-4 py-8">
         <Card 
           className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-background to-muted/30 border-2 border-primary/20 hover:border-primary/40 transition-all duration-300 cursor-pointer group"
-          onClick={() => navigate("/collections/calacatta")}
+          onClick={() => {
+            trackEvent('click', 'banner_card');
+            navigate("/collections/calacatta");
+          }}
         >
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -z-10" />
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-accent/5 rounded-full blur-3xl -z-10" />
@@ -254,6 +276,7 @@ const OnlineShop = () => {
                   size="lg"
                   onClick={(e) => {
                     e.stopPropagation();
+                    trackEvent('click', 'explore_collection_button');
                     navigate("/collections/calacatta");
                   }}
                   className="group/btn"
@@ -266,6 +289,7 @@ const OnlineShop = () => {
                   variant="outline"
                   onClick={(e) => {
                     e.stopPropagation();
+                    trackEvent('click', 'get_quote_button');
                     navigate("/estimator");
                   }}
                 >
