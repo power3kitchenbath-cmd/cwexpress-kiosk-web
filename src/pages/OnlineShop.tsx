@@ -11,6 +11,10 @@ import { useCart } from "@/contexts/CartContext";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { ProgressiveImage } from "@/components/ui/progressive-image";
 import { ProductGridSkeleton } from "@/components/ui/product-card-skeleton";
+import doormarkShakerImg from "@/assets/cabinet-doors/doormark-shaker-abacoa.png";
+import doormarkBalHarborImg from "@/assets/cabinet-doors/doormark-bal-harbor.png";
+import doormarkCaprisImg from "@/assets/cabinet-doors/doormark-capris.png";
+import doormarkEuroImg from "@/assets/cabinet-doors/doormark-euro-shaker.png";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -338,6 +342,116 @@ const OnlineShop = () => {
               {/* Overlay badge */}
               <div className="absolute -bottom-2 -right-2 bg-primary text-primary-foreground rounded-full p-3 shadow-lg group-hover:scale-110 transition-transform">
                 <span className="text-xl font-bold">7</span>
+              </div>
+            </div>
+          </div>
+        </Card>
+      </section>
+
+      {/* Doormark Featured Collection Banner */}
+      <section className="container mx-auto px-4 py-8">
+        <Card 
+          className="relative overflow-hidden bg-gradient-to-br from-amber-500/10 via-background to-orange-500/10 border-2 border-amber-500/20 hover:border-amber-500/40 transition-all duration-300 cursor-pointer group"
+          onClick={() => {
+            trackEvent('click', 'doormark_banner_card');
+            navigate("/collections/doormark");
+          }}
+        >
+          <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl -z-10" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-orange-500/5 rounded-full blur-3xl -z-10" />
+          
+          <div className="grid md:grid-cols-2 gap-8 p-8 md:p-12 items-center">
+            {/* Left Content */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-amber-600 animate-pulse" />
+                <Badge variant="secondary" className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20">
+                  Made in South Florida
+                </Badge>
+              </div>
+              
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground">
+                Doormark Cabinet Doors
+              </h2>
+              
+              <p className="text-muted-foreground text-lg">
+                Premium replacement cabinet doors and drawer fronts. Transform your kitchen 
+                with quality craftsmanship. Multiple styles and finishes available.
+              </p>
+              
+              <div className="flex flex-wrap gap-3 pt-2">
+                <Button 
+                  size="lg"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    trackEvent('click', 'doormark_explore_button');
+                    navigate("/collections/doormark");
+                  }}
+                  className="group/btn bg-amber-600 hover:bg-amber-700"
+                >
+                  Explore Door Styles
+                  <ArrowRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
+                </Button>
+                <Button 
+                  size="lg"
+                  variant="outline"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    trackEvent('click', 'doormark_contact_button');
+                    navigate("/collections/doormark");
+                  }}
+                  className="border-amber-500/30 hover:bg-amber-500/10"
+                >
+                  View Pricing
+                </Button>
+              </div>
+              
+              <div className="flex items-center gap-6 pt-4 text-sm text-muted-foreground border-t border-border/50">
+                <span>🛠️ Custom Sizing Available</span>
+                <span>⭐ Premium Quality</span>
+              </div>
+            </div>
+
+            {/* Right Content - Image Grid Preview */}
+            <div className="relative h-64 md:h-80">
+              <div className="grid grid-cols-2 gap-3 h-full">
+                <div className="space-y-3">
+                  <div className="h-32 rounded-lg overflow-hidden shadow-lg group-hover:shadow-xl transition-shadow bg-muted">
+                    <img 
+                      src={doormarkShakerImg} 
+                      alt="Shaker Abacoa"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  </div>
+                  <div className="h-32 rounded-lg overflow-hidden shadow-lg group-hover:shadow-xl transition-shadow bg-muted">
+                    <img 
+                      src={doormarkBalHarborImg} 
+                      alt="Bal Harbor"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-3 pt-6">
+                  <div className="h-32 rounded-lg overflow-hidden shadow-lg group-hover:shadow-xl transition-shadow bg-muted">
+                    <img 
+                      src={doormarkCaprisImg} 
+                      alt="Capris"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  </div>
+                  <div className="h-32 rounded-lg overflow-hidden shadow-lg group-hover:shadow-xl transition-shadow bg-muted">
+                    <img 
+                      src={doormarkEuroImg} 
+                      alt="Euro Shaker"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Overlay badge */}
+              <div className="absolute -bottom-2 -right-2 bg-amber-600 text-white rounded-full p-3 shadow-lg group-hover:scale-110 transition-transform">
+                <span className="text-xl font-bold">6+</span>
               </div>
             </div>
           </div>
