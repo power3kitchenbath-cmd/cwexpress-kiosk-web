@@ -682,6 +682,45 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_flooring_designs: {
+        Row: {
+          brightness: number
+          created_at: string
+          design_name: string
+          flooring_type: string
+          id: string
+          is_sample_room: boolean
+          opacity: number
+          room_image_url: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          brightness?: number
+          created_at?: string
+          design_name: string
+          flooring_type: string
+          id?: string
+          is_sample_room?: boolean
+          opacity?: number
+          room_image_url: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          brightness?: number
+          created_at?: string
+          design_name?: string
+          flooring_type?: string
+          id?: string
+          is_sample_room?: boolean
+          opacity?: number
+          room_image_url?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null

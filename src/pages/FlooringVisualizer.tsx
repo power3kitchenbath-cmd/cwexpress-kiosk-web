@@ -4,9 +4,29 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Upload, RotateCcw, Download, ImageIcon } from "lucide-react";
+import { ArrowLeft, Upload, RotateCcw, Download, ImageIcon, Save, FolderOpen, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import cocoaImg from "@/assets/flooring/lvp/cocoa.png";
 import butternutImg from "@/assets/flooring/lvp/butternut.png";
 import fogImg from "@/assets/flooring/lvp/fog.png";
@@ -61,6 +81,34 @@ export default function FlooringVisualizer() {
   const [brightness, setBrightness] = useState([100]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [user, setUser] = useState<any>(null);
+  const [savedDesigns, setSavedDesigns] = useState<any[]>([]);
+  const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
+  const [designName, setDesignName] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingDesigns, setIsLoadingDesigns] = useState(false);
+  const [showSavedDesigns, setShowSavedDesigns] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  // Check authentication status
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Load saved designs when user is authenticated
+  useEffect(() => {
+    if (user) {
+      loadSavedDesigns();
+    }
+  }, [user]);
 
   // Load flooring texture when selection changes
   useEffect(() => {
@@ -129,6 +177,181 @@ export default function FlooringVisualizer() {
 
   const handleSampleRoomSelect = (sampleRoom: SampleRoom) => {
     loadImageFromUrl(sampleRoom.image, "sample");
+  };
+
+  const loadSavedDesigns = async () => {
+    if (!user) return;
+    
+    setIsLoadingDesigns(true);
+    try {
+      const { data, error } = await supabase
+        .from("saved_flooring_designs")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setSavedDesigns(data || []);
+    } catch (error) {
+      console.error("Error loading saved designs:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load saved designs",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingDesigns(false);
+    }
+  };
+
+  const handleSaveDesign = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to save your designs",
+        variant: "destructive",
+      });
+      navigate("/auth");
+      return;
+    }
+
+    if (!roomImage || !selectedFlooring) {
+      toast({
+        title: "Missing Information",
+        description: "Please select a room and flooring option",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSaveDialogOpen(true);
+  };
+
+  const confirmSaveDesign = async () => {
+    if (!designName.trim()) {
+      toast({
+        title: "Name Required",
+        description: "Please enter a name for your design",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      let imageUrl = roomImage.src;
+      let isSampleRoom = false;
+
+      // Check if it's a sample room
+      const sampleRoom = sampleRooms.find(room => room.image === roomImage.src);
+      if (sampleRoom) {
+        isSampleRoom = true;
+      } else if (fileInputRef.current?.files?.[0]) {
+        // Upload user's image to storage
+        const file = fileInputRef.current.files[0];
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('visualizer-rooms')
+          .upload(fileName, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('visualizer-rooms')
+          .getPublicUrl(fileName);
+        
+        imageUrl = publicUrl;
+      }
+
+      // Save design to database
+      const { error } = await supabase
+        .from("saved_flooring_designs")
+        .insert({
+          user_id: user.id,
+          design_name: designName.trim(),
+          room_image_url: imageUrl,
+          flooring_type: selectedFlooring.name,
+          opacity: opacity[0],
+          brightness: brightness[0],
+          is_sample_room: isSampleRoom,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Design saved successfully!",
+      });
+
+      setIsSaveDialogOpen(false);
+      setDesignName("");
+      loadSavedDesigns();
+    } catch (error) {
+      console.error("Error saving design:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save design",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleLoadDesign = async (design: any) => {
+    try {
+      // Find the flooring option
+      const flooringOption = flooringOptions.find(opt => opt.name === design.flooring_type);
+      if (flooringOption) {
+        setSelectedFlooring(flooringOption);
+      }
+      
+      setOpacity([design.opacity]);
+      setBrightness([design.brightness]);
+
+      // Load the room image
+      await loadImageFromUrl(design.room_image_url, "saved");
+
+      setShowSavedDesigns(false);
+      toast({
+        title: "Design Loaded",
+        description: `Loaded "${design.design_name}"`,
+      });
+    } catch (error) {
+      console.error("Error loading design:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load design",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteDesign = async (designId: string) => {
+    try {
+      const { error } = await supabase
+        .from("saved_flooring_designs")
+        .delete()
+        .eq("id", designId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Design deleted successfully",
+      });
+
+      loadSavedDesigns();
+      setDeleteConfirmId(null);
+    } catch (error) {
+      console.error("Error deleting design:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete design",
+        variant: "destructive",
+      });
+    }
   };
 
   const filteredSampleRooms = selectedCategory === "All" 
@@ -439,10 +662,56 @@ export default function FlooringVisualizer() {
           <div className="lg:col-span-2">
             <Card className="h-full">
               <CardHeader>
-                <CardTitle>Preview</CardTitle>
-                <CardDescription>
-                  See how {selectedFlooring.label} looks in your room
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Preview</CardTitle>
+                    <CardDescription>
+                      See how {selectedFlooring.label} looks in your room
+                    </CardDescription>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSaveDesign}
+                      disabled={!roomImage || !flooringTexture}
+                      className="gap-2"
+                    >
+                      <Save className="h-4 w-4" />
+                      Save
+                    </Button>
+                    {user && savedDesigns.length > 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowSavedDesigns(!showSavedDesigns)}
+                        className="gap-2"
+                      >
+                        <FolderOpen className="h-4 w-4" />
+                        My Designs
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleReset}
+                      className="gap-2"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      Reset
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDownload}
+                      disabled={!roomImage || !flooringTexture}
+                      className="gap-2"
+                    >
+                      <Download className="h-4 w-4" />
+                      Download
+                    </Button>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent className="flex items-center justify-center min-h-[500px]">
                 {!roomImage ? (
@@ -503,7 +772,115 @@ export default function FlooringVisualizer() {
             </ul>
           </CardContent>
         </Card>
+
+        {/* Saved Designs Section */}
+        {showSavedDesigns && user && (
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle>My Saved Designs</CardTitle>
+              <CardDescription>
+                View and manage your saved flooring visualizations
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoadingDesigns ? (
+                <p className="text-muted-foreground">Loading designs...</p>
+              ) : savedDesigns.length === 0 ? (
+                <p className="text-muted-foreground">No saved designs yet. Create and save your first design!</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {savedDesigns.map((design) => (
+                    <Card key={design.id} className="overflow-hidden">
+                      <div className="aspect-video relative bg-muted">
+                        <img
+                          src={design.room_image_url}
+                          alt={design.design_name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <CardContent className="p-4">
+                        <h3 className="font-semibold mb-2">{design.design_name}</h3>
+                        <p className="text-sm text-muted-foreground mb-1">
+                          Flooring: {design.flooring_type}
+                        </p>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          {new Date(design.created_at).toLocaleDateString()}
+                        </p>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleLoadDesign(design)}
+                            className="flex-1"
+                          >
+                            Load
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setDeleteConfirmId(design.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </main>
+
+      {/* Save Design Dialog */}
+      <Dialog open={isSaveDialogOpen} onOpenChange={setIsSaveDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save Design</DialogTitle>
+            <DialogDescription>
+              Give your design a name to save it to your account
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="design-name">Design Name</Label>
+              <Input
+                id="design-name"
+                placeholder="e.g., Kitchen Remodel - Cocoa"
+                value={designName}
+                onChange={(e) => setDesignName(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsSaveDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={confirmSaveDesign} disabled={isSaving}>
+              {isSaving ? "Saving..." : "Save Design"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Design</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this design? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => deleteConfirmId && handleDeleteDesign(deleteConfirmId)}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
