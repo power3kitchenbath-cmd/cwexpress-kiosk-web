@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Mail, Phone, MapPin, Calendar, DollarSign } from "lucide-react";
+import { TaskManagementTab } from "./TaskManagementTab";
 
 interface ProjectDetailsDialogProps {
   projectId: string;
@@ -224,17 +225,7 @@ export function ProjectDetailsDialog({ projectId, open, onOpenChange, onUpdate }
           </TabsContent>
 
           <TabsContent value="tasks">
-            <Card>
-              <CardHeader>
-                <CardTitle>Project Tasks</CardTitle>
-                <CardDescription>Track milestones and deliverables</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground text-center py-8">
-                  Task management features coming soon
-                </p>
-              </CardContent>
-            </Card>
+            <TaskManagementTab projectId={projectId} />
           </TabsContent>
 
           <TabsContent value="kpis">
