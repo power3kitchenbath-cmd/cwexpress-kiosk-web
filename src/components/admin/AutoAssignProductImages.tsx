@@ -31,6 +31,7 @@ export const AutoAssignProductImages = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [previewData, setPreviewData] = useState<PreviewItem[]>([]);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [modelFilter, setModelFilter] = useState<string>("all");
   const [changeFilter, setChangeFilter] = useState<string>("all");
@@ -88,6 +89,10 @@ export const AutoAssignProductImages = () => {
 
       setPreviewData(preview);
       setShowPreview(true);
+      
+      // Select all by default
+      const allIds = new Set(preview.map(p => p.id));
+      setSelectedIds(allIds);
 
       toast({
         title: "Preview Generated",
@@ -131,6 +136,41 @@ export const AutoAssignProductImages = () => {
     });
   }, [previewData, searchQuery, modelFilter, changeFilter]);
 
+  // Check if all filtered items are selected
+  const allFilteredSelected = useMemo(() => {
+    return filteredPreviewData.length > 0 && 
+      filteredPreviewData.every(item => selectedIds.has(item.id));
+  }, [filteredPreviewData, selectedIds]);
+
+  // Count of selected items from filtered list
+  const selectedCount = useMemo(() => {
+    return filteredPreviewData.filter(item => selectedIds.has(item.id)).length;
+  }, [filteredPreviewData, selectedIds]);
+
+  const handleToggleAll = () => {
+    if (allFilteredSelected) {
+      // Deselect all filtered items
+      const newSelected = new Set(selectedIds);
+      filteredPreviewData.forEach(item => newSelected.delete(item.id));
+      setSelectedIds(newSelected);
+    } else {
+      // Select all filtered items
+      const newSelected = new Set(selectedIds);
+      filteredPreviewData.forEach(item => newSelected.add(item.id));
+      setSelectedIds(newSelected);
+    }
+  };
+
+  const handleToggleItem = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
   const handleAutoAssign = async () => {
     setIsProcessing(true);
     
@@ -138,8 +178,10 @@ export const AutoAssignProductImages = () => {
       let updatedCount = 0;
       let skippedCount = 0;
 
-      // Update products based on filtered preview data
-      for (const item of filteredPreviewData) {
+      // Update only selected products
+      const selectedItems = filteredPreviewData.filter(item => selectedIds.has(item.id));
+      
+      for (const item of selectedItems) {
         const { error: updateError } = await supabase
           .from("products")
           .update({
@@ -163,6 +205,7 @@ export const AutoAssignProductImages = () => {
 
       setShowPreview(false);
       setPreviewData([]);
+      setSelectedIds(new Set());
       setSearchQuery("");
       setModelFilter("all");
       setChangeFilter("all");
@@ -264,8 +307,13 @@ export const AutoAssignProductImages = () => {
                 </div>
               </div>
               
-              <div className="text-sm text-muted-foreground">
-                Showing {filteredPreviewData.length} of {previewData.length} products
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>
+                  Showing {filteredPreviewData.length} of {previewData.length} products
+                </span>
+                <span className="font-medium text-foreground">
+                  {selectedCount} selected
+                </span>
               </div>
             </div>
 
@@ -273,6 +321,15 @@ export const AutoAssignProductImages = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12">
+                      <input
+                        type="checkbox"
+                        checked={allFilteredSelected}
+                        onChange={handleToggleAll}
+                        className="h-4 w-4 cursor-pointer"
+                        disabled={filteredPreviewData.length === 0}
+                      />
+                    </TableHead>
                     <TableHead>Product Name</TableHead>
                     <TableHead>Model</TableHead>
                     <TableHead>Current Image</TableHead>
@@ -282,32 +339,40 @@ export const AutoAssignProductImages = () => {
                 <TableBody>
                   {filteredPreviewData.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                         No products match your filters
                       </TableCell>
                     </TableRow>
                   ) : (
                     filteredPreviewData.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-medium">{item.name}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{item.modelPrefix}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        {item.currentImage ? (
-                          <span className="text-sm text-muted-foreground truncate max-w-[150px] block">
-                            {item.currentImage.split('/').pop()}
+                      <TableRow key={item.id}>
+                        <TableCell>
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.has(item.id)}
+                            onChange={() => handleToggleItem(item.id)}
+                            className="h-4 w-4 cursor-pointer"
+                          />
+                        </TableCell>
+                        <TableCell className="font-medium">{item.name}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{item.modelPrefix}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          {item.currentImage ? (
+                            <span className="text-sm text-muted-foreground truncate max-w-[150px] block">
+                              {item.currentImage.split('/').pop()}
+                            </span>
+                          ) : (
+                            <span className="text-sm text-muted-foreground italic">None</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm font-medium text-primary">
+                            {item.proposedImage.split('/').pop()}
                           </span>
-                        ) : (
-                          <span className="text-sm text-muted-foreground italic">None</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm font-medium text-primary">
-                          {item.proposedImage.split('/').pop()}
-                        </span>
-                      </TableCell>
-                    </TableRow>
+                        </TableCell>
+                      </TableRow>
                     ))
                   )}
                 </TableBody>
@@ -319,6 +384,7 @@ export const AutoAssignProductImages = () => {
                 onClick={() => {
                   setShowPreview(false);
                   setPreviewData([]);
+                  setSelectedIds(new Set());
                   setSearchQuery("");
                   setModelFilter("all");
                   setChangeFilter("all");
@@ -330,7 +396,7 @@ export const AutoAssignProductImages = () => {
               </Button>
               <Button 
                 onClick={handleAutoAssign} 
-                disabled={isProcessing || filteredPreviewData.length === 0}
+                disabled={isProcessing || selectedCount === 0}
                 className="flex-1"
               >
                 {isProcessing ? (
@@ -341,7 +407,7 @@ export const AutoAssignProductImages = () => {
                 ) : (
                   <>
                     <Check className="mr-2 h-4 w-4" />
-                    Apply to {filteredPreviewData.length} {filteredPreviewData.length === 1 ? 'Product' : 'Products'}
+                    Apply to {selectedCount} Selected {selectedCount === 1 ? 'Product' : 'Products'}
                   </>
                 )}
               </Button>
