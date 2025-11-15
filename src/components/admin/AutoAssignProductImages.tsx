@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Map model prefixes to their image filenames
 const MODEL_IMAGE_MAP: Record<string, string> = {
@@ -561,17 +562,51 @@ export const AutoAssignProductImages = () => {
                           </TableCell>
                           <TableCell>
                             {item.currentImage ? (
-                              <span className="text-sm text-muted-foreground truncate max-w-[150px] block">
-                                {item.currentImage.split('/').pop()}
-                              </span>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="text-sm text-muted-foreground truncate max-w-[150px] block cursor-help hover:text-foreground transition-colors">
+                                      {item.currentImage.split('/').pop()}
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="right" className="p-0 border-0">
+                                    <img 
+                                      src={item.currentImage} 
+                                      alt="Current product image"
+                                      className="w-48 h-48 object-cover rounded-md shadow-lg"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                        e.currentTarget.parentElement!.innerHTML = '<p class="p-4 text-sm text-muted-foreground">Image not found</p>';
+                                      }}
+                                    />
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             ) : (
                               <span className="text-sm text-muted-foreground italic">None</span>
                             )}
                           </TableCell>
                           <TableCell>
-                            <span className={`text-sm font-medium ${hasChange ? 'text-primary' : 'text-muted-foreground'}`}>
-                              {item.proposedImage.split('/').pop()}
-                            </span>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className={`text-sm font-medium cursor-help hover:underline transition-colors ${hasChange ? 'text-primary' : 'text-muted-foreground'}`}>
+                                    {item.proposedImage.split('/').pop()}
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent side="right" className="p-0 border-0">
+                                  <img 
+                                    src={item.proposedImage} 
+                                    alt="Proposed product image"
+                                    className="w-48 h-48 object-cover rounded-md shadow-lg"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                      e.currentTarget.parentElement!.innerHTML = '<p class="p-4 text-sm text-muted-foreground">Image not found</p>';
+                                    }}
+                                  />
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                           </TableCell>
                         </TableRow>
                       );
