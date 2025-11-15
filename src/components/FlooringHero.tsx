@@ -16,8 +16,8 @@ interface FlooringImage {
 
 const flooringImages: FlooringImage[] = [
   { src: cocoaImg, name: "LVP - Cocoa", label: "COCOA" },
-  { src: butternutImg, name: "LVP - Butternut", label: "BUTTERNUT" },
-  { src: fogImg, name: "LVP - Fog", label: "FOG" },
+  { src: fogImg, name: "LVP - Butternut", label: "BUTTERNUT" },
+  { src: butternutImg, name: "LVP - Fog", label: "FOG" },
   { src: blondieImg, name: "LVP - Blondie", label: "BLONDIE" },
 ];
 
