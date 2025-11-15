@@ -19,6 +19,7 @@ import Checkout from "./pages/Checkout";
 import Orders from "./pages/Orders";
 import ProProfile from "./pages/ProProfile";
 import NotFound from "./pages/NotFound";
+import ImageOrganizer from "./pages/ImageOrganizer";
 import { ShippingLayout } from "./layouts/ShippingLayout";
 import Dashboard from "./pages/shipping/Dashboard";
 import ShipNow from "./pages/shipping/ShipNow";
@@ -54,6 +55,7 @@ const App = () => (
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/profile" element={<ProProfile />} />
+          <Route path="/image-organizer" element={<ImageOrganizer />} />
           
           {/* CW Express Shipping Platform */}
           <Route path="/shipping" element={<ShippingLayout />}>
