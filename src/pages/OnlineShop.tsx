@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, ShoppingCart, Package, AlertCircle, User, LogOut, Building2 } from "lucide-react";
+import { ArrowLeft, ShoppingCart, Package, AlertCircle, User, LogOut, Building2, Sparkles, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -219,6 +219,105 @@ const OnlineShop = () => {
             Browse our complete selection of cabinets, countertops, and flooring online at thecabinetstore.org
           </p>
         </div>
+      </section>
+
+      {/* Featured Collection Banner */}
+      <section className="container mx-auto px-4 py-8">
+        <Card 
+          className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-background to-muted/30 border-2 border-primary/20 hover:border-primary/40 transition-all duration-300 cursor-pointer group"
+          onClick={() => navigate("/collections/calacatta")}
+        >
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -z-10" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-accent/5 rounded-full blur-3xl -z-10" />
+          
+          <div className="grid md:grid-cols-2 gap-8 p-8 md:p-12 items-center">
+            {/* Left Content */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-primary animate-pulse" />
+                <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+                  New 2025 Collection
+                </Badge>
+              </div>
+              
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground">
+                Calacatta Premium Collection
+              </h2>
+              
+              <p className="text-muted-foreground text-lg">
+                Discover 7 exquisite Calacatta quartz variations combining Italian marble elegance 
+                with modern durability. From $85/ft.
+              </p>
+              
+              <div className="flex flex-wrap gap-3 pt-2">
+                <Button 
+                  size="lg"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate("/collections/calacatta");
+                  }}
+                  className="group/btn"
+                >
+                  Explore Collection
+                  <ArrowRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
+                </Button>
+                <Button 
+                  size="lg"
+                  variant="outline"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate("/estimator");
+                  }}
+                >
+                  Get Quote
+                </Button>
+              </div>
+            </div>
+
+            {/* Right Content - Image Grid Preview */}
+            <div className="relative h-64 md:h-80">
+              <div className="grid grid-cols-2 gap-3 h-full">
+                <div className="space-y-3">
+                  <div className="h-32 rounded-lg overflow-hidden shadow-lg group-hover:shadow-xl transition-shadow">
+                    <img 
+                      src="/src/assets/countertops/calacatta-nova.jpg" 
+                      alt="Calacatta Nova"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  </div>
+                  <div className="h-32 rounded-lg overflow-hidden shadow-lg group-hover:shadow-xl transition-shadow">
+                    <img 
+                      src="/src/assets/countertops/calacatta-venus.jpg" 
+                      alt="Calacatta Venus"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-3 pt-6">
+                  <div className="h-32 rounded-lg overflow-hidden shadow-lg group-hover:shadow-xl transition-shadow">
+                    <img 
+                      src="/src/assets/countertops/calacatta-gris.jpg" 
+                      alt="Calacatta Gris"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  </div>
+                  <div className="h-32 rounded-lg overflow-hidden shadow-lg group-hover:shadow-xl transition-shadow">
+                    <img 
+                      src="/src/assets/countertops/calacatta-luna.jpg" 
+                      alt="Calacatta Luna"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Overlay badge */}
+              <div className="absolute -bottom-2 -right-2 bg-primary text-primary-foreground rounded-full p-3 shadow-lg group-hover:scale-110 transition-transform">
+                <span className="text-xl font-bold">7</span>
+              </div>
+            </div>
+          </div>
+        </Card>
       </section>
 
       {/* Products Grid */}
