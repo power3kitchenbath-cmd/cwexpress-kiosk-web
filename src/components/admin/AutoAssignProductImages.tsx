@@ -2,13 +2,14 @@ import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Image, Eye, Check, Search, Filter } from "lucide-react";
+import { Loader2, Image, Eye, Check, Search, Filter, ListChecks } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 // Map model prefixes to their image filenames
 const MODEL_IMAGE_MAP: Record<string, string> = {
@@ -171,6 +172,56 @@ export const AutoAssignProductImages = () => {
     setSelectedIds(newSelected);
   };
 
+  const handleSelectWithChanges = () => {
+    const newSelected = new Set(selectedIds);
+    filteredPreviewData.forEach(item => {
+      if (item.currentImage !== item.proposedImage) {
+        newSelected.add(item.id);
+      }
+    });
+    setSelectedIds(newSelected);
+    
+    const changesCount = filteredPreviewData.filter(
+      item => item.currentImage !== item.proposedImage
+    ).length;
+    
+    toast({
+      title: "Selection Updated",
+      description: `Selected ${changesCount} products with changes.`,
+    });
+  };
+
+  const handleDeselectNoChanges = () => {
+    const newSelected = new Set(selectedIds);
+    filteredPreviewData.forEach(item => {
+      if (item.currentImage === item.proposedImage) {
+        newSelected.delete(item.id);
+      }
+    });
+    setSelectedIds(newSelected);
+    
+    const noChangesCount = filteredPreviewData.filter(
+      item => item.currentImage === item.proposedImage
+    ).length;
+    
+    toast({
+      title: "Selection Updated",
+      description: `Deselected ${noChangesCount} products with no changes.`,
+    });
+  };
+
+  const handleSelectAll = () => {
+    const newSelected = new Set(selectedIds);
+    filteredPreviewData.forEach(item => newSelected.add(item.id));
+    setSelectedIds(newSelected);
+  };
+
+  const handleDeselectAll = () => {
+    const newSelected = new Set(selectedIds);
+    filteredPreviewData.forEach(item => newSelected.delete(item.id));
+    setSelectedIds(newSelected);
+  };
+
   const handleAutoAssign = async () => {
     setIsProcessing(true);
     
@@ -256,55 +307,83 @@ export const AutoAssignProductImages = () => {
         ) : (
           <>
             <div className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="space-y-2">
-                  <Label htmlFor="search" className="text-sm font-medium flex items-center gap-2">
-                    <Search className="h-4 w-4" />
-                    Search Products
-                  </Label>
-                  <Input
-                    id="search"
-                    placeholder="Search by name..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
+              <div className="flex items-end gap-4">
+                <div className="flex-1 grid gap-4 md:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="search" className="text-sm font-medium flex items-center gap-2">
+                      <Search className="h-4 w-4" />
+                      Search Products
+                    </Label>
+                    <Input
+                      id="search"
+                      placeholder="Search by name..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="model-filter" className="text-sm font-medium flex items-center gap-2">
+                      <Filter className="h-4 w-4" />
+                      Filter by Model
+                    </Label>
+                    <Select value={modelFilter} onValueChange={setModelFilter}>
+                      <SelectTrigger id="model-filter">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Models</SelectItem>
+                        {uniqueModels.map((model) => (
+                          <SelectItem key={model} value={model}>
+                            {model}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="change-filter" className="text-sm font-medium">
+                      Filter by Status
+                    </Label>
+                    <Select value={changeFilter} onValueChange={setChangeFilter}>
+                      <SelectTrigger id="change-filter">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Products</SelectItem>
+                        <SelectItem value="changes">Will Change</SelectItem>
+                        <SelectItem value="no-changes">No Changes</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="model-filter" className="text-sm font-medium flex items-center gap-2">
-                    <Filter className="h-4 w-4" />
-                    Filter by Model
-                  </Label>
-                  <Select value={modelFilter} onValueChange={setModelFilter}>
-                    <SelectTrigger id="model-filter">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Models</SelectItem>
-                      {uniqueModels.map((model) => (
-                        <SelectItem key={model} value={model}>
-                          {model}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="change-filter" className="text-sm font-medium">
-                    Filter by Status
-                  </Label>
-                  <Select value={changeFilter} onValueChange={setChangeFilter}>
-                    <SelectTrigger id="change-filter">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Products</SelectItem>
-                      <SelectItem value="changes">Will Change</SelectItem>
-                      <SelectItem value="no-changes">No Changes</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="gap-2">
+                      <ListChecks className="h-4 w-4" />
+                      Bulk Actions
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>Selection Actions</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSelectAll}>
+                      Select All Filtered
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleDeselectAll}>
+                      Deselect All Filtered
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSelectWithChanges}>
+                      Select All With Changes
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleDeselectNoChanges}>
+                      Deselect All Without Changes
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
               
               <div className="flex items-center justify-between text-sm text-muted-foreground">
