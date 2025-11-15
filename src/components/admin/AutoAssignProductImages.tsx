@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Image, Eye, Check, Search, Filter, ListChecks, ArrowRight, Minus, Download, Package, TrendingUp, TrendingDown, Save, FolderOpen, Trash2, ArrowUpDown, ArrowUp, ArrowDown, Maximize2, Keyboard } from "lucide-react";
+import { Loader2, Image, Eye, Check, Search, Filter, ListChecks, ArrowRight, Minus, Download, Package, TrendingUp, TrendingDown, Save, FolderOpen, Trash2, ArrowUpDown, ArrowUp, ArrowDown, Maximize2, Keyboard, Upload } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -57,6 +57,9 @@ export const AutoAssignProductImages = () => {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [comparisonItem, setComparisonItem] = useState<PreviewItem | null>(null);
   const [comparisonDialogOpen, setComparisonDialogOpen] = useState(false);
+  const [csvImportDialogOpen, setCsvImportDialogOpen] = useState(false);
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [csvError, setCsvError] = useState<string>("");
   const { toast } = useToast();
 
   // Load presets from localStorage on mount
@@ -432,6 +435,114 @@ export const AutoAssignProductImages = () => {
     setComparisonDialogOpen(true);
   };
 
+  const handleCsvFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.name.endsWith('.csv')) {
+        setCsvError("Please upload a CSV file");
+        setCsvFile(null);
+        return;
+      }
+      setCsvFile(file);
+      setCsvError("");
+    }
+  };
+
+  const handleCsvImport = async () => {
+    if (!csvFile) {
+      setCsvError("Please select a CSV file");
+      return;
+    }
+
+    setIsProcessing(true);
+    setCsvError("");
+
+    try {
+      const text = await csvFile.text();
+      const lines = text.split('\n').filter(line => line.trim());
+      
+      if (lines.length < 2) {
+        setCsvError("CSV file must contain a header row and at least one data row");
+        setIsProcessing(false);
+        return;
+      }
+
+      // Parse header
+      const header = lines[0].toLowerCase().split(',').map(h => h.trim());
+      const idIndex = header.findIndex(h => h === 'id' || h === 'product_id');
+      const imageIndex = header.findIndex(h => h === 'image' || h === 'image_url' || h === 'image_path');
+
+      if (idIndex === -1 || imageIndex === -1) {
+        setCsvError("CSV must contain 'id' (or 'product_id') and 'image' (or 'image_url') columns");
+        setIsProcessing(false);
+        return;
+      }
+
+      // Fetch all products
+      const { data: products, error: fetchError } = await supabase
+        .from("products")
+        .select("*");
+
+      if (fetchError) throw fetchError;
+
+      // Parse data rows and match with products
+      const preview: PreviewItem[] = [];
+      const unmatchedIds: string[] = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',').map(v => v.trim().replace(/^["']|["']$/g, ''));
+        const productId = values[idIndex];
+        const imagePath = values[imageIndex];
+
+        if (!productId || !imagePath) continue;
+
+        const product = products?.find(p => p.id === productId || p.sku === productId);
+        
+        if (product) {
+          // Determine model prefix from product name
+          const modelPrefix = extractModelPrefix(product.name) || 'UNKNOWN';
+          
+          preview.push({
+            id: product.id,
+            name: product.name,
+            currentImage: product.image_url,
+            proposedImage: imagePath,
+            modelPrefix,
+          });
+        } else {
+          unmatchedIds.push(productId);
+        }
+      }
+
+      if (preview.length === 0) {
+        setCsvError(`No matching products found. Unmatched IDs: ${unmatchedIds.join(', ')}`);
+        setIsProcessing(false);
+        return;
+      }
+
+      setPreviewData(preview);
+      setShowPreview(true);
+      
+      // Select all by default
+      const allIds = new Set(preview.map(p => p.id));
+      setSelectedIds(allIds);
+
+      setCsvImportDialogOpen(false);
+      setCsvFile(null);
+
+      toast({
+        title: "CSV Import Successful",
+        description: `Loaded ${preview.length} products from CSV. ${unmatchedIds.length > 0 ? `${unmatchedIds.length} IDs not found.` : ''}`,
+      });
+
+    } catch (error) {
+      console.error("Error importing CSV:", error);
+      setCsvError("Failed to parse CSV file. Please check the format.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleExportCSV = () => {
     // Prepare CSV content
     const headers = ['Product Name', 'Model Prefix', 'Current Image', 'Proposed Image', 'Status', 'Selected'];
@@ -568,23 +679,118 @@ export const AutoAssignProductImages = () => {
       </CardHeader>
       <CardContent className="space-y-4">
         {!showPreview ? (
-          <Button 
-            onClick={handlePreview} 
-            disabled={isProcessing}
-            className="w-full"
-          >
-            {isProcessing ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Generating Preview...
-              </>
-            ) : (
-              <>
-                <Eye className="mr-2 h-4 w-4" />
-                Preview Image Assignments
-              </>
-            )}
-          </Button>
+          <div className="space-y-3">
+            <Button 
+              onClick={handlePreview} 
+              disabled={isProcessing}
+              className="w-full"
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generating Preview...
+                </>
+              ) : (
+                <>
+                  <Eye className="mr-2 h-4 w-4" />
+                  Preview Image Assignments
+                </>
+              )}
+            </Button>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">Or</span>
+              </div>
+            </div>
+
+            {/* CSV Import Dialog */}
+            <Dialog open={csvImportDialogOpen} onOpenChange={setCsvImportDialogOpen}>
+              <DialogTrigger asChild>
+                <Button 
+                  variant="outline"
+                  className="w-full"
+                  disabled={isProcessing}
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  Import from CSV
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-background">
+                <DialogHeader>
+                  <DialogTitle>Import Image Assignments from CSV</DialogTitle>
+                  <DialogDescription>
+                    Upload a CSV file with product IDs and image paths to bulk update assignments.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="csv-file">CSV File</Label>
+                    <Input
+                      id="csv-file"
+                      type="file"
+                      accept=".csv"
+                      onChange={handleCsvFileChange}
+                      disabled={isProcessing}
+                    />
+                    {csvError && (
+                      <p className="text-sm text-destructive">{csvError}</p>
+                    )}
+                  </div>
+                  
+                  <div className="rounded-lg border bg-muted/50 p-4 space-y-2">
+                    <p className="text-sm font-medium">CSV Format Requirements:</p>
+                    <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                      <li>Must include header row</li>
+                      <li>Required columns: <code className="bg-muted px-1 rounded">id</code> (or <code className="bg-muted px-1 rounded">product_id</code>) and <code className="bg-muted px-1 rounded">image</code> (or <code className="bg-muted px-1 rounded">image_url</code>)</li>
+                      <li>Product ID can be the database UUID or SKU</li>
+                      <li>Image path should be relative to assets folder</li>
+                    </ul>
+                  </div>
+
+                  <div className="rounded-lg border bg-muted/30 p-3">
+                    <p className="text-xs font-mono text-muted-foreground mb-2">Example CSV:</p>
+                    <pre className="text-xs font-mono">
+{`id,image
+abc-123-uuid,/src/assets/shower-doors/ds01.jpg
+def-456-uuid,/src/assets/shower-doors/ss03.jpg`}
+                    </pre>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setCsvImportDialogOpen(false);
+                      setCsvFile(null);
+                      setCsvError("");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={handleCsvImport}
+                    disabled={!csvFile || isProcessing}
+                  >
+                    {isProcessing ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="mr-2 h-4 w-4" />
+                        Import CSV
+                      </>
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         ) : (
           <>
             <div className="space-y-4">
