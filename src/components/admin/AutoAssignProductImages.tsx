@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 import { generateThumbnailAndFullSize } from "@/utils/imageCompression";
+import { ImageComparisonSlider } from "./ImageComparisonSlider";
 
 // Map model prefixes to their image filenames (stored in Supabase)
 const MODEL_IMAGE_MAP: Record<string, string> = {
@@ -26,7 +27,7 @@ const MODEL_IMAGE_MAP: Record<string, string> = {
 };
 
 // Helper function to upload local images to Supabase storage with compression
-const uploadImageToStorage = async (imagePath: string, fileName: string): Promise<{ imageUrl: string, thumbnailUrl: string, stats: { originalSize: number, compressedSize: number, saved: number } } | null> => {
+const uploadImageToStorage = async (imagePath: string, fileName: string): Promise<{ imageUrl: string, thumbnailUrl: string, originalImageUrl: string, stats: { originalSize: number, compressedSize: number, saved: number } } | null> => {
   try {
     // Fetch the local image file
     const response = await fetch(imagePath);
@@ -84,7 +85,8 @@ const uploadImageToStorage = async (imagePath: string, fileName: string): Promis
       .from('product-images')
       .getPublicUrl(fullSizeFileName);
     
-    return { imageUrl, thumbnailUrl, stats };
+    // Return original local image path for comparison
+    return { imageUrl, thumbnailUrl, originalImageUrl: imagePath, stats };
   } catch (error) {
     console.error(`Failed to upload ${fileName}:`, error);
     return null;
@@ -142,6 +144,7 @@ export const AutoAssignProductImages = () => {
   const [isUndoing, setIsUndoing] = useState(false);
   const [compressionStats, setCompressionStats] = useState<{ totalOriginal: number, totalCompressed: number, totalSaved: number, count: number } | null>(null);
   const [uploadProgress, setUploadProgress] = useState<{ current: number, total: number, currentImage: string, isUploading: boolean }>({ current: 0, total: 0, currentImage: '', isUploading: false });
+  const [comparisonImages, setComparisonImages] = useState<{ before: string, after: string } | null>(null);
   const { toast } = useToast();
 
   // Load presets from localStorage on mount
@@ -221,6 +224,7 @@ export const AutoAssignProductImages = () => {
   const handlePreview = async () => {
     setIsProcessing(true);
     setCompressionStats(null);
+    setComparisonImages(null);
     
     try {
       const { data: products, error: fetchError } = await supabase
@@ -252,6 +256,7 @@ export const AutoAssignProductImages = () => {
       let totalCompressed = 0;
       let totalSaved = 0;
       let successCount = 0;
+      let firstComparison: { before: string, after: string } | null = null;
       
       let currentIndex = 0;
       for (const [prefix, filename] of Object.entries(MODEL_IMAGE_MAP)) {
@@ -270,6 +275,14 @@ export const AutoAssignProductImages = () => {
           totalCompressed += uploadedUrls.stats.compressedSize;
           totalSaved += uploadedUrls.stats.saved;
           successCount++;
+          
+          // Store first image for comparison slider
+          if (!firstComparison) {
+            firstComparison = {
+              before: uploadedUrls.originalImageUrl,
+              after: uploadedUrls.imageUrl
+            };
+          }
         }
 
         currentIndex++;
@@ -287,6 +300,11 @@ export const AutoAssignProductImages = () => {
         totalSaved,
         count: successCount
       });
+      
+      // Store comparison images for slider
+      if (firstComparison) {
+        setComparisonImages(firstComparison);
+      }
 
       const preview: PreviewItem[] = [];
 
@@ -987,6 +1005,22 @@ export const AutoAssignProductImages = () => {
               <div className="pt-2 text-xs text-muted-foreground">
                 {compressionStats.count} images compressed successfully
               </div>
+              
+              {/* Image Comparison Slider */}
+              {comparisonImages && (
+                <div className="mt-4 pt-4 border-t">
+                  <div className="text-sm font-medium mb-3">Quality Comparison</div>
+                  <ImageComparisonSlider
+                    beforeImage={comparisonImages.before}
+                    afterImage={comparisonImages.after}
+                    beforeLabel="Original"
+                    afterLabel="Compressed"
+                  />
+                  <p className="text-xs text-muted-foreground mt-2 text-center">
+                    Drag the slider to compare image quality
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
