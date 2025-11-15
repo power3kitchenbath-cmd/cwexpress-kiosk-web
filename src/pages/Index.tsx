@@ -13,10 +13,10 @@ import fogImg from "@/assets/flooring/lvp/fog.png";
 import blondieImg from "@/assets/flooring/lvp/blondie.png";
 
 const flooringImages = [
-  { src: cocoaImg, name: "LVP - Cocoa", label: "COCOA" },
+  { src: blondieImg, name: "LVP - Cocoa", label: "COCOA" },
   { src: fogImg, name: "LVP - Butternut", label: "BUTTERNUT" },
   { src: butternutImg, name: "LVP - Fog", label: "FOG" },
-  { src: blondieImg, name: "LVP - Blondie", label: "BLONDIE" },
+  { src: cocoaImg, name: "LVP - Blondie", label: "BLONDIE" },
 ];
 
 const flooringPricing: Record<string, number> = {
