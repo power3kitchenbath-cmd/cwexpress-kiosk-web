@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Progress } from "@/components/ui/progress";
 
 // Map model prefixes to their image filenames
 const MODEL_IMAGE_MAP: Record<string, string> = {
@@ -37,6 +38,8 @@ export const AutoAssignProductImages = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [modelFilter, setModelFilter] = useState<string>("all");
   const [changeFilter, setChangeFilter] = useState<string>("all");
+  const [processingProgress, setProcessingProgress] = useState(0);
+  const [currentProcessingItem, setCurrentProcessingItem] = useState<string>("");
   const { toast } = useToast();
 
   const extractModelPrefix = (productName: string): string | null => {
@@ -280,6 +283,8 @@ export const AutoAssignProductImages = () => {
 
   const handleAutoAssign = async () => {
     setIsProcessing(true);
+    setProcessingProgress(0);
+    setCurrentProcessingItem("");
     
     try {
       let updatedCount = 0;
@@ -287,8 +292,13 @@ export const AutoAssignProductImages = () => {
 
       // Update only selected products
       const selectedItems = filteredPreviewData.filter(item => selectedIds.has(item.id));
+      const totalItems = selectedItems.length;
       
-      for (const item of selectedItems) {
+      for (let i = 0; i < selectedItems.length; i++) {
+        const item = selectedItems[i];
+        setCurrentProcessingItem(item.name);
+        setProcessingProgress(Math.round(((i + 1) / totalItems) * 100));
+
         const { error: updateError } = await supabase
           .from("products")
           .update({
@@ -316,6 +326,8 @@ export const AutoAssignProductImages = () => {
       setSearchQuery("");
       setModelFilter("all");
       setChangeFilter("all");
+      setProcessingProgress(0);
+      setCurrentProcessingItem("");
 
     } catch (error) {
       console.error("Error auto-assigning images:", error);
@@ -502,6 +514,26 @@ export const AutoAssignProductImages = () => {
                 </CardContent>
               </Card>
             </div>
+            
+            {/* Progress Indicator */}
+            {isProcessing && (
+              <Card className="border-primary/50 bg-primary/5">
+                <CardContent className="pt-6">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-medium">Processing updates...</span>
+                      <span className="text-muted-foreground">{processingProgress}%</span>
+                    </div>
+                    <Progress value={processingProgress} className="h-2" />
+                    {currentProcessingItem && (
+                      <p className="text-sm text-muted-foreground truncate">
+                        Currently updating: <span className="font-medium text-foreground">{currentProcessingItem}</span>
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             <div className="rounded-lg border">
               <Table>
