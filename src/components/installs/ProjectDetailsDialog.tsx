@@ -105,11 +105,12 @@ export function ProjectDetailsDialog({ projectId, open, onOpenChange, onUpdate }
         </DialogHeader>
 
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="teams">Teams</TabsTrigger>
             <TabsTrigger value="tasks">Tasks</TabsTrigger>
             <TabsTrigger value="kpis">KPIs</TabsTrigger>
+            <TabsTrigger value="assignments">Assignments</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
@@ -231,6 +232,10 @@ export function ProjectDetailsDialog({ projectId, open, onOpenChange, onUpdate }
                 </p>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="assignments">
+            <ProjectAssignmentsTab projectId={projectId} />
           </TabsContent>
         </Tabs>
       </DialogContent>
