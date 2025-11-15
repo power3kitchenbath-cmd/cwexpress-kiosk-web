@@ -141,6 +141,7 @@ export const AutoAssignProductImages = () => {
   const [undoState, setUndoState] = useState<UndoState | null>(null);
   const [isUndoing, setIsUndoing] = useState(false);
   const [compressionStats, setCompressionStats] = useState<{ totalOriginal: number, totalCompressed: number, totalSaved: number, count: number } | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<{ current: number, total: number, currentImage: string, isUploading: boolean }>({ current: 0, total: 0, currentImage: '', isUploading: false });
   const { toast } = useToast();
 
   // Load presets from localStorage on mount
@@ -237,6 +238,9 @@ export const AutoAssignProductImages = () => {
         return;
       }
 
+      const totalImages = Object.keys(MODEL_IMAGE_MAP).length;
+      setUploadProgress({ current: 0, total: totalImages, currentImage: '', isUploading: true });
+
       toast({
         title: "Compressing & Uploading Images",
         description: "Compressing and uploading shower door images to storage...",
@@ -249,7 +253,15 @@ export const AutoAssignProductImages = () => {
       let totalSaved = 0;
       let successCount = 0;
       
+      let currentIndex = 0;
       for (const [prefix, filename] of Object.entries(MODEL_IMAGE_MAP)) {
+        setUploadProgress({ 
+          current: currentIndex, 
+          total: totalImages, 
+          currentImage: filename,
+          isUploading: true 
+        });
+
         const localPath = `/src/assets/shower-doors/${filename}`;
         const uploadedUrls = await uploadImageToStorage(localPath, filename);
         if (uploadedUrls) {
@@ -259,6 +271,14 @@ export const AutoAssignProductImages = () => {
           totalSaved += uploadedUrls.stats.saved;
           successCount++;
         }
+
+        currentIndex++;
+        setUploadProgress({ 
+          current: currentIndex, 
+          total: totalImages, 
+          currentImage: filename,
+          isUploading: true 
+        });
       }
 
       setCompressionStats({
@@ -287,6 +307,7 @@ export const AutoAssignProductImages = () => {
 
       setPreviewData(preview);
       setShowPreview(true);
+      setUploadProgress({ current: 0, total: 0, currentImage: '', isUploading: false });
       
       // Select all by default
       const allIds = new Set(preview.map(p => p.id));
@@ -304,6 +325,7 @@ export const AutoAssignProductImages = () => {
         description: "Failed to generate preview. Please try again.",
         variant: "destructive",
       });
+      setUploadProgress({ current: 0, total: 0, currentImage: '', isUploading: false });
     } finally {
       setIsProcessing(false);
     }
@@ -910,6 +932,30 @@ export const AutoAssignProductImages = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Upload Progress */}
+        {uploadProgress.isUploading && (
+          <Card className="border-primary/20 bg-primary/5">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Compressing Images
+              </CardTitle>
+              <CardDescription>
+                Processing {uploadProgress.current} of {uploadProgress.total} images
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div>
+                <div className="flex justify-between text-sm mb-2">
+                  <span className="text-muted-foreground">Current: {uploadProgress.currentImage}</span>
+                  <span className="font-medium">{Math.round((uploadProgress.current / uploadProgress.total) * 100)}%</span>
+                </div>
+                <Progress value={(uploadProgress.current / uploadProgress.total) * 100} />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Compression Statistics */}
         {compressionStats && showPreview && (
           <Card className="bg-muted/50 border-primary/20">
