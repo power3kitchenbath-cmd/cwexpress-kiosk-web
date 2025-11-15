@@ -408,20 +408,26 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          image_url: string | null
           name: string
           price_per_sqft: number
+          thumbnail_url: string | null
         }
         Insert: {
           created_at?: string | null
           id?: string
+          image_url?: string | null
           name: string
           price_per_sqft: number
+          thumbnail_url?: string | null
         }
         Update: {
           created_at?: string | null
           id?: string
+          image_url?: string | null
           name?: string
           price_per_sqft?: number
+          thumbnail_url?: string | null
         }
         Relationships: []
       }
