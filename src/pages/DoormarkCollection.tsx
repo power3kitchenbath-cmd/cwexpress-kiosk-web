@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -27,6 +27,7 @@ interface Product {
 }
 
 const DoormarkCollection = () => {
+  const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -148,21 +149,49 @@ const DoormarkCollection = () => {
             from Doormark. Proudly crafted in South Florida with precision and quality that 
             stands the test of time.
           </p>
+          <div className="flex gap-4 justify-center">
+            <Button 
+              size="lg"
+              onClick={() => navigate("/cabinet-visualizer")}
+              className="gap-2"
+            >
+              Try Virtual Visualizer
+            </Button>
+            <Button 
+              size="lg"
+              variant="outline"
+              onClick={() => {
+                const element = document.getElementById('products-section');
+                element?.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
+              Browse Styles
+            </Button>
+          </div>
         </div>
       </section>
 
       {/* Filters Section */}
-      <section className="border-b border-border bg-muted/20">
+      <section id="products-section" className="border-b border-border bg-muted/20">
         <div className="container mx-auto px-4 py-6">
           <div className="max-w-6xl mx-auto">
-            <div className="flex items-center gap-4 mb-4">
-              <SlidersHorizontal className="w-5 h-5 text-muted-foreground" />
-              <h2 className="text-lg font-semibold">Filter Products</h2>
-              {hasActiveFilters && (
-                <Button variant="ghost" size="sm" onClick={clearFilters}>
-                  Clear All
-                </Button>
-              )}
+            <div className="flex items-center justify-between gap-4 mb-4">
+              <div className="flex items-center gap-4">
+                <SlidersHorizontal className="w-5 h-5 text-muted-foreground" />
+                <h2 className="text-lg font-semibold">Filter Products</h2>
+                {hasActiveFilters && (
+                  <Button variant="ghost" size="sm" onClick={clearFilters}>
+                    Clear All
+                  </Button>
+                )}
+              </div>
+              <Button 
+                variant="outline"
+                size="sm"
+                onClick={() => navigate("/cabinet-visualizer")}
+              >
+                Try Visualizer
+              </Button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Finish Filter */}
