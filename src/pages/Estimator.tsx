@@ -16,6 +16,7 @@ import { z } from "zod";
 import logo from "@/assets/logo.png";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { CalacattaHero } from "@/components/CalacattaHero";
 
 const cabinetSchema = z.object({
   quantity: z.number().int().min(1, "Quantity must be at least 1").max(1000, "Quantity cannot exceed 1000")
@@ -1101,6 +1102,8 @@ export default function Estimator() {
             <p className="text-primary-foreground/80">Calculate your cabinet and flooring costs</p>
           </div>
 
+          <CalacattaHero />
+
           <div className="grid md:grid-cols-2 gap-6 mb-8">
             {/* Cabinet Calculator */}
             <Card className={editingItem.type === 'cabinet' ? 'ring-2 ring-primary shadow-lg transition-all duration-200' : 'transition-all duration-200'}>
@@ -1340,7 +1343,7 @@ export default function Estimator() {
             </Card>
 
             {/* Countertop Calculator */}
-            <Card className={editingItem.type === 'countertop' ? 'ring-2 ring-primary shadow-lg transition-all duration-200' : 'transition-all duration-200'}>
+            <Card data-section="countertops" className={editingItem.type === 'countertop' ? 'ring-2 ring-primary shadow-lg transition-all duration-200' : 'transition-all duration-200'}>
               <CardHeader>
                 <CardTitle>Countertops</CardTitle>
                 <CardDescription>Add countertops to your estimate</CardDescription>
