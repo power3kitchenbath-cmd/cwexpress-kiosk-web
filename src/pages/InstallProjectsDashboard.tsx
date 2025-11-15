@@ -15,6 +15,7 @@ import { format } from "date-fns";
 import { CreateProjectDialog } from "@/components/installs/CreateProjectDialog";
 import { ProjectDetailsDialog } from "@/components/installs/ProjectDetailsDialog";
 import { TeamManagementDialog } from "@/components/installs/TeamManagementDialog";
+import { NotificationPanel } from "@/components/installs/NotificationPanel";
 
 type Project = {
   id: string;
@@ -252,6 +253,9 @@ export default function InstallProjectsDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Notifications */}
+      <NotificationPanel />
 
       {/* Filters */}
       <Card>
