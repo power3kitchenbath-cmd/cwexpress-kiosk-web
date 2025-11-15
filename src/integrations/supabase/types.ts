@@ -50,6 +50,33 @@ export type Database = {
         }
         Relationships: []
       }
+      analytics_report_config: {
+        Row: {
+          admin_email: string
+          created_at: string
+          frequency: string
+          id: string
+          last_sent_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          admin_email: string
+          created_at?: string
+          frequency: string
+          id?: string
+          last_sent_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          admin_email?: string
+          created_at?: string
+          frequency?: string
+          id?: string
+          last_sent_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cabinet_types: {
         Row: {
           created_at: string | null
@@ -102,6 +129,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      countertop_types: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          price_per_linear_ft: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          price_per_linear_ft: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          price_per_linear_ft?: number
+        }
+        Relationships: []
       }
       design_projects: {
         Row: {
@@ -198,10 +246,86 @@ export type Database = {
           },
         ]
       }
+      email_warmup_daily_stats: {
+        Row: {
+          created_at: string
+          date: string
+          emails_sent: number
+          exceeded_limit: boolean
+          id: string
+          percentage_used: number
+          target_volume: number
+          warmup_schedule_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          emails_sent?: number
+          exceeded_limit?: boolean
+          id?: string
+          percentage_used?: number
+          target_volume: number
+          warmup_schedule_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          emails_sent?: number
+          exceeded_limit?: boolean
+          id?: string
+          percentage_used?: number
+          target_volume?: number
+          warmup_schedule_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_warmup_daily_stats_warmup_schedule_id_fkey"
+            columns: ["warmup_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "email_warmup_schedule"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_warmup_schedule: {
+        Row: {
+          created_at: string
+          current_day: number
+          daily_limit: number
+          domain: string
+          id: string
+          start_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_day?: number
+          daily_limit: number
+          domain: string
+          id?: string
+          start_date: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_day?: number
+          daily_limit?: number
+          domain?: string
+          id?: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       estimates: {
         Row: {
           cabinet_items: Json
           cabinet_total: number
+          countertop_items: Json
+          countertop_total: number
           created_at: string | null
           flooring_items: Json
           flooring_total: number
@@ -212,6 +336,8 @@ export type Database = {
         Insert: {
           cabinet_items?: Json
           cabinet_total?: number
+          countertop_items?: Json
+          countertop_total?: number
           created_at?: string | null
           flooring_items?: Json
           flooring_total?: number
@@ -222,6 +348,8 @@ export type Database = {
         Update: {
           cabinet_items?: Json
           cabinet_total?: number
+          countertop_items?: Json
+          countertop_total?: number
           created_at?: string | null
           flooring_items?: Json
           flooring_total?: number
@@ -390,6 +518,7 @@ export type Database = {
           price: number
           sku: string | null
           specifications: Json | null
+          thumbnail_url: string | null
           updated_at: string
         }
         Insert: {
@@ -404,6 +533,7 @@ export type Database = {
           price?: number
           sku?: string | null
           specifications?: Json | null
+          thumbnail_url?: string | null
           updated_at?: string
         }
         Update: {
@@ -418,6 +548,7 @@ export type Database = {
           price?: number
           sku?: string | null
           specifications?: Json | null
+          thumbnail_url?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -517,7 +648,25 @@ export type Database = {
           total_emails: number
         }[]
       }
+      calculate_warmup_daily_limit: {
+        Args: { day_number: number }
+        Returns: number
+      }
       check_email_delivery_health: { Args: never; Returns: undefined }
+      get_cron_jobs: {
+        Args: never
+        Returns: {
+          active: boolean
+          command: string
+          database: string
+          jobid: number
+          jobname: string
+          nodename: string
+          nodeport: number
+          schedule: string
+          username: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

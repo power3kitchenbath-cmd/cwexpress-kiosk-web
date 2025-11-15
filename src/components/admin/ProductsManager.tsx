@@ -50,6 +50,17 @@ export const ProductsManager = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   
+  // Add new product states
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [newProduct, setNewProduct] = useState({
+    name: '',
+    category: '',
+    price: 0,
+    description: '',
+    sku: '',
+    inventory_count: 0
+  });
+  
   // Bulk upload states
   const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
   const [bulkItems, setBulkItems] = useState<BulkUploadItem[]>([]);
@@ -306,6 +317,83 @@ export const ProductsManager = () => {
     setIsDialogOpen(true);
   };
 
+  const openAddDialog = () => {
+    setNewProduct({
+      name: '',
+      category: '',
+      price: 0,
+      description: '',
+      sku: '',
+      inventory_count: 0
+    });
+    setImagePreview(null);
+    setSelectedFile(null);
+    setCompressionStats(null);
+    setIsAddDialogOpen(true);
+  };
+
+  const handleCreateProduct = async () => {
+    if (!newProduct.name || !newProduct.category) {
+      toast({
+        title: "Validation Error",
+        description: "Product name and category are required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Create product first
+      const { data: createdProduct, error: insertError } = await supabase
+        .from('products')
+        .insert({
+          name: newProduct.name,
+          category: newProduct.category,
+          price: newProduct.price,
+          description: newProduct.description,
+          sku: newProduct.sku || null,
+          inventory_count: newProduct.inventory_count,
+          inventory_status: newProduct.inventory_count === 0 ? 'out_of_stock' : 
+                          newProduct.inventory_count < 10 ? 'low_stock' : 'in_stock'
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+
+      // Upload image if selected
+      if (selectedFile && createdProduct) {
+        await uploadImage(createdProduct.id);
+      }
+
+      toast({
+        title: "Success",
+        description: "Product created successfully",
+      });
+
+      setIsAddDialogOpen(false);
+      setNewProduct({
+        name: '',
+        category: '',
+        price: 0,
+        description: '',
+        sku: '',
+        inventory_count: 0
+      });
+      setSelectedFile(null);
+      setImagePreview(null);
+      setCompressionStats(null);
+      fetchProducts();
+    } catch (error) {
+      console.error('Error creating product:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create product",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Auto-match image to product by filename
   const autoMatchProduct = (filename: string): string | null => {
     const nameLower = filename.toLowerCase();
@@ -555,10 +643,16 @@ export const ProductsManager = () => {
           <h2 className="text-2xl font-bold text-foreground">Product Management</h2>
           <p className="text-muted-foreground">Manage product images and details</p>
         </div>
-        <Button onClick={() => setBulkUploadOpen(true)} className="gap-2">
-          <Images className="w-4 h-4" />
-          Bulk Upload Images
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={openAddDialog} className="gap-2" variant="default">
+            <Plus className="w-4 h-4" />
+            Add New Product
+          </Button>
+          <Button onClick={() => setBulkUploadOpen(true)} className="gap-2" variant="outline">
+            <Images className="w-4 h-4" />
+            Bulk Upload Images
+          </Button>
+        </div>
       </div>
 
       {loading ? (
@@ -742,6 +836,167 @@ export const ProductsManager = () => {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Add New Product Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add New Product</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Image Upload */}
+            <div className="space-y-2">
+              <Label>Product Image</Label>
+              <div className="border-2 border-dashed rounded-lg p-4 text-center space-y-3">
+                {compressing ? (
+                  <div className="py-8">
+                    <Upload className="w-12 h-12 mx-auto text-muted-foreground mb-2 animate-pulse" />
+                    <p className="text-sm text-muted-foreground">Compressing image...</p>
+                  </div>
+                ) : imagePreview ? (
+                  <div className="relative">
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="max-h-64 mx-auto rounded-lg"
+                    />
+                    {compressionStats && (
+                      <Badge variant="secondary" className="mt-2">
+                        Compressed: {formatFileSize(compressionStats.compressed)} 
+                        {' '}(was {formatFileSize(compressionStats.original)})
+                      </Badge>
+                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="mt-2"
+                      onClick={() => {
+                        setImagePreview(null);
+                        setSelectedFile(null);
+                        setCompressionStats(null);
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="py-8">
+                    <Upload className="w-12 h-12 mx-auto text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground">
+                      Click to upload or drag and drop
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      PNG, JPG, WEBP up to 10MB (optimized to WebP + thumbnail)
+                    </p>
+                  </div>
+                )}
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  className="cursor-pointer"
+                  disabled={compressing}
+                />
+              </div>
+            </div>
+
+            {/* Product Details */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="new-name">Product Name *</Label>
+                <Input
+                  id="new-name"
+                  value={newProduct.name}
+                  onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                  placeholder="Enter product name"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="new-category">Category *</Label>
+                <Input
+                  id="new-category"
+                  value={newProduct.category}
+                  onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
+                  placeholder="Enter category"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="new-price">Price</Label>
+                <Input
+                  id="new-price"
+                  type="number"
+                  step="0.01"
+                  value={newProduct.price}
+                  onChange={(e) => setNewProduct({ ...newProduct, price: parseFloat(e.target.value) || 0 })}
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="new-sku">SKU</Label>
+                <Input
+                  id="new-sku"
+                  value={newProduct.sku}
+                  onChange={(e) => setNewProduct({ ...newProduct, sku: e.target.value })}
+                  placeholder="Enter SKU"
+                />
+              </div>
+
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="new-inventory">Inventory Count</Label>
+                <Input
+                  id="new-inventory"
+                  type="number"
+                  min="0"
+                  value={newProduct.inventory_count}
+                  onChange={(e) => setNewProduct({ ...newProduct, inventory_count: parseInt(e.target.value) || 0 })}
+                  placeholder="0"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="new-description">Description</Label>
+              <Textarea
+                id="new-description"
+                value={newProduct.description}
+                onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+                rows={3}
+                placeholder="Enter product description"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsAddDialogOpen(false);
+                  setNewProduct({
+                    name: '',
+                    category: '',
+                    price: 0,
+                    description: '',
+                    sku: '',
+                    inventory_count: 0
+                  });
+                  setSelectedFile(null);
+                  setImagePreview(null);
+                  setCompressionStats(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleCreateProduct} disabled={uploading}>
+                {uploading ? 'Creating...' : 'Create Product'}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
