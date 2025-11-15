@@ -25,6 +25,7 @@ import CalacattaCollection from "./pages/CalacattaCollection";
 import FlooringVisualizer from "./pages/FlooringVisualizer";
 import DoormarkCollection from "./pages/DoormarkCollection";
 import CabinetVisualizer from "./pages/CabinetVisualizer";
+import InstallProjectsDashboard from "./pages/InstallProjectsDashboard";
 import { ShippingLayout } from "./layouts/ShippingLayout";
 import Dashboard from "./pages/shipping/Dashboard";
 import ShipNow from "./pages/shipping/ShipNow";
@@ -66,6 +67,7 @@ const App = () => (
           <Route path="/flooring-visualizer" element={<FlooringVisualizer />} />
           <Route path="/collections/doormark" element={<DoormarkCollection />} />
           <Route path="/cabinet-visualizer" element={<CabinetVisualizer />} />
+          <Route path="/installs/dashboard" element={<InstallProjectsDashboard />} />
           
           {/* CW Express Shipping Platform */}
           <Route path="/shipping" element={<ShippingLayout />}>

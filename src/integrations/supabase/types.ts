@@ -458,6 +458,123 @@ export type Database = {
         }
         Relationships: []
       }
+      install_projects: {
+        Row: {
+          actual_completion_date: string | null
+          actual_cost: number
+          address: Json
+          assigned_pm: string | null
+          budget: number
+          created_at: string
+          created_by: string
+          customer_email: string
+          customer_name: string
+          customer_phone: string | null
+          id: string
+          notes: string | null
+          order_id: string | null
+          priority: string
+          project_name: string
+          project_type: string
+          quote_request_id: string | null
+          services: Json
+          start_date: string
+          status: string
+          target_completion_date: string
+          updated_at: string
+        }
+        Insert: {
+          actual_completion_date?: string | null
+          actual_cost?: number
+          address: Json
+          assigned_pm?: string | null
+          budget?: number
+          created_at?: string
+          created_by: string
+          customer_email: string
+          customer_name: string
+          customer_phone?: string | null
+          id?: string
+          notes?: string | null
+          order_id?: string | null
+          priority?: string
+          project_name: string
+          project_type: string
+          quote_request_id?: string | null
+          services?: Json
+          start_date: string
+          status?: string
+          target_completion_date: string
+          updated_at?: string
+        }
+        Update: {
+          actual_completion_date?: string | null
+          actual_cost?: number
+          address?: Json
+          assigned_pm?: string | null
+          budget?: number
+          created_at?: string
+          created_by?: string
+          customer_email?: string
+          customer_name?: string
+          customer_phone?: string | null
+          id?: string
+          notes?: string | null
+          order_id?: string | null
+          priority?: string
+          project_name?: string
+          project_type?: string
+          quote_request_id?: string | null
+          services?: Json
+          start_date?: string
+          status?: string
+          target_completion_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "install_projects_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "install_projects_quote_request_id_fkey"
+            columns: ["quote_request_id"]
+            isOneToOne: false
+            referencedRelation: "quote_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      install_teams: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          specialty: string
+          team_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          specialty: string
+          team_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          specialty?: string
+          team_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string | null
@@ -682,6 +799,238 @@ export type Database = {
         }
         Relationships: []
       }
+      project_assignments: {
+        Row: {
+          assigned_date: string
+          created_at: string
+          id: string
+          notes: string | null
+          project_id: string
+          scheduled_end: string
+          scheduled_start: string
+          status: string
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_date?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          project_id: string
+          scheduled_end: string
+          scheduled_start: string
+          status?: string
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_date?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          project_id?: string
+          scheduled_end?: string
+          scheduled_start?: string
+          status?: string
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_assignments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "install_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_assignments_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "install_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_issues: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          issue_type: string
+          project_id: string
+          reported_by: string
+          reported_date: string
+          resolution: string | null
+          resolved_date: string | null
+          severity: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          issue_type: string
+          project_id: string
+          reported_by: string
+          reported_date?: string
+          resolution?: string | null
+          resolved_date?: string | null
+          severity: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          issue_type?: string
+          project_id?: string
+          reported_by?: string
+          reported_date?: string
+          resolution?: string | null
+          resolved_date?: string | null
+          severity?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_issues_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "install_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_kpis: {
+        Row: {
+          budget_used_percentage: number
+          completion_percentage: number
+          created_at: string
+          customer_satisfaction: number | null
+          id: string
+          issues_count: number
+          notes: string | null
+          project_id: string
+          quality_score: number | null
+          recorded_date: string
+          safety_incidents: number
+          schedule_variance_days: number
+          team_efficiency_rating: number | null
+        }
+        Insert: {
+          budget_used_percentage?: number
+          completion_percentage?: number
+          created_at?: string
+          customer_satisfaction?: number | null
+          id?: string
+          issues_count?: number
+          notes?: string | null
+          project_id: string
+          quality_score?: number | null
+          recorded_date?: string
+          safety_incidents?: number
+          schedule_variance_days?: number
+          team_efficiency_rating?: number | null
+        }
+        Update: {
+          budget_used_percentage?: number
+          completion_percentage?: number
+          created_at?: string
+          customer_satisfaction?: number | null
+          id?: string
+          issues_count?: number
+          notes?: string | null
+          project_id?: string
+          quality_score?: number | null
+          recorded_date?: string
+          safety_incidents?: number
+          schedule_variance_days?: number
+          team_efficiency_rating?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_kpis_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "install_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_tasks: {
+        Row: {
+          actual_hours: number | null
+          assigned_to_team: string | null
+          completed_date: string | null
+          created_at: string
+          dependencies: Json | null
+          description: string | null
+          due_date: string
+          estimated_hours: number | null
+          id: string
+          priority: string
+          project_id: string
+          status: string
+          task_name: string
+          task_type: string
+          updated_at: string
+        }
+        Insert: {
+          actual_hours?: number | null
+          assigned_to_team?: string | null
+          completed_date?: string | null
+          created_at?: string
+          dependencies?: Json | null
+          description?: string | null
+          due_date: string
+          estimated_hours?: number | null
+          id?: string
+          priority?: string
+          project_id: string
+          status?: string
+          task_name: string
+          task_type: string
+          updated_at?: string
+        }
+        Update: {
+          actual_hours?: number | null
+          assigned_to_team?: string | null
+          completed_date?: string | null
+          created_at?: string
+          dependencies?: Json | null
+          description?: string | null
+          due_date?: string
+          estimated_hours?: number | null
+          id?: string
+          priority?: string
+          project_id?: string
+          status?: string
+          task_name?: string
+          task_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_tasks_assigned_to_team_fkey"
+            columns: ["assigned_to_team"]
+            isOneToOne: false
+            referencedRelation: "install_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "install_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quote_requests: {
         Row: {
           created_at: string
@@ -804,6 +1153,62 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      team_members: {
+        Row: {
+          certification_level: string
+          created_at: string
+          email: string | null
+          hire_date: string
+          hourly_rate: number | null
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          phone: string | null
+          specialty: string
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          certification_level: string
+          created_at?: string
+          email?: string | null
+          hire_date: string
+          hourly_rate?: number | null
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          phone?: string | null
+          specialty: string
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          certification_level?: string
+          created_at?: string
+          email?: string | null
+          hire_date?: string
+          hourly_rate?: number | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          specialty?: string
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "install_teams"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
