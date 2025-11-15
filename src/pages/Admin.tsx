@@ -28,6 +28,7 @@ import { EmailReputationMonitor } from "@/components/admin/EmailReputationMonito
 import { EmailWarmupTracker } from "@/components/admin/EmailWarmupTracker";
 import { EmailAuthenticationValidator } from "@/components/admin/EmailAuthenticationValidator";
 import { ProductsManager } from "@/components/admin/ProductsManager";
+import { AutoAssignProductImages } from "@/components/admin/AutoAssignProductImages";
 
 interface CabinetType {
   id: string;
@@ -306,7 +307,8 @@ const Admin = () => {
             <ProCustomersSection />
           </TabsContent>
 
-          <TabsContent value="products">
+          <TabsContent value="products" className="space-y-4">
+            <AutoAssignProductImages />
             <ProductsManager />
           </TabsContent>
 
