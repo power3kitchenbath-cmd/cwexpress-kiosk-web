@@ -369,6 +369,8 @@ export type Database = {
           flooring_items: Json
           flooring_total: number
           grand_total: number
+          hardware_items: Json
+          hardware_total: number
           id: string
           user_id: string
         }
@@ -381,6 +383,8 @@ export type Database = {
           flooring_items?: Json
           flooring_total?: number
           grand_total?: number
+          hardware_items?: Json
+          hardware_total?: number
           id?: string
           user_id: string
         }
@@ -393,6 +397,8 @@ export type Database = {
           flooring_items?: Json
           flooring_total?: number
           grand_total?: number
+          hardware_items?: Json
+          hardware_total?: number
           id?: string
           user_id?: string
         }
@@ -416,6 +422,33 @@ export type Database = {
           id?: string
           name?: string
           price_per_sqft?: number
+        }
+        Relationships: []
+      }
+      hardware_types: {
+        Row: {
+          category: string
+          created_at: string | null
+          id: string
+          image_url: string | null
+          name: string
+          price_per_unit: number
+        }
+        Insert: {
+          category?: string
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          price_per_unit: number
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          price_per_unit?: number
         }
         Relationships: []
       }
