@@ -14,6 +14,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
+import { generateThumbnailAndFullSize } from "@/utils/imageCompression";
 
 // Map model prefixes to their image filenames (stored in Supabase)
 const MODEL_IMAGE_MAP: Record<string, string> = {
@@ -24,33 +25,60 @@ const MODEL_IMAGE_MAP: Record<string, string> = {
   "H07": "h07.jpg",
 };
 
-// Helper function to upload local images to Supabase storage
-const uploadImageToStorage = async (imagePath: string, fileName: string): Promise<string | null> => {
+// Helper function to upload local images to Supabase storage with compression
+const uploadImageToStorage = async (imagePath: string, fileName: string): Promise<{ imageUrl: string, thumbnailUrl: string } | null> => {
   try {
     // Fetch the local image file
     const response = await fetch(imagePath);
     const blob = await response.blob();
+    const file = new File([blob], fileName, { type: 'image/jpeg' });
     
-    // Generate unique filename
+    // Generate compressed thumbnail and full-size images
+    const { thumbnail, fullSize, originalSize, thumbnailSize, fullSizeSize } = await generateThumbnailAndFullSize(file);
+    
+    console.log(`Compression for ${fileName}:`, {
+      original: `${(originalSize / 1024).toFixed(2)} KB`,
+      thumbnail: `${(thumbnailSize / 1024).toFixed(2)} KB`,
+      fullSize: `${(fullSizeSize / 1024).toFixed(2)} KB`,
+      saved: `${((originalSize - fullSizeSize) / 1024).toFixed(2)} KB`
+    });
+    
+    // Generate unique filenames
     const timestamp = Date.now();
-    const storageFileName = `shower-doors-${fileName.replace('.jpg', '')}-${timestamp}.jpg`;
+    const baseName = fileName.replace('.jpg', '');
+    const thumbnailFileName = `shower-doors-${baseName}-thumb-${timestamp}.webp`;
+    const fullSizeFileName = `shower-doors-${baseName}-${timestamp}.${fullSize.name.split('.').pop()}`;
     
-    // Upload to Supabase storage
-    const { data, error } = await supabase.storage
+    // Upload thumbnail
+    const { error: thumbError } = await supabase.storage
       .from('product-images')
-      .upload(storageFileName, blob, {
-        contentType: 'image/jpeg',
+      .upload(thumbnailFileName, thumbnail, {
+        contentType: thumbnail.type,
         upsert: false
       });
     
-    if (error) throw error;
+    if (thumbError) throw thumbError;
     
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
+    // Upload full-size image
+    const { error: fullError } = await supabase.storage
       .from('product-images')
-      .getPublicUrl(storageFileName);
+      .upload(fullSizeFileName, fullSize, {
+        contentType: fullSize.type,
+        upsert: false
+      });
     
-    return publicUrl;
+    if (fullError) throw fullError;
+    
+    // Get public URLs
+    const { data: { publicUrl: thumbnailUrl } } = supabase.storage
+      .from('product-images')
+      .getPublicUrl(thumbnailFileName);
+    
+    const { data: { publicUrl: imageUrl } } = supabase.storage
+      .from('product-images')
+      .getPublicUrl(fullSizeFileName);
+    
+    return { imageUrl, thumbnailUrl };
   } catch (error) {
     console.error(`Failed to upload ${fileName}:`, error);
     return null;
@@ -62,6 +90,7 @@ interface PreviewItem {
   name: string;
   currentImage: string | null;
   proposedImage: string;
+  proposedThumbnail: string;
   modelPrefix: string;
 }
 
@@ -201,17 +230,17 @@ export const AutoAssignProductImages = () => {
       }
 
       toast({
-        title: "Uploading Images",
-        description: "Uploading shower door images to storage...",
+        title: "Compressing & Uploading Images",
+        description: "Compressing and uploading shower door images to storage...",
       });
 
-      // Upload images to Supabase storage and get their URLs
-      const imageUrlMap: Record<string, string> = {};
+      // Upload compressed images to Supabase storage and get their URLs
+      const imageUrlMap: Record<string, { imageUrl: string, thumbnailUrl: string }> = {};
       for (const [prefix, filename] of Object.entries(MODEL_IMAGE_MAP)) {
         const localPath = `/src/assets/shower-doors/${filename}`;
-        const uploadedUrl = await uploadImageToStorage(localPath, filename);
-        if (uploadedUrl) {
-          imageUrlMap[prefix] = uploadedUrl;
+        const uploadedUrls = await uploadImageToStorage(localPath, filename);
+        if (uploadedUrls) {
+          imageUrlMap[prefix] = uploadedUrls;
         }
       }
 
@@ -225,7 +254,8 @@ export const AutoAssignProductImages = () => {
             id: product.id,
             name: product.name,
             currentImage: product.image_url,
-            proposedImage: imageUrlMap[modelPrefix],
+            proposedImage: imageUrlMap[modelPrefix].imageUrl,
+            proposedThumbnail: imageUrlMap[modelPrefix].thumbnailUrl,
             modelPrefix,
           });
         }
@@ -240,7 +270,7 @@ export const AutoAssignProductImages = () => {
 
       toast({
         title: "Preview Generated",
-        description: `Found ${preview.length} products to update. Images uploaded to storage.`,
+        description: `Found ${preview.length} products to update. Compressed images uploaded to storage.`,
       });
 
     } catch (error) {
@@ -564,6 +594,7 @@ export const AutoAssignProductImages = () => {
             name: product.name,
             currentImage: product.image_url,
             proposedImage: imagePath,
+            proposedThumbnail: imagePath, // CSV import uses same for both
             modelPrefix,
           });
         } else {
@@ -797,7 +828,7 @@ export const AutoAssignProductImages = () => {
             .from("products")
             .update({
               image_url: item.proposedImage,
-              thumbnail_url: item.proposedImage,
+              thumbnail_url: item.proposedThumbnail,
             })
             .eq("id", item.id);
 
