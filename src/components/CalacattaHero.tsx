@@ -19,7 +19,18 @@ const calacattaImages = [
   { src: calacattaVenus, name: "Calacatta Venus" },
 ];
 
-export const CalacattaHero = () => {
+interface CalacattaHeroProps {
+  onFilterCalacatta: () => void;
+}
+
+export const CalacattaHero = ({ onFilterCalacatta }: CalacattaHeroProps) => {
+  const handleCTAClick = () => {
+    onFilterCalacatta();
+    setTimeout(() => {
+      const countertopSection = document.querySelector('[data-section="countertops"]');
+      countertopSection?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+  };
   return (
     <Card className="mb-8 overflow-hidden border-2 border-accent/30 bg-gradient-to-br from-background via-background to-accent/5">
       <div className="p-8">
@@ -63,10 +74,7 @@ export const CalacattaHero = () => {
             variant="default"
             size="lg"
             className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold"
-            onClick={() => {
-              const countertopSection = document.querySelector('[data-section="countertops"]');
-              countertopSection?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }}
+            onClick={handleCTAClick}
           >
             Add Calacatta to Your Estimate
           </Button>
