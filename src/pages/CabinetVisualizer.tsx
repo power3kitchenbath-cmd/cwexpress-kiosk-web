@@ -223,7 +223,7 @@ export default function CabinetVisualizer() {
     setIsLoadingDesigns(true);
     try {
       const { data, error } = await supabase
-        .from('saved_cabinet_designs')
+        .from('saved_cabinet_designs' as any)
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
@@ -287,7 +287,7 @@ export default function CabinetVisualizer() {
 
       // Save design metadata
       const { error: insertError } = await supabase
-        .from('saved_cabinet_designs')
+        .from('saved_cabinet_designs' as any)
         .insert({
           user_id: user.id,
           design_name: designName,
@@ -357,7 +357,7 @@ export default function CabinetVisualizer() {
   const handleDeleteDesign = async (id: string) => {
     try {
       const { error } = await supabase
-        .from('saved_cabinet_designs')
+        .from('saved_cabinet_designs' as any)
         .delete()
         .eq('id', id);
 
