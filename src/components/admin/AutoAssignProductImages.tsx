@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Image, Eye, Check, Search, Filter, ListChecks, ArrowRight, Minus } from "lucide-react";
+import { Loader2, Image, Eye, Check, Search, Filter, ListChecks, ArrowRight, Minus, Download } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -222,6 +222,46 @@ export const AutoAssignProductImages = () => {
     setSelectedIds(newSelected);
   };
 
+  const handleExportCSV = () => {
+    // Prepare CSV content
+    const headers = ['Product Name', 'Model Prefix', 'Current Image', 'Proposed Image', 'Status', 'Selected'];
+    const rows = filteredPreviewData.map(item => {
+      const hasChange = item.currentImage !== item.proposedImage;
+      return [
+        item.name,
+        item.modelPrefix,
+        item.currentImage || 'None',
+        item.proposedImage,
+        hasChange ? 'Will Change' : 'No Change',
+        selectedIds.has(item.id) ? 'Yes' : 'No'
+      ];
+    });
+
+    // Create CSV string
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    const timestamp = new Date().toISOString().split('T')[0];
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `product-image-assignments-${timestamp}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({
+      title: "CSV Exported",
+      description: `Exported ${filteredPreviewData.length} products to CSV file.`,
+    });
+  };
+
   const handleAutoAssign = async () => {
     setIsProcessing(true);
     
@@ -359,31 +399,43 @@ export const AutoAssignProductImages = () => {
                   </div>
                 </div>
 
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="gap-2">
-                      <ListChecks className="h-4 w-4" />
-                      Bulk Actions
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel>Selection Actions</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleSelectAll}>
-                      Select All Filtered
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleDeselectAll}>
-                      Deselect All Filtered
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleSelectWithChanges}>
-                      Select All With Changes
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleDeselectNoChanges}>
-                      Deselect All Without Changes
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <div className="flex gap-2">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" className="gap-2">
+                        <ListChecks className="h-4 w-4" />
+                        Bulk Actions
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuLabel>Selection Actions</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={handleSelectAll}>
+                        Select All Filtered
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleDeselectAll}>
+                        Deselect All Filtered
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={handleSelectWithChanges}>
+                        Select All With Changes
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleDeselectNoChanges}>
+                        Deselect All Without Changes
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  
+                  <Button 
+                    variant="outline" 
+                    className="gap-2"
+                    onClick={handleExportCSV}
+                    disabled={filteredPreviewData.length === 0}
+                  >
+                    <Download className="h-4 w-4" />
+                    Export CSV
+                  </Button>
+                </div>
               </div>
               
               <div className="flex items-center justify-between text-sm text-muted-foreground">
