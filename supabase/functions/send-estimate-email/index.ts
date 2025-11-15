@@ -1,7 +1,27 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@4.0.0";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+
+// Input validation schema
+const EstimateEmailSchema = z.object({
+  recipientEmail: z.string().email().max(255),
+  recipientName: z.string().trim().max(100).optional(),
+  pdfBase64: z.string().max(10485760).regex(/^[A-Za-z0-9+/=]+$/), // 10MB limit, valid base64
+  estimateDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  grandTotal: z.number().positive().max(999999.99)
+});
+
+// HTML escape function to prevent XSS
+const escapeHtml = (unsafe: string): string => {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+};
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,13 +44,13 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { recipientEmail, recipientName, pdfBase64, estimateDate, grandTotal }: EstimateEmailRequest = await req.json();
+    // Parse and validate input
+    const requestData = await req.json();
+    const validated = EstimateEmailSchema.parse(requestData);
+    
+    const { recipientEmail, recipientName, pdfBase64, estimateDate, grandTotal } = validated;
 
     console.log("Sending estimate email to:", recipientEmail);
-
-    if (!recipientEmail || !pdfBase64) {
-      throw new Error("Missing required fields: recipientEmail or pdfBase64");
-    }
 
     // Convert base64 to buffer for attachment
     const pdfBuffer = Uint8Array.from(atob(pdfBase64), c => c.charCodeAt(0));
@@ -42,7 +62,7 @@ const handler = async (req: Request): Promise<Response> => {
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h1 style="color: #4F46E5;">Your Custom Estimate</h1>
-          ${recipientName ? `<p>Dear ${recipientName},</p>` : '<p>Hello,</p>'}
+          ${recipientName ? `<p>Dear ${escapeHtml(recipientName)},</p>` : '<p>Hello,</p>'}
           
           <p>Thank you for your interest in our products! Please find your detailed estimate attached to this email.</p>
           
@@ -97,6 +117,25 @@ const handler = async (req: Request): Promise<Response> => {
     );
   } catch (error: any) {
     console.error("Error in send-estimate-email function:", error);
+    
+    // Handle validation errors specifically
+    if (error instanceof z.ZodError) {
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: "Invalid input data",
+          details: error.errors
+        }),
+        {
+          status: 400,
+          headers: { 
+            "Content-Type": "application/json", 
+            ...corsHeaders 
+          },
+        }
+      );
+    }
+    
     return new Response(
       JSON.stringify({ 
         success: false,
