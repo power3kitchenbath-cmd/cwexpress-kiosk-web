@@ -15,13 +15,46 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 
-// Map model prefixes to their image filenames
+// Map model prefixes to their image filenames (stored in Supabase)
 const MODEL_IMAGE_MAP: Record<string, string> = {
   "DS01-": "ds01-66.jpg",
   "DS01": "ds01.jpg",
   "SS03": "ss03.jpg",
   "DS08": "ds08.jpg",
   "H07": "h07.jpg",
+};
+
+// Helper function to upload local images to Supabase storage
+const uploadImageToStorage = async (imagePath: string, fileName: string): Promise<string | null> => {
+  try {
+    // Fetch the local image file
+    const response = await fetch(imagePath);
+    const blob = await response.blob();
+    
+    // Generate unique filename
+    const timestamp = Date.now();
+    const storageFileName = `shower-doors-${fileName.replace('.jpg', '')}-${timestamp}.jpg`;
+    
+    // Upload to Supabase storage
+    const { data, error } = await supabase.storage
+      .from('product-images')
+      .upload(storageFileName, blob, {
+        contentType: 'image/jpeg',
+        upsert: false
+      });
+    
+    if (error) throw error;
+    
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('product-images')
+      .getPublicUrl(storageFileName);
+    
+    return publicUrl;
+  } catch (error) {
+    console.error(`Failed to upload ${fileName}:`, error);
+    return null;
+  }
 };
 
 interface PreviewItem {
@@ -167,20 +200,32 @@ export const AutoAssignProductImages = () => {
         return;
       }
 
+      toast({
+        title: "Uploading Images",
+        description: "Uploading shower door images to storage...",
+      });
+
+      // Upload images to Supabase storage and get their URLs
+      const imageUrlMap: Record<string, string> = {};
+      for (const [prefix, filename] of Object.entries(MODEL_IMAGE_MAP)) {
+        const localPath = `/src/assets/shower-doors/${filename}`;
+        const uploadedUrl = await uploadImageToStorage(localPath, filename);
+        if (uploadedUrl) {
+          imageUrlMap[prefix] = uploadedUrl;
+        }
+      }
+
       const preview: PreviewItem[] = [];
 
       for (const product of products) {
         const modelPrefix = extractModelPrefix(product.name);
         
-        if (modelPrefix) {
-          const imageFilename = MODEL_IMAGE_MAP[modelPrefix];
-          const imagePath = `/src/assets/shower-doors/${imageFilename}`;
-
+        if (modelPrefix && imageUrlMap[modelPrefix]) {
           preview.push({
             id: product.id,
             name: product.name,
             currentImage: product.image_url,
-            proposedImage: imagePath,
+            proposedImage: imageUrlMap[modelPrefix],
             modelPrefix,
           });
         }
@@ -195,7 +240,7 @@ export const AutoAssignProductImages = () => {
 
       toast({
         title: "Preview Generated",
-        description: `Found ${preview.length} products to update.`,
+        description: `Found ${preview.length} products to update. Images uploaded to storage.`,
       });
 
     } catch (error) {
