@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, FileText, Presentation, ExternalLink } from "lucide-react";
+import { ArrowLeft, FileText, Presentation, ExternalLink, Building2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useUserRole } from "@/hooks/use-user-role";
 import { useEffect } from "react";
@@ -71,6 +71,15 @@ const Presentations = () => {
       icon: Presentation,
       path: "/launch-plan",
       badge: "Internal",
+    },
+    {
+      id: 5,
+      title: "Power 3 Installs - Partnership Plan",
+      description: "Strategic roadmap for Power 3 Installs LLC, including leadership structure, service offerings, 2026 launch timeline, and financial projections",
+      type: "Partnership Agreement",
+      icon: Building2,
+      path: "/power3-installs-plan",
+      badge: "Confidential",
     },
   ];
 
