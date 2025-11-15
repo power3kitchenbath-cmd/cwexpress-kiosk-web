@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { Mail, Phone, MapPin, Calendar, DollarSign } from "lucide-react";
 import { TaskManagementTab } from "./TaskManagementTab";
+import { ProjectAssignmentsTab } from "./ProjectAssignmentsTab";
 
 interface ProjectDetailsDialogProps {
   projectId: string;
@@ -211,17 +212,7 @@ export function ProjectDetailsDialog({ projectId, open, onOpenChange, onUpdate }
           </TabsContent>
 
           <TabsContent value="teams">
-            <Card>
-              <CardHeader>
-                <CardTitle>Team Assignments</CardTitle>
-                <CardDescription>Teams assigned to this project</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground text-center py-8">
-                  Team assignment features coming soon
-                </p>
-              </CardContent>
-            </Card>
+            <ProjectAssignmentsTab projectId={projectId} />
           </TabsContent>
 
           <TabsContent value="tasks">
