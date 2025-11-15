@@ -30,41 +30,12 @@ export const FailedEmailsSection = () => {
   const fetchFailedEmails = async () => {
     setLoading(true);
     try {
-      // Query the email_tracking table directly instead of the view
-      const { data, error } = await supabase
-        .from("email_tracking")
-        .select("*")
-        .in("status", ["failed", "bounced"])
-        .order("failed_at", { ascending: false });
+      // Use the security invoker function for better performance and security
+      const { data, error } = await supabase.rpc("get_failed_emails_summary");
 
       if (error) throw error;
 
-      // Group by email address
-      const grouped = data?.reduce((acc: any, item: any) => {
-        if (!acc[item.recipient_email]) {
-          acc[item.recipient_email] = {
-            recipient_email: item.recipient_email,
-            failure_count: 0,
-            last_failure: item.failed_at,
-            failure_reasons: [],
-            bounce_types: [],
-            affected_orders: [],
-          };
-        }
-        acc[item.recipient_email].failure_count++;
-        if (item.failure_reason && !acc[item.recipient_email].failure_reasons.includes(item.failure_reason)) {
-          acc[item.recipient_email].failure_reasons.push(item.failure_reason);
-        }
-        if (item.bounce_type && !acc[item.recipient_email].bounce_types.includes(item.bounce_type)) {
-          acc[item.recipient_email].bounce_types.push(item.bounce_type);
-        }
-        if (!acc[item.recipient_email].affected_orders.includes(item.order_id)) {
-          acc[item.recipient_email].affected_orders.push(item.order_id);
-        }
-        return acc;
-      }, {});
-
-      setFailedEmails(Object.values(grouped || {}));
+      setFailedEmails(data || []);
     } catch (error) {
       console.error("Error fetching failed emails:", error);
       toast({
