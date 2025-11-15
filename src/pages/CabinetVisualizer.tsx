@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Upload, RotateCcw, Download, ImageIcon, Save, FolderOpen, Trash2 } from "lucide-react";
+import { ArrowLeft, Upload, RotateCcw, Download, ImageIcon, Save, FolderOpen, Trash2, FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,6 +17,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -72,6 +73,14 @@ export default function CabinetVisualizer() {
   const [isLoadingDesigns, setIsLoadingDesigns] = useState(false);
   const [showSavedDesigns, setShowSavedDesigns] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [isQuoteDialogOpen, setIsQuoteDialogOpen] = useState(false);
+  const [quoteForm, setQuoteForm] = useState({
+    customer_name: "",
+    customer_email: "",
+    customer_phone: "",
+    message: "",
+  });
+  const [isSubmittingQuote, setIsSubmittingQuote] = useState(false);
 
   // Check authentication status
   useEffect(() => {
@@ -381,6 +390,120 @@ export default function CabinetVisualizer() {
     }
   };
 
+  const handleRequestQuote = async () => {
+    if (!quoteForm.customer_name.trim() || !quoteForm.customer_email.trim()) {
+      toast({
+        title: "Required fields missing",
+        description: "Please provide your name and email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(quoteForm.customer_email)) {
+      toast({
+        title: "Invalid email",
+        description: "Please enter a valid email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    setIsSubmittingQuote(true);
+    try {
+      // Convert canvas to blob
+      const blob = await new Promise<Blob>((resolve) => {
+        canvas.toBlob((blob) => resolve(blob!), 'image/png');
+      });
+
+      // Upload design image to storage
+      const fileName = `quote-requests/${Date.now()}-${quoteForm.customer_name.replace(/\s+/g, '-')}.png`;
+      const { error: uploadError } = await supabase.storage
+        .from('visualizer-rooms')
+        .upload(fileName, blob);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('visualizer-rooms')
+        .getPublicUrl(fileName);
+
+      // Save quote request to database
+      const { data: quoteData, error: insertError } = await supabase
+        .from('quote_requests' as any)
+        .insert({
+          user_id: user?.id || null,
+          customer_name: quoteForm.customer_name,
+          customer_email: quoteForm.customer_email,
+          customer_phone: quoteForm.customer_phone || null,
+          door_style: selectedDoor.name,
+          design_image_url: publicUrl,
+          design_settings: {
+            opacity: opacity[0],
+            brightness: brightness[0],
+            scale: scale[0],
+          },
+          message: quoteForm.message || null,
+        })
+        .select();
+
+      if (insertError) throw insertError;
+
+      const quoteId = (quoteData as any)?.[0]?.id || 'pending';
+
+      // Send email notification to admins
+      const { error: emailError } = await supabase.functions.invoke('send-quote-request', {
+        body: {
+          customer_name: quoteForm.customer_name,
+          customer_email: quoteForm.customer_email,
+          customer_phone: quoteForm.customer_phone,
+          door_style: selectedDoor.name,
+          design_image_url: publicUrl,
+          design_settings: {
+            opacity: opacity[0],
+            brightness: brightness[0],
+            scale: scale[0],
+          },
+          message: quoteForm.message,
+          quote_id: quoteId,
+        },
+      });
+
+      if (emailError) {
+        console.error('Error sending email:', emailError);
+        // Don't fail the request if email fails
+      }
+
+      toast({
+        title: "Quote request submitted!",
+        description: "We'll get back to you within 24 hours",
+      });
+
+      setIsQuoteDialogOpen(false);
+      setQuoteForm({
+        customer_name: "",
+        customer_email: "",
+        customer_phone: "",
+        message: "",
+      });
+    } catch (error) {
+      console.error('Error submitting quote request:', error);
+      toast({
+        title: "Error",
+        description: "Failed to submit quote request. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmittingQuote(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -423,6 +546,14 @@ export default function CabinetVisualizer() {
               >
                 <Download className="w-4 h-4 mr-2" />
                 Download
+              </Button>
+              <Button
+                onClick={() => setIsQuoteDialogOpen(true)}
+                variant="default"
+                className="bg-amber-600 hover:bg-amber-700"
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                Request Quote
               </Button>
             </div>
           </div>
@@ -761,6 +892,84 @@ export default function CabinetVisualizer() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Quote Request Dialog */}
+      <Dialog open={isQuoteDialogOpen} onOpenChange={setIsQuoteDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Request a Quote</DialogTitle>
+            <DialogDescription>
+              Fill in your details and we'll send you a personalized quote for your {selectedDoor.name} cabinet doors
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="quote-name">Name *</Label>
+              <Input
+                id="quote-name"
+                value={quoteForm.customer_name}
+                onChange={(e) => setQuoteForm({ ...quoteForm, customer_name: e.target.value })}
+                placeholder="Your full name"
+                maxLength={100}
+              />
+            </div>
+            <div>
+              <Label htmlFor="quote-email">Email *</Label>
+              <Input
+                id="quote-email"
+                type="email"
+                value={quoteForm.customer_email}
+                onChange={(e) => setQuoteForm({ ...quoteForm, customer_email: e.target.value })}
+                placeholder="your.email@example.com"
+                maxLength={255}
+              />
+            </div>
+            <div>
+              <Label htmlFor="quote-phone">Phone (optional)</Label>
+              <Input
+                id="quote-phone"
+                type="tel"
+                value={quoteForm.customer_phone}
+                onChange={(e) => setQuoteForm({ ...quoteForm, customer_phone: e.target.value })}
+                placeholder="(555) 123-4567"
+                maxLength={20}
+              />
+            </div>
+            <div>
+              <Label htmlFor="quote-message">Additional Details (optional)</Label>
+              <textarea
+                id="quote-message"
+                className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                value={quoteForm.message}
+                onChange={(e) => setQuoteForm({ ...quoteForm, message: e.target.value })}
+                placeholder="Tell us about your project (number of doors, measurements, timeline, etc.)"
+                maxLength={1000}
+              />
+            </div>
+            <div className="rounded-lg bg-muted p-4">
+              <p className="text-sm font-medium mb-2">Your Design:</p>
+              <p className="text-sm text-muted-foreground">
+                <strong>{selectedDoor.name}</strong> • Opacity: {opacity[0]}% • Brightness: {brightness[0]}% • Scale: {scale[0]}%
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsQuoteDialogOpen(false)}
+              disabled={isSubmittingQuote}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleRequestQuote}
+              disabled={isSubmittingQuote || !quoteForm.customer_name.trim() || !quoteForm.customer_email.trim()}
+            >
+              {isSubmittingQuote ? 'Submitting...' : 'Submit Request'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
