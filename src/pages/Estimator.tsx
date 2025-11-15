@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ImageSelect, ImageSelectTrigger, ImageSelectContent, ImageSelectItem } from "@/components/ui/image-select";
-import { ArrowLeft, Calculator, Shield, Trash2 } from "lucide-react";
+import { ArrowLeft, Calculator, Shield, Trash2, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/use-user-role";
@@ -107,6 +107,7 @@ export default function Estimator() {
   const [countertopType, setCountertopType] = useState("");
   const [countertopLinearFeet, setCountertopLinearFeet] = useState("");
   const [countertops, setCountertops] = useState<CountertopItem[]>([]);
+  const [calacattaFilter, setCalacattaFilter] = useState(false);
   
   const [hardwareType, setHardwareType] = useState("");
   const [hardwareQuantity, setHardwareQuantity] = useState("");
@@ -1102,7 +1103,7 @@ export default function Estimator() {
             <p className="text-primary-foreground/80">Calculate your cabinet and flooring costs</p>
           </div>
 
-          <CalacattaHero />
+          <CalacattaHero onFilterCalacatta={() => setCalacattaFilter(true)} />
 
           <div className="grid md:grid-cols-2 gap-6 mb-8">
             {/* Cabinet Calculator */}
@@ -1350,19 +1351,39 @@ export default function Estimator() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Countertop Type</Label>
+                  <div className="flex items-center justify-between">
+                    <Label>Countertop Type</Label>
+                    {calacattaFilter && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setCalacattaFilter(false)}
+                        className="h-6 text-xs text-accent hover:text-accent/80"
+                      >
+                        Show All
+                      </Button>
+                    )}
+                  </div>
                   <Select value={countertopType} onValueChange={setCountertopType}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select countertop type" />
+                    <SelectTrigger className={calacattaFilter ? 'ring-2 ring-accent' : ''}>
+                      <SelectValue placeholder={calacattaFilter ? "Select Calacatta countertop" : "Select countertop type"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {countertopTypes.map((countertop) => (
-                        <SelectItem key={countertop.id} value={countertop.name}>
-                          {formatName(countertop.name)} - ${countertop.price_per_linear_ft}/linear ft
-                        </SelectItem>
-                      ))}
+                      {countertopTypes
+                        .filter(countertop => !calacattaFilter || countertop.name.toLowerCase().includes('calacatta'))
+                        .map((countertop) => (
+                          <SelectItem key={countertop.id} value={countertop.name}>
+                            {formatName(countertop.name)} - ${countertop.price_per_linear_ft}/linear ft
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
+                  {calacattaFilter && (
+                    <p className="text-xs text-accent flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" />
+                      Showing Calacatta collection only
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
