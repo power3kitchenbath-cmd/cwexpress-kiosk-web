@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ImageSelect, ImageSelectTrigger, ImageSelectContent, ImageSelectItem } from "@/components/ui/image-select";
 import { ArrowLeft, Calculator, Shield, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -64,6 +65,21 @@ interface CountertopType {
   price_per_linear_ft: number;
 }
 
+interface HardwareItem {
+  type: string;
+  quantity: number;
+  pricePerUnit: number;
+  imageUrl?: string;
+}
+
+interface HardwareType {
+  id: string;
+  name: string;
+  price_per_unit: number;
+  image_url?: string;
+  category: string;
+}
+
 export default function Estimator() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -76,6 +92,7 @@ export default function Estimator() {
   
   const [cabinetTypes, setCabinetTypes] = useState<CabinetType[]>([]);
   const [flooringTypes, setFlooringTypes] = useState<FlooringType[]>([]);
+  const [hardwareTypes, setHardwareTypes] = useState<HardwareType[]>([]);
   
   const [cabinetType, setCabinetType] = useState("");
   const [cabinetQuantity, setCabinetQuantity] = useState("");
@@ -90,26 +107,30 @@ export default function Estimator() {
   const [countertopLinearFeet, setCountertopLinearFeet] = useState("");
   const [countertops, setCountertops] = useState<CountertopItem[]>([]);
   
+  const [hardwareType, setHardwareType] = useState("");
+  const [hardwareQuantity, setHardwareQuantity] = useState("");
+  const [hardware, setHardware] = useState<HardwareItem[]>([]);
+  
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
-    type: 'cabinet' | 'flooring' | 'countertop' | null;
+    type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | null;
     index: number;
     itemName: string;
   }>({ open: false, type: null, index: -1, itemName: '' });
 
   const [clearAllDialog, setClearAllDialog] = useState<{
     open: boolean;
-    type: 'cabinet' | 'flooring' | 'countertop' | null;
+    type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | null;
   }>({ open: false, type: null });
 
   const [undoState, setUndoState] = useState<{
     action: 'remove' | 'clear' | null;
-    type: 'cabinet' | 'flooring' | 'countertop' | null;
-    data: CabinetItem[] | FlooringItem[] | CountertopItem[] | null;
+    type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | null;
+    data: CabinetItem[] | FlooringItem[] | CountertopItem[] | HardwareItem[] | null;
   }>({ action: null, type: null, data: null });
 
   const [editingItem, setEditingItem] = useState<{
-    type: 'cabinet' | 'flooring' | 'countertop' | null;
+    type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | null;
     index: number;
     value: string;
   }>({ type: null, index: -1, value: '' });
@@ -156,6 +177,12 @@ export default function Estimator() {
       .from("countertop_types" as any)
       .select("*")
       .order("name");
+    
+    const { data: hardwareData } = await supabase
+      .from("hardware_types" as any)
+      .select("*")
+      .order("category", { ascending: true })
+      .order("name", { ascending: true });
 
     if (cabinetData) {
       setCabinetTypes(cabinetData);
@@ -175,6 +202,13 @@ export default function Estimator() {
       setCountertopTypes(countertopData as unknown as CountertopType[]);
       if (countertopData.length > 0 && !countertopType) {
         setCountertopType((countertopData[0] as any).name);
+      }
+    }
+    
+    if (hardwareData) {
+      setHardwareTypes(hardwareData as unknown as HardwareType[]);
+      if (hardwareData.length > 0 && !hardwareType) {
+        setHardwareType((hardwareData[0] as any).name);
       }
     }
   };
@@ -198,6 +232,7 @@ export default function Estimator() {
     setCabinets((data.cabinet_items as unknown) as CabinetItem[]);
     setFlooring((data.flooring_items as unknown) as FlooringItem[]);
     setCountertops(((data as any).countertop_items as unknown) as CountertopItem[]);
+    setHardware(((data as any).hardware_items as unknown) as HardwareItem[] || []);
   };
 
   const loadImportedCabinets = (importedCabinets: any[]) => {
@@ -328,6 +363,35 @@ export default function Estimator() {
     }
   };
 
+  const addHardware = () => {
+    if (hardwareType && hardwareQuantity) {
+      const quantity = parseInt(hardwareQuantity);
+      
+      try {
+        cabinetSchema.parse({ quantity });
+        
+        const selectedType = hardwareTypes.find(h => h.name === hardwareType);
+        if (selectedType) {
+          setHardware([...hardware, {
+            type: hardwareType,
+            quantity,
+            pricePerUnit: selectedType.price_per_unit,
+            imageUrl: selectedType.image_url,
+          }]);
+          setHardwareQuantity("");
+        }
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          toast({
+            title: "Invalid Input",
+            description: error.errors[0].message,
+            variant: "destructive",
+          });
+        }
+      }
+    }
+  };
+
   const confirmRemoveCabinet = (index: number) => {
     const item = cabinets[index];
     setDeleteDialog({
@@ -355,6 +419,16 @@ export default function Estimator() {
       type: 'countertop',
       index,
       itemName: `${formatName(item.type)} - ${item.linearFeet} linear ft`
+    });
+  };
+
+  const confirmRemoveHardware = (index: number) => {
+    const item = hardware[index];
+    setDeleteDialog({
+      open: true,
+      type: 'hardware',
+      index,
+      itemName: `${formatName(item.type)} x${item.quantity}`
     });
   };
 
@@ -386,6 +460,15 @@ export default function Estimator() {
         description: "Countertop removed from estimate",
         action: <Button variant="outline" size="sm" onClick={handleUndo}>Undo</Button>
       });
+    } else if (deleteDialog.type === 'hardware') {
+      const removedItem = hardware[deleteDialog.index];
+      setUndoState({ action: 'remove', type: 'hardware', data: [removedItem] });
+      setHardware(hardware.filter((_, i) => i !== deleteDialog.index));
+      toast({
+        title: "Item Removed",
+        description: "Hardware removed from estimate",
+        action: <Button variant="outline" size="sm" onClick={handleUndo}>Undo</Button>
+      });
     }
     setDeleteDialog({ open: false, type: null, index: -1, itemName: '' });
   };
@@ -394,7 +477,7 @@ export default function Estimator() {
     setDeleteDialog({ open: false, type: null, index: -1, itemName: '' });
   };
 
-  const confirmClearAll = (type: 'cabinet' | 'flooring' | 'countertop') => {
+  const confirmClearAll = (type: 'cabinet' | 'flooring' | 'countertop' | 'hardware') => {
     setClearAllDialog({ open: true, type });
   };
 
@@ -421,6 +504,14 @@ export default function Estimator() {
       toast({
         title: "Countertops Cleared",
         description: `Removed ${countertops.length} countertop item(s)`,
+        action: <Button variant="outline" size="sm" onClick={handleUndo}>Undo</Button>
+      });
+    } else if (clearAllDialog.type === 'hardware') {
+      setUndoState({ action: 'clear', type: 'hardware', data: [...hardware] });
+      setHardware([]);
+      toast({
+        title: "Hardware Cleared",
+        description: `Removed ${hardware.length} hardware item(s)`,
         action: <Button variant="outline" size="sm" onClick={handleUndo}>Undo</Button>
       });
     }
@@ -464,18 +555,30 @@ export default function Estimator() {
         title: "Undo Successful",
         description: "Countertop items restored"
       });
+    } else if (undoState.type === 'hardware') {
+      if (undoState.action === 'remove') {
+        setHardware([...hardware, ...(undoState.data as HardwareItem[])]);
+      } else if (undoState.action === 'clear') {
+        setHardware(undoState.data as HardwareItem[]);
+      }
+      toast({
+        title: "Undo Successful",
+        description: "Hardware items restored"
+      });
     }
 
     setUndoState({ action: null, type: null, data: null });
   };
 
-  const startEditing = (type: 'cabinet' | 'flooring' | 'countertop', index: number) => {
+  const startEditing = (type: 'cabinet' | 'flooring' | 'countertop' | 'hardware', index: number) => {
     if (type === 'cabinet') {
       setEditingItem({ type, index, value: cabinets[index].quantity.toString() });
     } else if (type === 'flooring') {
       setEditingItem({ type, index, value: flooring[index].squareFeet.toString() });
     } else if (type === 'countertop') {
       setEditingItem({ type, index, value: countertops[index].linearFeet.toString() });
+    } else if (type === 'hardware') {
+      setEditingItem({ type, index, value: hardware[index].quantity.toString() });
     }
   };
 
@@ -577,7 +680,7 @@ export default function Estimator() {
 
   const saveEdit = () => {
     if (!editingItem.type || editingItem.index === -1) return;
-
+    
     try {
       if (editingItem.type === 'cabinet') {
         const quantity = parseInt(editingItem.value);
@@ -621,6 +724,20 @@ export default function Estimator() {
           title: "Updated",
           description: "Countertop measurement updated successfully"
         });
+      } else if (editingItem.type === 'hardware') {
+        const quantity = parseInt(editingItem.value);
+        cabinetSchema.parse({ quantity });
+        
+        const updatedHardware = [...hardware];
+        updatedHardware[editingItem.index] = {
+          ...updatedHardware[editingItem.index],
+          quantity
+        };
+        setHardware(updatedHardware);
+        toast({
+          title: "Updated",
+          description: "Hardware quantity updated successfully"
+        });
       }
       
       cancelEditing();
@@ -638,8 +755,9 @@ export default function Estimator() {
   const cabinetTotal = cabinets.reduce((sum, item) => sum + (item.quantity * item.pricePerUnit), 0);
   const flooringTotal = flooring.reduce((sum, item) => sum + (item.squareFeet * item.pricePerSqFt), 0);
   const countertopTotal = countertops.reduce((sum, item) => sum + (item.linearFeet * item.pricePerLinearFt), 0);
+  const hardwareTotal = hardware.reduce((sum, item) => sum + (item.quantity * item.pricePerUnit), 0);
   const totalCabinetQuantity = cabinets.reduce((sum, item) => sum + item.quantity, 0);
-  const subtotal = cabinetTotal + flooringTotal + countertopTotal;
+  const subtotal = cabinetTotal + flooringTotal + countertopTotal + hardwareTotal;
   
   let markupPercentage = 0;
   let markupLabel = "";
@@ -884,6 +1002,7 @@ export default function Estimator() {
           cabinet_total: cabinetTotal,
           flooring_total: flooringTotal,
           countertop_total: countertopTotal,
+          hardware_total: hardwareTotal,
           grand_total: grandTotal,
         } as any)
         .eq("id", editId);
@@ -908,9 +1027,11 @@ export default function Estimator() {
         cabinet_items: cabinets as any,
         flooring_items: flooring as any,
         countertop_items: countertops as any,
+        hardware_items: hardware as any,
         cabinet_total: cabinetTotal,
         flooring_total: flooringTotal,
         countertop_total: countertopTotal,
+        hardware_total: hardwareTotal,
         grand_total: grandTotal,
       } as any);
 
@@ -1339,8 +1460,123 @@ export default function Estimator() {
             </Card>
           </div>
 
+          {/* Hardware Section */}
+          <div className="col-span-1">
+            <Card>
+              <CardHeader>
+                <CardTitle>Cabinet Hardware</CardTitle>
+                <CardDescription>Add handles, knobs, and hardware</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4">
+                  <div>
+                    <Label htmlFor="hardware-type">Hardware Type</Label>
+                    <ImageSelect value={hardwareType} onValueChange={setHardwareType}>
+                      <ImageSelectTrigger>
+                        {hardwareType ? (
+                          <div className="flex items-center gap-2">
+                            {hardwareTypes.find(h => h.name === hardwareType)?.image_url && (
+                              <img 
+                                src={hardwareTypes.find(h => h.name === hardwareType)?.image_url} 
+                                alt="" 
+                                className="h-8 w-8 rounded object-cover"
+                              />
+                            )}
+                            <span>{hardwareType}</span>
+                          </div>
+                        ) : "Select hardware"}
+                      </ImageSelectTrigger>
+                      <ImageSelectContent>
+                        {hardwareTypes.map((type) => (
+                          <ImageSelectItem key={type.id} value={type.name} image={type.image_url}>
+                            <div className="flex flex-col">
+                              <span className="font-medium">{type.name}</span>
+                              <span className="text-xs text-muted-foreground">${type.price_per_unit.toFixed(2)} each</span>
+                            </div>
+                          </ImageSelectItem>
+                        ))}
+                      </ImageSelectContent>
+                    </ImageSelect>
+                  </div>
+                  <div>
+                    <Label htmlFor="hardware-quantity">Quantity</Label>
+                    <Input
+                      id="hardware-quantity"
+                      type="number"
+                      min="1"
+                      value={hardwareQuantity}
+                      onChange={(e) => setHardwareQuantity(e.target.value)}
+                      placeholder="Enter quantity"
+                    />
+                  </div>
+                  <Button onClick={addHardware}>Add Hardware</Button>
+                </div>
+
+                {hardware.length > 0 && (
+                  <div className="space-y-2 mt-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <h4 className="font-semibold">Added Hardware:</h4>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => confirmClearAll('hardware')}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        Clear All
+                      </Button>
+                    </div>
+                    {hardware.map((item, index) => (
+                      <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded gap-2">
+                        {editingItem.type === 'hardware' && editingItem.index === index ? (
+                          <div className="flex items-center gap-2 flex-1">
+                            <Input
+                              type="number"
+                              min="1"
+                              value={editingItem.value}
+                              onChange={(e) => setEditingItem({ ...editingItem, value: e.target.value })}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') saveEdit();
+                                if (e.key === 'Escape') cancelEditing();
+                                handleKeyNavigation(e, index);
+                              }}
+                              className="h-7 w-24"
+                              autoFocus
+                            />
+                            <Button variant="ghost" size="sm" onClick={saveEdit} className="h-7 px-2 text-xs">Save</Button>
+                            <Button variant="ghost" size="sm" onClick={cancelEditing} className="h-7 px-2 text-xs">Cancel</Button>
+                          </div>
+                        ) : (
+                          <span 
+                            className="flex-1 cursor-pointer hover:bg-muted/50 px-2 py-1 rounded transition-colors"
+                            onClick={() => startEditing('hardware', index)}
+                            title="Click to edit quantity"
+                          >
+                            {formatName(item.type)} x{item.quantity}
+                          </span>
+                        )}
+                        <span className="font-semibold">${(item.quantity * item.pricePerUnit).toFixed(2)}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => confirmRemoveHardware(index)}
+                          className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    <div className="flex justify-between font-bold pt-2 border-t">
+                      <span>Factory Price:</span>
+                      <span>${hardwareTotal.toFixed(2)}</span>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Total Summary */}
-          {(cabinets.length > 0 || flooring.length > 0 || countertops.length > 0) && (
+          {(cabinets.length > 0 || flooring.length > 0 || countertops.length > 0 || hardware.length > 0) && (
             <Card className="border-accent border-2">
               <CardHeader>
                 <CardTitle className="text-2xl">Total Estimate</CardTitle>
