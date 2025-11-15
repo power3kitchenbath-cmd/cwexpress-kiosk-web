@@ -601,6 +601,64 @@ export const AutoAssignProductImages = () => {
     }
   };
 
+  const handleDownloadTemplate = async () => {
+    try {
+      // Fetch a few sample products to include in the template
+      const { data: sampleProducts, error } = await supabase
+        .from("products")
+        .select("id, name, sku")
+        .eq("category", "Shower Doors")
+        .limit(3);
+
+      // Create CSV content
+      const headers = ['id', 'image'];
+      const rows = [
+        ['product-id-or-sku', '/src/assets/shower-doors/ds01.jpg'],
+        ['another-product-id', '/src/assets/shower-doors/ss03.jpg'],
+      ];
+
+      // Add real product examples if available
+      if (sampleProducts && sampleProducts.length > 0) {
+        rows.push(
+          ...sampleProducts.map(p => [
+            p.sku || p.id,
+            '/src/assets/shower-doors/example.jpg'
+          ])
+        );
+      }
+
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ].join('\n');
+
+      // Create blob and download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', 'product-image-assignment-template.csv');
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast({
+        title: "Template Downloaded",
+        description: "CSV template file has been downloaded. Edit it with your product data and re-upload.",
+      });
+
+    } catch (error) {
+      console.error("Error generating template:", error);
+      toast({
+        title: "Download Failed",
+        description: "Failed to generate template. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleExportCSV = () => {
     // Prepare CSV content
     const headers = ['Product Name', 'Model Prefix', 'Current Image', 'Proposed Image', 'Status', 'Selected'];
@@ -865,6 +923,15 @@ abc-123-uuid,/src/assets/shower-doors/ds01.jpg
 def-456-uuid,/src/assets/shower-doors/ss03.jpg`}
                     </pre>
                   </div>
+
+                  <Button
+                    variant="outline"
+                    onClick={handleDownloadTemplate}
+                    className="w-full gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    Download CSV Template
+                  </Button>
                 </div>
                 <DialogFooter>
                   <Button 
