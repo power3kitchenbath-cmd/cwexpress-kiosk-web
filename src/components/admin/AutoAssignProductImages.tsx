@@ -51,6 +51,7 @@ export const AutoAssignProductImages = () => {
   const [presetDialogOpen, setPresetDialogOpen] = useState(false);
   const [savePresetDialogOpen, setSavePresetDialogOpen] = useState(false);
   const [newPresetName, setNewPresetName] = useState("");
+  const [isDryRun, setIsDryRun] = useState(false);
   const { toast } = useToast();
 
   // Load presets from localStorage on mount
@@ -373,38 +374,60 @@ export const AutoAssignProductImages = () => {
       const selectedItems = filteredPreviewData.filter(item => selectedIds.has(item.id));
       const totalItems = selectedItems.length;
       
-      for (let i = 0; i < selectedItems.length; i++) {
-        const item = selectedItems[i];
-        setCurrentProcessingItem(item.name);
-        setProcessingProgress(Math.round(((i + 1) / totalItems) * 100));
-
-        const { error: updateError } = await supabase
-          .from("products")
-          .update({
-            image_url: item.proposedImage,
-            thumbnail_url: item.proposedImage,
-          })
-          .eq("id", item.id);
-
-        if (updateError) {
-          console.error(`Failed to update product ${item.name}:`, updateError);
-          skippedCount++;
-        } else {
+      if (isDryRun) {
+        // Dry-run mode: simulate without database updates
+        for (let i = 0; i < selectedItems.length; i++) {
+          const item = selectedItems[i];
+          setCurrentProcessingItem(item.name);
+          setProcessingProgress(Math.round(((i + 1) / totalItems) * 100));
+          
+          // Simulate processing delay
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+          // Count as success in dry-run
           updatedCount++;
         }
+
+        toast({
+          title: "Dry-Run Complete",
+          description: `Simulation complete. Would update ${updatedCount} products without any errors. No actual changes were made.`,
+        });
+      } else {
+        // Normal mode: actually update database
+        for (let i = 0; i < selectedItems.length; i++) {
+          const item = selectedItems[i];
+          setCurrentProcessingItem(item.name);
+          setProcessingProgress(Math.round(((i + 1) / totalItems) * 100));
+
+          const { error: updateError } = await supabase
+            .from("products")
+            .update({
+              image_url: item.proposedImage,
+              thumbnail_url: item.proposedImage,
+            })
+            .eq("id", item.id);
+
+          if (updateError) {
+            console.error(`Failed to update product ${item.name}:`, updateError);
+            skippedCount++;
+          } else {
+            updatedCount++;
+          }
+        }
+
+        toast({
+          title: "Auto-Assignment Complete",
+          description: `Successfully assigned images to ${updatedCount} products. ${skippedCount} products skipped.`,
+        });
+
+        setShowPreview(false);
+        setPreviewData([]);
+        setSelectedIds(new Set());
+        setSearchQuery("");
+        setModelFilter("all");
+        setChangeFilter("all");
       }
-
-      toast({
-        title: "Auto-Assignment Complete",
-        description: `Successfully assigned images to ${updatedCount} products. ${skippedCount} products skipped.`,
-      });
-
-      setShowPreview(false);
-      setPreviewData([]);
-      setSelectedIds(new Set());
-      setSearchQuery("");
-      setModelFilter("all");
-      setChangeFilter("all");
+      
       setProcessingProgress(0);
       setCurrentProcessingItem("");
 
@@ -412,7 +435,7 @@ export const AutoAssignProductImages = () => {
       console.error("Error auto-assigning images:", error);
       toast({
         title: "Error",
-        description: "Failed to auto-assign images. Please try again.",
+        description: `Failed to ${isDryRun ? 'simulate' : 'auto-assign'} images. Please try again.`,
         variant: "destructive",
       });
     } finally {
@@ -833,38 +856,73 @@ export const AutoAssignProductImages = () => {
               </Table>
             </div>
             
-            <div className="flex gap-2">
-              <Button 
-                onClick={() => {
-                  setShowPreview(false);
-                  setPreviewData([]);
-                  setSelectedIds(new Set());
-                  setSearchQuery("");
-                  setModelFilter("all");
-                  setChangeFilter("all");
-                }}
-                variant="outline"
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleAutoAssign} 
-                disabled={isProcessing || selectedCount === 0}
-                className="flex-1"
-              >
-                {isProcessing ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Updating...
-                  </>
-                ) : (
-                  <>
-                    <Check className="mr-2 h-4 w-4" />
-                    Apply to {selectedCount} Selected {selectedCount === 1 ? 'Product' : 'Products'}
-                  </>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 p-3 rounded-lg border bg-muted/50">
+                <input
+                  type="checkbox"
+                  id="dry-run-mode"
+                  checked={isDryRun}
+                  onChange={(e) => setIsDryRun(e.target.checked)}
+                  className="h-4 w-4 cursor-pointer"
+                />
+                <Label htmlFor="dry-run-mode" className="cursor-pointer font-normal flex-1">
+                  <span className="font-medium">Dry-Run Mode</span>
+                  <span className="text-sm text-muted-foreground ml-2">
+                    Simulate changes without updating the database
+                  </span>
+                </Label>
+                {isDryRun && (
+                  <Badge variant="secondary" className="gap-1">
+                    <Eye className="h-3 w-3" />
+                    Preview Only
+                  </Badge>
                 )}
-              </Button>
+              </div>
+
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => {
+                    setShowPreview(false);
+                    setPreviewData([]);
+                    setSelectedIds(new Set());
+                    setSearchQuery("");
+                    setModelFilter("all");
+                    setChangeFilter("all");
+                    setIsDryRun(false);
+                  }}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleAutoAssign} 
+                  disabled={isProcessing || selectedCount === 0}
+                  className="flex-1"
+                  variant={isDryRun ? "secondary" : "default"}
+                >
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {isDryRun ? 'Simulating...' : 'Updating...'}
+                    </>
+                  ) : (
+                    <>
+                      {isDryRun ? (
+                        <>
+                          <Eye className="mr-2 h-4 w-4" />
+                          Simulate {selectedCount} {selectedCount === 1 ? 'Update' : 'Updates'}
+                        </>
+                      ) : (
+                        <>
+                          <Check className="mr-2 h-4 w-4" />
+                          Apply to {selectedCount} Selected {selectedCount === 1 ? 'Product' : 'Products'}
+                        </>
+                      )}
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </>
         )}
