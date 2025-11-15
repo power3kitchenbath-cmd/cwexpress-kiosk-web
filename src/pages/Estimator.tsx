@@ -1103,7 +1103,10 @@ export default function Estimator() {
             <p className="text-primary-foreground/80">Calculate your cabinet and flooring costs</p>
           </div>
 
-          <CalacattaHero onFilterCalacatta={() => setCalacattaFilter(true)} />
+          <CalacattaHero 
+            onFilterCalacatta={() => setCalacattaFilter(true)}
+            onSelectCountertop={(name) => setCountertopType(name)}
+          />
 
           <div className="grid md:grid-cols-2 gap-6 mb-8">
             {/* Cabinet Calculator */}

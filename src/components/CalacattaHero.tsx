@@ -21,11 +21,21 @@ const calacattaImages = [
 
 interface CalacattaHeroProps {
   onFilterCalacatta: () => void;
+  onSelectCountertop: (countertopName: string) => void;
 }
 
-export const CalacattaHero = ({ onFilterCalacatta }: CalacattaHeroProps) => {
+export const CalacattaHero = ({ onFilterCalacatta, onSelectCountertop }: CalacattaHeroProps) => {
   const handleCTAClick = () => {
     onFilterCalacatta();
+    setTimeout(() => {
+      const countertopSection = document.querySelector('[data-section="countertops"]');
+      countertopSection?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+  };
+
+  const handleImageClick = (name: string) => {
+    onFilterCalacatta();
+    onSelectCountertop(name.toLowerCase());
     setTimeout(() => {
       const countertopSection = document.querySelector('[data-section="countertops"]');
       countertopSection?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -51,7 +61,8 @@ export const CalacattaHero = ({ onFilterCalacatta }: CalacattaHeroProps) => {
           {calacattaImages.map((image, index) => (
             <div
               key={index}
-              className="group relative aspect-square overflow-hidden rounded-lg border-2 border-border hover:border-accent transition-all duration-300 hover:scale-105 hover:shadow-xl"
+              className="group relative aspect-square overflow-hidden rounded-lg border-2 border-border hover:border-accent transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer"
+              onClick={() => handleImageClick(image.name)}
             >
               <img
                 src={image.src}
@@ -62,6 +73,9 @@ export const CalacattaHero = ({ onFilterCalacatta }: CalacattaHeroProps) => {
                 <div className="absolute bottom-0 left-0 right-0 p-2">
                   <p className="text-xs font-semibold text-foreground text-center">
                     {image.name}
+                  </p>
+                  <p className="text-[10px] text-accent text-center mt-1 font-medium">
+                    Click to select
                   </p>
                 </div>
               </div>
