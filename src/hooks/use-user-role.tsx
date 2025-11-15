@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-export type UserRole = "admin" | "user" | null;
+export type UserRole = "admin" | "project_manager" | "user" | null;
 
 export const useUserRole = () => {
   const [role, setRole] = useState<UserRole>(null);
@@ -29,7 +29,8 @@ export const useUserRole = () => {
         } else {
           const roles = (data as { role: UserRole }[]) || [];
           const isAdmin = roles.some((r) => r.role === "admin");
-          setRole(isAdmin ? "admin" : "user");
+          const isProjectManager = roles.some((r) => r.role === "project_manager");
+          setRole(isAdmin ? "admin" : isProjectManager ? "project_manager" : "user");
         }
       } catch (error) {
         console.error("Error in useUserRole:", error);
@@ -48,5 +49,10 @@ export const useUserRole = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  return { role, loading, isAdmin: role === "admin" };
+  return { 
+    role, 
+    loading, 
+    isAdmin: role === "admin",
+    isProjectManager: role === "project_manager" || role === "admin"
+  };
 };
