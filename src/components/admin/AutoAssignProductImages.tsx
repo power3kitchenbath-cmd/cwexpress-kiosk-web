@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Image, Eye, Check, Search, Filter, ListChecks, ArrowRight, Minus, Download } from "lucide-react";
+import { Loader2, Image, Eye, Check, Search, Filter, ListChecks, ArrowRight, Minus, Download, Package, TrendingUp, TrendingDown } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -147,6 +147,21 @@ export const AutoAssignProductImages = () => {
   const selectedCount = useMemo(() => {
     return filteredPreviewData.filter(item => selectedIds.has(item.id)).length;
   }, [filteredPreviewData, selectedIds]);
+
+  // Summary statistics
+  const statistics = useMemo(() => {
+    const totalProducts = filteredPreviewData.length;
+    const productsWithChanges = filteredPreviewData.filter(
+      item => item.currentImage !== item.proposedImage
+    ).length;
+    const productsWithoutChanges = totalProducts - productsWithChanges;
+    
+    return {
+      totalProducts,
+      productsWithChanges,
+      productsWithoutChanges
+    };
+  }, [filteredPreviewData]);
 
   const handleToggleAll = () => {
     if (allFilteredSelected) {
@@ -446,6 +461,45 @@ export const AutoAssignProductImages = () => {
                   {selectedCount} selected
                 </span>
               </div>
+            </div>
+
+            {/* Summary Statistics */}
+            <div className="grid gap-4 md:grid-cols-3">
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Total Products</p>
+                      <p className="text-2xl font-bold">{statistics.totalProducts}</p>
+                    </div>
+                    <Package className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Will Change</p>
+                      <p className="text-2xl font-bold text-primary">{statistics.productsWithChanges}</p>
+                    </div>
+                    <TrendingUp className="h-8 w-8 text-primary" />
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">No Changes</p>
+                      <p className="text-2xl font-bold text-muted-foreground">{statistics.productsWithoutChanges}</p>
+                    </div>
+                    <TrendingDown className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
             <div className="rounded-lg border">
