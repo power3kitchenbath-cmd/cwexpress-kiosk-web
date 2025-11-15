@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Eye } from "lucide-react";
+import { Check, Eye, Image } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import cocoaImg from "@/assets/flooring/lvp/cocoa.png";
@@ -116,7 +116,7 @@ export const FlooringHero = ({
         </div>
 
         {!compareMode && onOpenComparison && (
-          <div className="text-center">
+          <div className="text-center flex gap-4 justify-center">
             <Button
               onClick={onOpenComparison}
               variant="outline"
@@ -125,6 +125,16 @@ export const FlooringHero = ({
             >
               <Eye className="mr-2 h-5 w-5" />
               Compare LVP Options
+            </Button>
+            
+            <Button
+              onClick={() => navigate("/flooring-visualizer")}
+              variant="default"
+              size="lg"
+              className="bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg"
+            >
+              <Image className="mr-2 h-5 w-5" />
+              Try Visualizer
             </Button>
           </div>
         )}
