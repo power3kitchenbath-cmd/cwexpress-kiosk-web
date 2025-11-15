@@ -3,7 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Image as ImageIcon, Package } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2, Image as ImageIcon, Package, MoveRight, CheckSquare, Square } from "lucide-react";
 import { ProgressiveImage } from "@/components/ui/progressive-image";
 
 interface Product {
@@ -23,6 +26,9 @@ export default function ImageOrganizer() {
   const [loading, setLoading] = useState(true);
   const [draggedProduct, setDraggedProduct] = useState<Product | null>(null);
   const [dragOverCategory, setDragOverCategory] = useState<string | null>(null);
+  const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
+  const [bulkMoveCategory, setBulkMoveCategory] = useState<string>("");
+  const [isBulkMoving, setIsBulkMoving] = useState(false);
   const { toast } = useToast();
 
   const categories = [
@@ -134,6 +140,94 @@ export default function ImageOrganizer() {
     }
   };
 
+  const handleSelectProduct = (productId: string, checked: boolean) => {
+    setSelectedProducts(prev => {
+      const newSet = new Set(prev);
+      if (checked) {
+        newSet.add(productId);
+      } else {
+        newSet.delete(productId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = (category: string, checked: boolean) => {
+    const categoryProducts = groupedProducts[category] || [];
+    setSelectedProducts(prev => {
+      const newSet = new Set(prev);
+      categoryProducts.forEach(product => {
+        if (checked) {
+          newSet.add(product.id);
+        } else {
+          newSet.delete(product.id);
+        }
+      });
+      return newSet;
+    });
+  };
+
+  const handleBulkMove = async () => {
+    if (selectedProducts.size === 0) {
+      toast({
+        title: "No Products Selected",
+        description: "Please select products to move",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!bulkMoveCategory) {
+      toast({
+        title: "No Category Selected",
+        description: "Please select a target category",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsBulkMoving(true);
+
+    try {
+      const selectedIds = Array.from(selectedProducts);
+      const { error } = await supabase
+        .from("products")
+        .update({ category: bulkMoveCategory })
+        .in("id", selectedIds);
+
+      if (error) throw error;
+
+      // Update local state
+      setProducts(prev =>
+        prev.map(p =>
+          selectedProducts.has(p.id) ? { ...p, category: bulkMoveCategory } : p
+        )
+      );
+
+      toast({
+        title: "Success",
+        description: `Moved ${selectedProducts.size} product(s) to ${bulkMoveCategory}`,
+      });
+
+      // Clear selection
+      setSelectedProducts(new Set());
+      setBulkMoveCategory("");
+    } catch (error) {
+      console.error("Error bulk moving products:", error);
+      toast({
+        title: "Error",
+        description: "Failed to move products",
+        variant: "destructive",
+      });
+    } finally {
+      setIsBulkMoving(false);
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedProducts(new Set());
+  };
+
   const groupedProducts = groupByCategory();
 
   if (loading) {
@@ -146,11 +240,56 @@ export default function ImageOrganizer() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Image Organizer</h1>
-        <p className="text-muted-foreground">
-          Drag and drop product images between categories to organize your inventory
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Image Organizer</h1>
+          <p className="text-muted-foreground">
+            Drag and drop product images between categories to organize your inventory
+          </p>
+        </div>
+
+        {/* Bulk Selection Controls */}
+        {selectedProducts.size > 0 && (
+          <Card className="p-4 bg-primary/5 border-primary/20">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <CheckSquare className="h-5 w-5 text-primary" />
+                <span className="font-medium">{selectedProducts.size} selected</span>
+              </div>
+              <Select value={bulkMoveCategory} onValueChange={setBulkMoveCategory}>
+                <SelectTrigger className="w-[200px] bg-background">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent className="bg-background z-50">
+                  {categories.map(category => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button 
+                onClick={handleBulkMove} 
+                disabled={isBulkMoving || !bulkMoveCategory}
+                size="sm"
+              >
+                {isBulkMoving ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <MoveRight className="h-4 w-4 mr-2" />
+                )}
+                Move Selected
+              </Button>
+              <Button 
+                onClick={handleClearSelection} 
+                variant="outline"
+                size="sm"
+              >
+                Clear Selection
+              </Button>
+            </div>
+          </Card>
+        )}
       </div>
 
       {/* Statistics */}
@@ -188,7 +327,7 @@ export default function ImageOrganizer() {
           >
             <CardHeader>
               <div className="flex items-center justify-between">
-                <div>
+                <div className="flex-1">
                   <CardTitle className="flex items-center gap-2">
                     {category}
                     <Badge variant="secondary">
@@ -201,6 +340,17 @@ export default function ImageOrganizer() {
                       : "Drag products here to change their category"}
                   </CardDescription>
                 </div>
+                {groupedProducts[category]?.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      checked={
+                        groupedProducts[category]?.every(p => selectedProducts.has(p.id)) || false
+                      }
+                      onCheckedChange={(checked) => handleSelectAll(category, checked as boolean)}
+                    />
+                    <span className="text-sm text-muted-foreground">Select All</span>
+                  </div>
+                )}
               </div>
             </CardHeader>
             <CardContent>
@@ -222,9 +372,22 @@ export default function ImageOrganizer() {
                         draggedProduct?.id === product.id
                           ? "opacity-50 scale-95"
                           : ""
+                      } ${
+                        selectedProducts.has(product.id)
+                          ? "ring-2 ring-primary ring-offset-2"
+                          : ""
                       }`}
                     >
                       <Card className="overflow-hidden border-2 hover:border-primary transition-colors">
+                        {/* Selection Checkbox */}
+                        <div className="absolute top-2 left-2 z-10">
+                          <Checkbox
+                            checked={selectedProducts.has(product.id)}
+                            onCheckedChange={(checked) => handleSelectProduct(product.id, checked as boolean)}
+                            className="bg-background border-2 shadow-lg"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
                         <div className="aspect-square bg-muted relative">
                           {product.image_url || product.thumbnail_url ? (
                             <ProgressiveImage
