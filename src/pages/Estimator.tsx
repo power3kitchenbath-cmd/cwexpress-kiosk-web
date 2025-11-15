@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +18,10 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { CalacattaHero } from "@/components/CalacattaHero";
 import { CalacattaComparisonModal } from "@/components/CalacattaComparisonModal";
+import cocoaImg from "@/assets/flooring/lvp/cocoa.png";
+import butternutImg from "@/assets/flooring/lvp/butternut.png";
+import fogImg from "@/assets/flooring/lvp/fog.png";
+import blondieImg from "@/assets/flooring/lvp/blondie.png";
 
 const cabinetSchema = z.object({
   quantity: z.number().int().min(1, "Quantity must be at least 1").max(1000, "Quantity cannot exceed 1000")
@@ -53,7 +57,16 @@ interface FlooringType {
   id: string;
   name: string;
   price_per_sqft: number;
+  image_url?: string;
+  thumbnail_url?: string;
 }
+
+const flooringImageMap: Record<string, string> = {
+  "LVP - Cocoa": cocoaImg,
+  "LVP - Butternut": butternutImg,
+  "LVP - Fog": fogImg,
+  "LVP - Blondie": blondieImg,
+};
 
 interface CountertopItem {
   type: string;
@@ -87,10 +100,12 @@ export default function Estimator() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const editId = searchParams.get("id");
+  const preSelectedFlooring = searchParams.get("flooring");
   const { toast } = useToast();
   const { isAdmin } = useUserRole();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const flooringSectionRef = useRef<HTMLDivElement>(null);
   
   const [cabinetTypes, setCabinetTypes] = useState<CabinetType[]>([]);
   const [flooringTypes, setFlooringTypes] = useState<FlooringType[]>([]);
@@ -156,6 +171,25 @@ export default function Estimator() {
       loadImportedCabinets(location.state.importedCabinets);
     }
   }, [editId, location.state]);
+
+  // Handle pre-selected flooring from URL parameter
+  useEffect(() => {
+    if (preSelectedFlooring && flooringTypes.length > 0) {
+      const matchingFlooring = flooringTypes.find(
+        f => f.name === preSelectedFlooring
+      );
+      if (matchingFlooring) {
+        setFlooringType(matchingFlooring.name);
+        // Auto-scroll to flooring section
+        setTimeout(() => {
+          flooringSectionRef.current?.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center' 
+          });
+        }, 500);
+      }
+    }
+  }, [preSelectedFlooring, flooringTypes]);
 
   const checkAuth = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -1253,14 +1287,65 @@ export default function Estimator() {
             </Card>
 
             {/* Flooring Calculator */}
-            <Card className={editingItem.type === 'flooring' ? 'ring-2 ring-primary shadow-lg transition-all duration-200' : 'transition-all duration-200'}>
+            <Card ref={flooringSectionRef} className={editingItem.type === 'flooring' ? 'ring-2 ring-primary shadow-lg transition-all duration-200' : 'transition-all duration-200'}>
               <CardHeader>
                 <CardTitle>Flooring</CardTitle>
                 <CardDescription>Add flooring to your estimate</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Visual Flooring Selection Grid */}
+                <div className="space-y-4">
+                  <Label>Select Flooring Type</Label>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {flooringTypes.map((flooring) => {
+                      const imageSrc = flooringImageMap[flooring.name] || null;
+                      const isSelected = flooringType === flooring.name;
+                      return (
+                        <div
+                          key={flooring.id}
+                          onClick={() => setFlooringType(flooring.name)}
+                          className={`cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${
+                            isSelected 
+                              ? 'border-accent ring-2 ring-accent scale-105' 
+                              : 'border-border hover:border-accent/50 hover:scale-102'
+                          }`}
+                        >
+                          {imageSrc ? (
+                            <div className="aspect-square relative">
+                              <img
+                                src={imageSrc}
+                                alt={flooring.name}
+                                className="w-full h-full object-cover"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                              <div className="absolute bottom-0 left-0 right-0 p-2 text-center">
+                                <p className="text-xs font-semibold text-white">
+                                  {formatName(flooring.name)}
+                                </p>
+                                <p className="text-xs text-accent font-bold">
+                                  ${flooring.price_per_sqft}/sq ft
+                                </p>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="aspect-square flex flex-col items-center justify-center bg-muted p-2">
+                              <p className="text-xs font-semibold text-center">
+                                {formatName(flooring.name)}
+                              </p>
+                              <p className="text-xs text-accent font-bold">
+                                ${flooring.price_per_sqft}/sq ft
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Dropdown Alternative */}
                 <div className="space-y-2">
-                  <Label>Flooring Type</Label>
+                  <Label>Or Select from Dropdown</Label>
                   <Select value={flooringType} onValueChange={setFlooringType}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select flooring type" />
@@ -1305,64 +1390,77 @@ export default function Estimator() {
                         Clear All
                       </Button>
                     </div>
-                    {flooring.map((item, index) => (
-                      <div key={index} className="flex justify-between items-center text-sm gap-2">
-                        {editingItem.type === 'flooring' && editingItem.index === index ? (
-                          <div className="flex-1 flex items-center gap-2">
-                            <span>{formatName(item.type)} -</span>
-                            <Input
-                              type="number"
-                              min="0.1"
-                              max="100000"
-                              step="0.1"
-                              value={editingItem.value}
-                              onChange={(e) => setEditingItem({ ...editingItem, value: e.target.value })}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') saveEdit();
-                                if (e.key === 'Escape') cancelEditing();
-                                handleKeyNavigation(e, index);
-                              }}
-                              className="h-7 w-24"
-                              autoFocus
-                            />
-                            <span className="text-xs">sq ft</span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={saveEdit}
-                              className="h-7 px-2 text-xs"
-                            >
-                              Save
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={cancelEditing}
-                              className="h-7 px-2 text-xs"
-                            >
-                              Cancel
-                            </Button>
-                          </div>
-                        ) : (
-                          <span 
-                            className="flex-1 cursor-pointer hover:bg-muted/50 px-2 py-1 rounded transition-colors"
-                            onClick={() => startEditing('flooring', index)}
-                            title="Click to edit square feet"
-                          >
-                            {formatName(item.type)} - {item.squareFeet} sq ft
-                          </span>
-                        )}
-                        <span className="font-semibold">${(item.squareFeet * item.pricePerSqFt).toFixed(2)}</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => confirmRemoveFlooring(index)}
-                          className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
+                    {flooring.map((item, index) => {
+                      const imageSrc = flooringImageMap[item.type] || null;
+                      return (
+                        <div key={index} className="flex justify-between items-center text-sm gap-2">
+                          {editingItem.type === 'flooring' && editingItem.index === index ? (
+                            <div className="flex-1 flex items-center gap-2">
+                              {imageSrc && (
+                                <img src={imageSrc} alt={item.type} className="w-8 h-8 object-cover rounded" />
+                              )}
+                              <span>{formatName(item.type)} -</span>
+                              <Input
+                                type="number"
+                                min="0.1"
+                                max="100000"
+                                step="0.1"
+                                value={editingItem.value}
+                                onChange={(e) => setEditingItem({ ...editingItem, value: e.target.value })}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') saveEdit();
+                                  if (e.key === 'Escape') cancelEditing();
+                                  handleKeyNavigation(e, index);
+                                }}
+                                className="h-7 w-24"
+                                autoFocus
+                              />
+                              <span className="text-xs">sq ft</span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={saveEdit}
+                                className="h-7 px-2 text-xs"
+                              >
+                                Save
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={cancelEditing}
+                                className="h-7 px-2 text-xs"
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="flex items-center gap-2 flex-1">
+                                {imageSrc && (
+                                  <img src={imageSrc} alt={item.type} className="w-8 h-8 object-cover rounded" />
+                                )}
+                                <span 
+                                  className="cursor-pointer hover:bg-muted/50 px-2 py-1 rounded transition-colors"
+                                  onClick={() => startEditing('flooring', index)}
+                                  title="Click to edit square feet"
+                                >
+                                  {formatName(item.type)} - {item.squareFeet} sq ft
+                                </span>
+                              </div>
+                              <span className="font-semibold">${(item.squareFeet * item.pricePerSqFt).toFixed(2)}</span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => confirmRemoveFlooring(index)}
+                                className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
                     <div className="flex justify-between font-bold pt-2 border-t">
                       <span>Flooring Subtotal:</span>
                       <span>${flooringTotal.toFixed(2)}</span>

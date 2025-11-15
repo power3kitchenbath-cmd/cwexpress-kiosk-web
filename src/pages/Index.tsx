@@ -4,9 +4,33 @@ import { useNavigate } from "react-router-dom";
 import showroomImg from "@/assets/showroom.jpg";
 import kioskImg from "@/assets/kiosk-screen.jpg";
 import logoImg from "@/assets/logo.png";
+import { FlooringHero } from "@/components/FlooringHero";
+import { FlooringComparisonModal } from "@/components/FlooringComparisonModal";
+import { useState } from "react";
+import cocoaImg from "@/assets/flooring/lvp/cocoa.png";
+import butternutImg from "@/assets/flooring/lvp/butternut.png";
+import fogImg from "@/assets/flooring/lvp/fog.png";
+import blondieImg from "@/assets/flooring/lvp/blondie.png";
+
+const flooringImages = [
+  { src: cocoaImg, name: "LVP - Cocoa", label: "COCOA" },
+  { src: butternutImg, name: "LVP - Butternut", label: "BUTTERNUT" },
+  { src: fogImg, name: "LVP - Fog", label: "FOG" },
+  { src: blondieImg, name: "LVP - Blondie", label: "BLONDIE" },
+];
+
+const flooringPricing: Record<string, number> = {
+  "lvp-cocoa": 4.99,
+  "lvp-butternut": 4.99,
+  "lvp-fog": 4.99,
+  "lvp-blondie": 4.99,
+};
 
 const Index = () => {
   const navigate = useNavigate();
+  const [compareMode, setCompareMode] = useState(false);
+  const [selectedForComparison, setSelectedForComparison] = useState<string[]>([]);
+  const [isComparisonModalOpen, setIsComparisonModalOpen] = useState(false);
   
   const handleKioskClick = () => {
     navigate("/estimator");
@@ -19,6 +43,38 @@ const Index = () => {
   const handleWebsiteClick = () => {
     navigate("/online-shop");
   };
+
+  const handleToggleSelection = (name: string) => {
+    setSelectedForComparison((prev) => {
+      if (prev.includes(name)) {
+        return prev.filter((n) => n !== name);
+      } else if (prev.length < 4) {
+        return [...prev, name];
+      }
+      return prev;
+    });
+  };
+
+  const handleOpenComparison = () => {
+    if (selectedForComparison.length >= 2) {
+      setIsComparisonModalOpen(true);
+    } else {
+      setCompareMode(true);
+    }
+  };
+
+  const handleSelectFlooring = (flooringType: string) => {
+    navigate(`/estimator?flooring=${encodeURIComponent(flooringType)}`);
+  };
+
+  const handleClearComparison = () => {
+    setSelectedForComparison([]);
+    setCompareMode(false);
+  };
+
+  const selectedImagesForModal = flooringImages.filter((img) =>
+    selectedForComparison.includes(img.name)
+  );
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-primary via-primary to-[hsl(215,85%,45%)]">
@@ -81,6 +137,25 @@ const Index = () => {
           />
         </div>
       </section>
+
+      {/* Flooring Hero Section */}
+      <FlooringHero
+        onSelectFlooring={handleSelectFlooring}
+        onOpenComparison={handleOpenComparison}
+        selectedForComparison={selectedForComparison}
+        onToggleSelection={handleToggleSelection}
+        compareMode={compareMode}
+      />
+
+      {/* Flooring Comparison Modal */}
+      <FlooringComparisonModal
+        open={isComparisonModalOpen}
+        onOpenChange={setIsComparisonModalOpen}
+        selectedImages={selectedImagesForModal}
+        onSelectFlooring={handleSelectFlooring}
+        onClearComparison={handleClearComparison}
+        pricing={flooringPricing}
+      />
 
       {/* Bottom Banner */}
       <footer className="bg-[hsl(215,85%,35%)] py-8 relative">
