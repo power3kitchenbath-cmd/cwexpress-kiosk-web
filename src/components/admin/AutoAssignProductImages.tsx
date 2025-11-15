@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Image, Eye, Check, Search, Filter, ListChecks, ArrowRight, Minus, Download, Package, TrendingUp, TrendingDown } from "lucide-react";
+import { Loader2, Image, Eye, Check, Search, Filter, ListChecks, ArrowRight, Minus, Download, Package, TrendingUp, TrendingDown, Save, FolderOpen, Trash2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 
@@ -30,6 +31,12 @@ interface PreviewItem {
   modelPrefix: string;
 }
 
+interface SelectionPreset {
+  name: string;
+  selectedIds: string[];
+  createdAt: string;
+}
+
 export const AutoAssignProductImages = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
@@ -40,7 +47,23 @@ export const AutoAssignProductImages = () => {
   const [changeFilter, setChangeFilter] = useState<string>("all");
   const [processingProgress, setProcessingProgress] = useState(0);
   const [currentProcessingItem, setCurrentProcessingItem] = useState<string>("");
+  const [savedPresets, setSavedPresets] = useState<SelectionPreset[]>([]);
+  const [presetDialogOpen, setPresetDialogOpen] = useState(false);
+  const [savePresetDialogOpen, setSavePresetDialogOpen] = useState(false);
+  const [newPresetName, setNewPresetName] = useState("");
   const { toast } = useToast();
+
+  // Load presets from localStorage on mount
+  useState(() => {
+    const stored = localStorage.getItem('productImagePresets');
+    if (stored) {
+      try {
+        setSavedPresets(JSON.parse(stored));
+      } catch (e) {
+        console.error('Failed to load presets:', e);
+      }
+    }
+  });
 
   const extractModelPrefix = (productName: string): string | null => {
     // Try to match model prefixes in order (DS01- before DS01 to avoid conflicts)
@@ -239,6 +262,62 @@ export const AutoAssignProductImages = () => {
     const newSelected = new Set(selectedIds);
     filteredPreviewData.forEach(item => newSelected.delete(item.id));
     setSelectedIds(newSelected);
+  };
+
+  const handleSavePreset = () => {
+    if (!newPresetName.trim()) {
+      toast({
+        title: "Preset Name Required",
+        description: "Please enter a name for the preset.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newPreset: SelectionPreset = {
+      name: newPresetName.trim(),
+      selectedIds: Array.from(selectedIds),
+      createdAt: new Date().toISOString(),
+    };
+
+    const updatedPresets = [...savedPresets, newPreset];
+    setSavedPresets(updatedPresets);
+    localStorage.setItem('productImagePresets', JSON.stringify(updatedPresets));
+
+    toast({
+      title: "Preset Saved",
+      description: `Saved "${newPresetName}" with ${selectedIds.size} selected products.`,
+    });
+
+    setNewPresetName("");
+    setSavePresetDialogOpen(false);
+  };
+
+  const handleLoadPreset = (preset: SelectionPreset) => {
+    const newSelected = new Set(preset.selectedIds);
+    setSelectedIds(newSelected);
+    
+    const matchedCount = filteredPreviewData.filter(item => 
+      newSelected.has(item.id)
+    ).length;
+
+    toast({
+      title: "Preset Loaded",
+      description: `Loaded "${preset.name}" - ${matchedCount} products selected from preset.`,
+    });
+
+    setPresetDialogOpen(false);
+  };
+
+  const handleDeletePreset = (presetName: string) => {
+    const updatedPresets = savedPresets.filter(p => p.name !== presetName);
+    setSavedPresets(updatedPresets);
+    localStorage.setItem('productImagePresets', JSON.stringify(updatedPresets));
+
+    toast({
+      title: "Preset Deleted",
+      description: `Deleted preset "${presetName}".`,
+    });
   };
 
   const handleExportCSV = () => {
@@ -463,6 +542,112 @@ export const AutoAssignProductImages = () => {
                     <Download className="h-4 w-4" />
                     Export CSV
                   </Button>
+
+                  {/* Save Preset Dialog */}
+                  <Dialog open={savePresetDialogOpen} onOpenChange={setSavePresetDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        className="gap-2"
+                        disabled={selectedCount === 0}
+                      >
+                        <Save className="h-4 w-4" />
+                        Save Preset
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="bg-background">
+                      <DialogHeader>
+                        <DialogTitle>Save Selection Preset</DialogTitle>
+                        <DialogDescription>
+                          Save your current selection ({selectedCount} products) as a preset for quick access later.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="preset-name">Preset Name</Label>
+                          <Input
+                            id="preset-name"
+                            placeholder="e.g., All DS01 Models"
+                            value={newPresetName}
+                            onChange={(e) => setNewPresetName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                handleSavePreset();
+                              }
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setSavePresetDialogOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button onClick={handleSavePreset}>
+                          <Save className="mr-2 h-4 w-4" />
+                          Save Preset
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+
+                  {/* Load Preset Dialog */}
+                  <Dialog open={presetDialogOpen} onOpenChange={setPresetDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        className="gap-2"
+                        disabled={savedPresets.length === 0}
+                      >
+                        <FolderOpen className="h-4 w-4" />
+                        Load Preset
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="bg-background">
+                      <DialogHeader>
+                        <DialogTitle>Load Selection Preset</DialogTitle>
+                        <DialogDescription>
+                          Choose a saved preset to quickly select products.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-2 py-4 max-h-[400px] overflow-y-auto">
+                        {savedPresets.length === 0 ? (
+                          <p className="text-sm text-muted-foreground text-center py-8">
+                            No saved presets yet. Save your current selection to create one.
+                          </p>
+                        ) : (
+                          savedPresets.map((preset) => (
+                            <div
+                              key={preset.name}
+                              className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent transition-colors"
+                            >
+                              <div className="flex-1">
+                                <p className="font-medium">{preset.name}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {preset.selectedIds.length} products • {new Date(preset.createdAt).toLocaleDateString()}
+                                </p>
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleLoadPreset(preset)}
+                                >
+                                  Load
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleDeletePreset(preset.name)}
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </div>
               
