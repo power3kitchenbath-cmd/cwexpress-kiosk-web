@@ -3,18 +3,31 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { ArrowLeft, Upload, RotateCcw, Download } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, Upload, RotateCcw, Download, ImageIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import cocoaImg from "@/assets/flooring/lvp/cocoa.png";
 import butternutImg from "@/assets/flooring/lvp/butternut.png";
 import fogImg from "@/assets/flooring/lvp/fog.png";
 import blondieImg from "@/assets/flooring/lvp/blondie.png";
+import kitchenSample from "@/assets/sample-rooms/kitchen-modern.jpg";
+import livingRoomSample from "@/assets/sample-rooms/living-room-spacious.jpg";
+import bathroomSample from "@/assets/sample-rooms/bathroom-modern.jpg";
+import bedroomSample from "@/assets/sample-rooms/bedroom-cozy.jpg";
+import officeSample from "@/assets/sample-rooms/office-home.jpg";
+import diningRoomSample from "@/assets/sample-rooms/dining-room-formal.jpg";
 
 interface FlooringOption {
   name: string;
   image: string;
   label: string;
+}
+
+interface SampleRoom {
+  name: string;
+  image: string;
+  category: string;
 }
 
 const flooringOptions: FlooringOption[] = [
@@ -23,6 +36,17 @@ const flooringOptions: FlooringOption[] = [
   { name: "LVP - Fog", image: fogImg, label: "FOG" },
   { name: "LVP - Blondie", image: blondieImg, label: "BLONDIE" },
 ];
+
+const sampleRooms: SampleRoom[] = [
+  { name: "Modern Kitchen", image: kitchenSample, category: "Kitchen" },
+  { name: "Spacious Living Room", image: livingRoomSample, category: "Living Room" },
+  { name: "Modern Bathroom", image: bathroomSample, category: "Bathroom" },
+  { name: "Cozy Bedroom", image: bedroomSample, category: "Bedroom" },
+  { name: "Home Office", image: officeSample, category: "Office" },
+  { name: "Formal Dining Room", image: diningRoomSample, category: "Dining Room" },
+];
+
+const roomCategories = ["All", "Kitchen", "Living Room", "Bathroom", "Bedroom", "Office", "Dining Room"];
 
 export default function FlooringVisualizer() {
   const navigate = useNavigate();
@@ -36,6 +60,7 @@ export default function FlooringVisualizer() {
   const [opacity, setOpacity] = useState([70]);
   const [brightness, setBrightness] = useState([100]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState("All");
 
   // Load flooring texture when selection changes
   useEffect(() => {
@@ -57,6 +82,31 @@ export default function FlooringVisualizer() {
     }
   }, [opacity, brightness, roomImage, flooringTexture]);
 
+  const loadImageFromUrl = (imageUrl: string, source: string = "upload") => {
+    setIsProcessing(true);
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      setRoomImage(img);
+      setIsProcessing(false);
+      toast({
+        title: "Image loaded!",
+        description: source === "sample" 
+          ? "Sample room loaded. Adjust flooring settings below." 
+          : "Adjust the flooring settings to see how it looks in your room",
+      });
+    };
+    img.onerror = () => {
+      setIsProcessing(false);
+      toast({
+        title: "Error loading image",
+        description: "Please try another image",
+        variant: "destructive",
+      });
+    };
+    img.src = imageUrl;
+  };
+
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -70,30 +120,20 @@ export default function FlooringVisualizer() {
       return;
     }
 
-    setIsProcessing(true);
     const reader = new FileReader();
     reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        setRoomImage(img);
-        setIsProcessing(false);
-        toast({
-          title: "Image loaded!",
-          description: "Adjust the flooring settings to see how it looks in your room",
-        });
-      };
-      img.onerror = () => {
-        setIsProcessing(false);
-        toast({
-          title: "Error loading image",
-          description: "Please try another image",
-          variant: "destructive",
-        });
-      };
-      img.src = e.target?.result as string;
+      loadImageFromUrl(e.target?.result as string);
     };
     reader.readAsDataURL(file);
   };
+
+  const handleSampleRoomSelect = (sampleRoom: SampleRoom) => {
+    loadImageFromUrl(sampleRoom.image, "sample");
+  };
+
+  const filteredSampleRooms = selectedCategory === "All" 
+    ? sampleRooms 
+    : sampleRooms.filter(room => room.category === selectedCategory);
 
   const renderVisualization = () => {
     if (!canvasRef.current || !roomImage || !flooringTexture) return;
@@ -214,52 +254,110 @@ export default function FlooringVisualizer() {
             {/* Upload Card */}
             <Card>
               <CardHeader>
-                <CardTitle>Upload Room Photo</CardTitle>
+                <CardTitle>Choose Room Photo</CardTitle>
                 <CardDescription>
-                  Upload a photo of your room to visualize different flooring options
+                  Upload your own photo or select from our sample rooms
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                  id="room-upload"
-                />
-                <Button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full"
-                  variant="outline"
-                  disabled={isProcessing}
-                >
-                  <Upload className="mr-2 h-4 w-4" />
-                  {isProcessing ? "Processing..." : "Choose Image"}
-                </Button>
-                
-                {roomImage && (
-                  <div className="flex gap-2">
+              <CardContent>
+                <Tabs defaultValue="upload" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="upload">Upload</TabsTrigger>
+                    <TabsTrigger value="samples">Sample Rooms</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="upload" className="space-y-4 mt-4">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      id="room-upload"
+                    />
                     <Button
-                      onClick={handleReset}
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full"
                       variant="outline"
-                      size="sm"
-                      className="flex-1"
+                      disabled={isProcessing}
                     >
-                      <RotateCcw className="mr-2 h-4 w-4" />
-                      Reset
+                      <Upload className="mr-2 h-4 w-4" />
+                      {isProcessing ? "Processing..." : "Choose Your Photo"}
                     </Button>
-                    <Button
-                      onClick={handleDownload}
-                      variant="default"
-                      size="sm"
-                      className="flex-1"
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      Download
-                    </Button>
-                  </div>
-                )}
+                    
+                    {roomImage && (
+                      <div className="flex gap-2 pt-2">
+                        <Button
+                          onClick={handleReset}
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                        >
+                          <RotateCcw className="mr-2 h-4 w-4" />
+                          Reset
+                        </Button>
+                        <Button
+                          onClick={handleDownload}
+                          variant="default"
+                          size="sm"
+                          className="flex-1"
+                        >
+                          <Download className="mr-2 h-4 w-4" />
+                          Download
+                        </Button>
+                      </div>
+                    )}
+                  </TabsContent>
+                  
+                  <TabsContent value="samples" className="space-y-4 mt-4">
+                    {/* Category Filter */}
+                    <div className="flex flex-wrap gap-2">
+                      {roomCategories.map((category) => (
+                        <Button
+                          key={category}
+                          onClick={() => setSelectedCategory(category)}
+                          variant={selectedCategory === category ? "default" : "outline"}
+                          size="sm"
+                          className="text-xs"
+                        >
+                          {category}
+                        </Button>
+                      ))}
+                    </div>
+                    
+                    {/* Sample Room Grid */}
+                    <div className="grid grid-cols-2 gap-3 max-h-[400px] overflow-y-auto">
+                      {filteredSampleRooms.map((room) => (
+                        <div
+                          key={room.name}
+                          onClick={() => handleSampleRoomSelect(room)}
+                          className="cursor-pointer rounded-lg overflow-hidden border-2 border-border hover:border-accent transition-all group"
+                        >
+                          <div className="aspect-video relative">
+                            <img
+                              src={room.image}
+                              alt={room.name}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="absolute bottom-0 left-0 right-0 p-2 text-center opacity-0 group-hover:opacity-100 transition-opacity">
+                              <p className="text-xs font-semibold text-white">
+                                {room.name}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {filteredSampleRooms.length === 0 && (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <ImageIcon className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">No rooms in this category</p>
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
 
@@ -350,9 +448,9 @@ export default function FlooringVisualizer() {
                 {!roomImage ? (
                   <div className="text-center space-y-4 text-muted-foreground">
                     <Upload className="h-16 w-16 mx-auto opacity-50" />
-                    <p className="text-lg font-medium">No room photo uploaded</p>
+                    <p className="text-lg font-medium">No room photo selected</p>
                     <p className="text-sm">
-                      Upload a photo of your room to get started
+                      Upload your own photo or try our sample rooms
                     </p>
                   </div>
                 ) : (
@@ -380,6 +478,10 @@ export default function FlooringVisualizer() {
             <ul className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
               <li className="flex items-start gap-2">
                 <span className="text-accent font-bold">•</span>
+                <span>Start with our sample rooms if you don't have a photo ready</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-accent font-bold">•</span>
                 <span>Use photos taken from eye level for more realistic results</span>
               </li>
               <li className="flex items-start gap-2">
@@ -393,6 +495,10 @@ export default function FlooringVisualizer() {
               <li className="flex items-start gap-2">
                 <span className="text-accent font-bold">•</span>
                 <span>Adjust brightness to compensate for room shadows</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-accent font-bold">•</span>
+                <span>Download your preview to share with family or contractors</span>
               </li>
             </ul>
           </CardContent>
