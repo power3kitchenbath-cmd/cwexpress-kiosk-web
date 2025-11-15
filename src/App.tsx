@@ -13,6 +13,7 @@ import DesignViewer from "./pages/DesignViewer";
 import LaunchPlan from "./pages/LaunchPlan";
 import InvestorDeck from "./pages/InvestorDeck";
 import Presentations from "./pages/Presentations";
+import Power3InstallsPlan from "./pages/Power3InstallsPlan";
 import OnlineShop from "./pages/OnlineShop";
 import ProductManager from "./pages/ProductManager";
 import Checkout from "./pages/Checkout";
@@ -54,6 +55,7 @@ const App = () => (
           <Route path="/launch-plan" element={<LaunchPlan />} />
           <Route path="/investor-deck" element={<InvestorDeck />} />
           <Route path="/presentations" element={<Presentations />} />
+          <Route path="/power3-installs-plan" element={<Power3InstallsPlan />} />
           <Route path="/online-shop" element={<OnlineShop />} />
           <Route path="/product-manager" element={<ProductManager />} />
           <Route path="/checkout" element={<Checkout />} />
