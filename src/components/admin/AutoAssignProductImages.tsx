@@ -2,8 +2,9 @@ import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Image, Eye, Check, Search, Filter, ListChecks, ArrowRight, Minus, Download, Package, TrendingUp, TrendingDown, Save, FolderOpen, Trash2, ArrowUpDown, ArrowUp, ArrowDown, Maximize2 } from "lucide-react";
+import { Loader2, Image, Eye, Check, Search, Filter, ListChecks, ArrowRight, Minus, Download, Package, TrendingUp, TrendingDown, Save, FolderOpen, Trash2, ArrowUpDown, ArrowUp, ArrowDown, Maximize2, Keyboard } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -68,6 +69,56 @@ export const AutoAssignProductImages = () => {
         console.error('Failed to load presets:', e);
       }
     }
+  });
+
+  // Keyboard shortcuts
+  useState(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle shortcuts when preview is shown and not processing
+      if (!showPreview || isProcessing) return;
+
+      // Don't trigger if user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      // Ctrl/Cmd + A: Select all filtered
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+        e.preventDefault();
+        handleSelectAll();
+      }
+
+      // Ctrl/Cmd + D: Deselect all filtered
+      if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+        e.preventDefault();
+        handleDeselectAll();
+      }
+
+      // Ctrl/Cmd + Shift + C: Select all with changes
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'C') {
+        e.preventDefault();
+        handleSelectWithChanges();
+      }
+
+      // Enter: Apply changes (if items are selected)
+      if (e.key === 'Enter' && selectedCount > 0) {
+        e.preventDefault();
+        handleAutoAssign();
+      }
+
+      // Escape: Cancel/close preview
+      if (e.key === 'Escape' && !comparisonDialogOpen && !presetDialogOpen && !savePresetDialogOpen) {
+        e.preventDefault();
+        setShowPreview(false);
+        setPreviewData([]);
+        setSelectedIds(new Set());
+        setSearchQuery("");
+        setModelFilter("all");
+        setChangeFilter("all");
+        setIsDryRun(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   });
 
   const extractModelPrefix = (productName: string): string | null => {
@@ -738,9 +789,53 @@ export const AutoAssignProductImages = () => {
                 <span>
                   Showing {filteredPreviewData.length} of {previewData.length} products
                 </span>
-                <span className="font-medium text-foreground">
-                  {selectedCount} selected
-                </span>
+                <div className="flex items-center gap-4">
+                  <span className="font-medium text-foreground">
+                    {selectedCount} selected
+                  </span>
+                  
+                  {/* Keyboard Shortcuts Help */}
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="ghost" size="sm" className="gap-2 h-8">
+                        <Keyboard className="h-4 w-4" />
+                        Shortcuts
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80 bg-background" align="end">
+                      <div className="space-y-3">
+                        <div>
+                          <h4 className="font-semibold mb-2">Keyboard Shortcuts</h4>
+                          <p className="text-sm text-muted-foreground mb-3">
+                            Use these shortcuts for faster workflow
+                          </p>
+                        </div>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">Select all</span>
+                            <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">Ctrl+A</kbd>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">Deselect all</span>
+                            <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">Ctrl+D</kbd>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">Select with changes</span>
+                            <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">Ctrl+Shift+C</kbd>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">Apply changes</span>
+                            <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">Enter</kbd>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">Cancel/Close</span>
+                            <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">Esc</kbd>
+                          </div>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
               </div>
             </div>
 
