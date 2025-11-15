@@ -63,8 +63,8 @@ interface FlooringType {
 
 const flooringImageMap: Record<string, string> = {
   "LVP - Cocoa": cocoaImg,
-  "LVP - Butternut": butternutImg,
-  "LVP - Fog": fogImg,
+  "LVP - Butternut": fogImg,
+  "LVP - Fog": butternutImg,
   "LVP - Blondie": blondieImg,
 };
 

@@ -52,8 +52,8 @@ interface SampleRoom {
 
 const flooringOptions: FlooringOption[] = [
   { name: "LVP - Cocoa", image: cocoaImg, label: "COCOA" },
-  { name: "LVP - Butternut", image: butternutImg, label: "BUTTERNUT" },
-  { name: "LVP - Fog", image: fogImg, label: "FOG" },
+  { name: "LVP - Butternut", image: fogImg, label: "BUTTERNUT" },
+  { name: "LVP - Fog", image: butternutImg, label: "FOG" },
   { name: "LVP - Blondie", image: blondieImg, label: "BLONDIE" },
 ];
 
