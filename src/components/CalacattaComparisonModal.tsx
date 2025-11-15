@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { X, TrendingUp, DollarSign } from "lucide-react";
+import { X, TrendingUp, DollarSign, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import * as React from "react";
 
 interface CalacattaImage {
@@ -30,6 +30,8 @@ export const CalacattaComparisonModal = ({
   onClearComparison,
   pricing,
 }: CalacattaComparisonModalProps) => {
+  const [sortOrder, setSortOrder] = React.useState<'none' | 'asc' | 'desc'>('none');
+
   const handleSelect = (name: string) => {
     onSelectCountertop(name);
     onOpenChange(false);
@@ -41,8 +43,23 @@ export const CalacattaComparisonModal = ({
     return pricing[normalizedName] || 0;
   };
 
+  const sortedImages = React.useMemo(() => {
+    if (sortOrder === 'none') return selectedImages;
+    
+    return [...selectedImages].sort((a, b) => {
+      const priceA = getPriceForCountertop(a.name);
+      const priceB = getPriceForCountertop(b.name);
+      
+      if (sortOrder === 'asc') {
+        return priceA - priceB;
+      } else {
+        return priceB - priceA;
+      }
+    });
+  }, [selectedImages, sortOrder, pricing]);
+
   const priceRange = React.useMemo(() => {
-    const prices = selectedImages
+    const prices = sortedImages
       .map(img => getPriceForCountertop(img.name))
       .filter(price => price > 0);
     
@@ -53,26 +70,65 @@ export const CalacattaComparisonModal = ({
     const avg = prices.reduce((sum, p) => sum + p, 0) / prices.length;
     
     return { min, max, avg };
-  }, [selectedImages, pricing]);
+  }, [sortedImages, pricing]);
+
+  const cycleSortOrder = () => {
+    if (sortOrder === 'none') {
+      setSortOrder('asc');
+    } else if (sortOrder === 'asc') {
+      setSortOrder('desc');
+    } else {
+      setSortOrder('none');
+    }
+  };
+
+  const getSortIcon = () => {
+    if (sortOrder === 'asc') return <ArrowUp className="w-4 h-4" />;
+    if (sortOrder === 'desc') return <ArrowDown className="w-4 h-4" />;
+    return <ArrowUpDown className="w-4 h-4" />;
+  };
+
+  const getSortLabel = () => {
+    if (sortOrder === 'asc') return 'Price: Low to High';
+    if (sortOrder === 'desc') return 'Price: High to Low';
+    return 'Sort by Price';
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl flex items-center justify-between">
-            Compare Calacatta Options
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onOpenChange(false)}
-              className="h-8 w-8 p-0"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </DialogTitle>
-          <DialogDescription>
-            Compare up to {selectedImages.length} selected Calacatta countertops side by side
-          </DialogDescription>
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <DialogTitle className="text-2xl flex items-center gap-3">
+                Compare Calacatta Options
+              </DialogTitle>
+              <DialogDescription>
+                Compare up to {selectedImages.length} selected Calacatta countertops side by side
+              </DialogDescription>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Button
+                variant={sortOrder !== 'none' ? 'default' : 'outline'}
+                size="sm"
+                onClick={cycleSortOrder}
+                className={sortOrder !== 'none' ? 'bg-accent hover:bg-accent/90 text-accent-foreground' : ''}
+              >
+                {getSortIcon()}
+                <span className="ml-2">{getSortLabel()}</span>
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onOpenChange(false)}
+                className="h-8 w-8 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </DialogHeader>
 
         {priceRange && (
@@ -123,11 +179,11 @@ export const CalacattaComparisonModal = ({
         )}
 
         <div className={`grid gap-6 ${
-          selectedImages.length === 2 ? 'grid-cols-2' : 
-          selectedImages.length === 3 ? 'grid-cols-3' : 
+          sortedImages.length === 2 ? 'grid-cols-2' : 
+          sortedImages.length === 3 ? 'grid-cols-3' : 
           'grid-cols-2 md:grid-cols-4'
         }`}>
-          {selectedImages.map((image, index) => {
+          {sortedImages.map((image, index) => {
             const pricePerLinearFt = getPriceForCountertop(image.name);
             return (
               <div key={index} className="space-y-3">
