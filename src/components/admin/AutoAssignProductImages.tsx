@@ -1,11 +1,14 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Image, Eye, Check } from "lucide-react";
+import { Loader2, Image, Eye, Check, Search, Filter } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 // Map model prefixes to their image filenames
 const MODEL_IMAGE_MAP: Record<string, string> = {
@@ -28,6 +31,9 @@ export const AutoAssignProductImages = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [previewData, setPreviewData] = useState<PreviewItem[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [modelFilter, setModelFilter] = useState<string>("all");
+  const [changeFilter, setChangeFilter] = useState<string>("all");
   const { toast } = useToast();
 
   const extractModelPrefix = (productName: string): string | null => {
@@ -100,6 +106,31 @@ export const AutoAssignProductImages = () => {
     }
   };
 
+  // Get unique model prefixes for filter dropdown
+  const uniqueModels = useMemo(() => {
+    const models = new Set(previewData.map(item => item.modelPrefix));
+    return Array.from(models).sort();
+  }, [previewData]);
+
+  // Filter preview data based on search and filters
+  const filteredPreviewData = useMemo(() => {
+    return previewData.filter(item => {
+      // Search filter
+      const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      // Model filter
+      const matchesModel = modelFilter === "all" || item.modelPrefix === modelFilter;
+      
+      // Change filter
+      const hasChange = item.currentImage !== item.proposedImage;
+      const matchesChange = changeFilter === "all" || 
+        (changeFilter === "changes" && hasChange) ||
+        (changeFilter === "no-changes" && !hasChange);
+      
+      return matchesSearch && matchesModel && matchesChange;
+    });
+  }, [previewData, searchQuery, modelFilter, changeFilter]);
+
   const handleAutoAssign = async () => {
     setIsProcessing(true);
     
@@ -107,8 +138,8 @@ export const AutoAssignProductImages = () => {
       let updatedCount = 0;
       let skippedCount = 0;
 
-      // Update products based on preview data
-      for (const item of previewData) {
+      // Update products based on filtered preview data
+      for (const item of filteredPreviewData) {
         const { error: updateError } = await supabase
           .from("products")
           .update({
@@ -132,6 +163,9 @@ export const AutoAssignProductImages = () => {
 
       setShowPreview(false);
       setPreviewData([]);
+      setSearchQuery("");
+      setModelFilter("all");
+      setChangeFilter("all");
 
     } catch (error) {
       console.error("Error auto-assigning images:", error);
@@ -178,6 +212,63 @@ export const AutoAssignProductImages = () => {
           </Button>
         ) : (
           <>
+            <div className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="space-y-2">
+                  <Label htmlFor="search" className="text-sm font-medium flex items-center gap-2">
+                    <Search className="h-4 w-4" />
+                    Search Products
+                  </Label>
+                  <Input
+                    id="search"
+                    placeholder="Search by name..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="model-filter" className="text-sm font-medium flex items-center gap-2">
+                    <Filter className="h-4 w-4" />
+                    Filter by Model
+                  </Label>
+                  <Select value={modelFilter} onValueChange={setModelFilter}>
+                    <SelectTrigger id="model-filter">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Models</SelectItem>
+                      {uniqueModels.map((model) => (
+                        <SelectItem key={model} value={model}>
+                          {model}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="change-filter" className="text-sm font-medium">
+                    Filter by Status
+                  </Label>
+                  <Select value={changeFilter} onValueChange={setChangeFilter}>
+                    <SelectTrigger id="change-filter">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Products</SelectItem>
+                      <SelectItem value="changes">Will Change</SelectItem>
+                      <SelectItem value="no-changes">No Changes</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="text-sm text-muted-foreground">
+                Showing {filteredPreviewData.length} of {previewData.length} products
+              </div>
+            </div>
+
             <div className="rounded-lg border">
               <Table>
                 <TableHeader>
@@ -189,7 +280,14 @@ export const AutoAssignProductImages = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {previewData.map((item) => (
+                  {filteredPreviewData.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                        No products match your filters
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredPreviewData.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell className="font-medium">{item.name}</TableCell>
                       <TableCell>
@@ -210,7 +308,8 @@ export const AutoAssignProductImages = () => {
                         </span>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </div>
@@ -220,6 +319,9 @@ export const AutoAssignProductImages = () => {
                 onClick={() => {
                   setShowPreview(false);
                   setPreviewData([]);
+                  setSearchQuery("");
+                  setModelFilter("all");
+                  setChangeFilter("all");
                 }}
                 variant="outline"
                 className="flex-1"
@@ -228,7 +330,7 @@ export const AutoAssignProductImages = () => {
               </Button>
               <Button 
                 onClick={handleAutoAssign} 
-                disabled={isProcessing}
+                disabled={isProcessing || filteredPreviewData.length === 0}
                 className="flex-1"
               >
                 {isProcessing ? (
@@ -239,7 +341,7 @@ export const AutoAssignProductImages = () => {
                 ) : (
                   <>
                     <Check className="mr-2 h-4 w-4" />
-                    Confirm & Apply Changes
+                    Apply to {filteredPreviewData.length} {filteredPreviewData.length === 1 ? 'Product' : 'Products'}
                   </>
                 )}
               </Button>
