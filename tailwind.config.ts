@@ -150,11 +150,25 @@ export default {
             transform: "scale(1.15)",
           },
         },
+        "gold-shimmer": {
+          "0%": {
+            transform: "translateX(-100%) skewX(-15deg)",
+            opacity: "0",
+          },
+          "50%": {
+            opacity: "0.6",
+          },
+          "100%": {
+            transform: "translateX(200%) skewX(-15deg)",
+            opacity: "0",
+          },
+        },
       },
   animation: {
     "accordion-down": "accordion-down 0.2s ease-out",
     "accordion-up": "accordion-up 0.2s ease-out",
     shimmer: "shimmer 2s infinite",
+    "gold-shimmer": "gold-shimmer 3s ease-in-out infinite",
     fadeInUp: "fadeInUp 0.5s ease-out forwards",
     ripple: "ripple 600ms ease-out",
     bounce: "bounce 600ms ease-in-out",
