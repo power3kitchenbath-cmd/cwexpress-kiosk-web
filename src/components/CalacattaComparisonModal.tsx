@@ -7,12 +7,17 @@ interface CalacattaImage {
   name: string;
 }
 
+interface CountertopPricing {
+  [key: string]: number;
+}
+
 interface CalacattaComparisonModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   selectedImages: CalacattaImage[];
   onSelectCountertop: (name: string) => void;
   onClearComparison: () => void;
+  pricing: CountertopPricing;
 }
 
 export const CalacattaComparisonModal = ({
@@ -21,11 +26,17 @@ export const CalacattaComparisonModal = ({
   selectedImages,
   onSelectCountertop,
   onClearComparison,
+  pricing,
 }: CalacattaComparisonModalProps) => {
   const handleSelect = (name: string) => {
     onSelectCountertop(name);
     onOpenChange(false);
     onClearComparison();
+  };
+
+  const getPriceForCountertop = (name: string): number => {
+    const normalizedName = name.toLowerCase();
+    return pricing[normalizedName] || 0;
   };
 
   return (
@@ -53,58 +64,69 @@ export const CalacattaComparisonModal = ({
           selectedImages.length === 3 ? 'grid-cols-3' : 
           'grid-cols-2 md:grid-cols-4'
         }`}>
-          {selectedImages.map((image, index) => (
-            <div key={index} className="space-y-3">
-              <div className="relative aspect-square overflow-hidden rounded-lg border-2 border-border group">
-                <img
-                  src={image.src}
-                  alt={image.name}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-4">
+          {selectedImages.map((image, index) => {
+            const pricePerLinearFt = getPriceForCountertop(image.name);
+            return (
+              <div key={index} className="space-y-3">
+                <div className="relative aspect-square overflow-hidden rounded-lg border-2 border-border group">
+                  <img
+                    src={image.src}
+                    alt={image.name}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-4">
+                    <Button
+                      size="sm"
+                      onClick={() => handleSelect(image.name.toLowerCase())}
+                      className="bg-accent hover:bg-accent/90 text-accent-foreground"
+                    >
+                      Select This
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold">{image.name}</h3>
+                    {pricePerLinearFt > 0 && (
+                      <div className="text-right">
+                        <p className="text-lg font-bold text-accent">${pricePerLinearFt}</p>
+                        <p className="text-xs text-muted-foreground">per linear ft</p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-1 text-xs text-muted-foreground">
+                    <div className="flex justify-between">
+                      <span>Material:</span>
+                      <span className="font-medium text-foreground">Quartz</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Finish:</span>
+                      <span className="font-medium text-foreground">Polished</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Thickness:</span>
+                      <span className="font-medium text-foreground">3cm</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Pattern:</span>
+                      <span className="font-medium text-foreground">Veined Marble</span>
+                    </div>
+                  </div>
+
                   <Button
+                    variant="outline"
                     size="sm"
+                    className="w-full"
                     onClick={() => handleSelect(image.name.toLowerCase())}
-                    className="bg-accent hover:bg-accent/90 text-accent-foreground"
                   >
-                    Select This
+                    Add to Estimate
                   </Button>
                 </div>
               </div>
-              
-              <div className="space-y-2">
-                <h3 className="font-semibold text-center">{image.name}</h3>
-                
-                <div className="space-y-1 text-xs text-muted-foreground">
-                  <div className="flex justify-between">
-                    <span>Material:</span>
-                    <span className="font-medium text-foreground">Quartz</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Finish:</span>
-                    <span className="font-medium text-foreground">Polished</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Thickness:</span>
-                    <span className="font-medium text-foreground">3cm</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Pattern:</span>
-                    <span className="font-medium text-foreground">Veined Marble</span>
-                  </div>
-                </div>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => handleSelect(image.name.toLowerCase())}
-                >
-                  Add to Estimate
-                </Button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="flex justify-center gap-3 mt-4 pt-4 border-t">

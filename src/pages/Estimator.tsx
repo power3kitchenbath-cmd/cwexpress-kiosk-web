@@ -1128,6 +1128,10 @@ export default function Estimator() {
               }, 100);
             }}
             onClearComparison={() => setComparisonImages([])}
+            pricing={countertopTypes.reduce((acc, ct) => {
+              acc[ct.name.toLowerCase()] = ct.price_per_linear_ft;
+              return acc;
+            }, {} as Record<string, number>)}
           />
 
           <div className="grid md:grid-cols-2 gap-6 mb-8">
