@@ -627,17 +627,7 @@ export type Database = {
       }
     }
     Views: {
-      failed_emails_summary: {
-        Row: {
-          affected_orders: string[] | null
-          bounce_types: string[] | null
-          failure_count: number | null
-          failure_reasons: string[] | null
-          last_failure: string | null
-          recipient_email: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       calculate_email_delivery_rate: {
@@ -665,6 +655,17 @@ export type Database = {
           nodeport: number
           schedule: string
           username: string
+        }[]
+      }
+      get_failed_emails_summary: {
+        Args: never
+        Returns: {
+          affected_orders: string[]
+          bounce_types: string[]
+          failure_count: number
+          failure_reasons: string[]
+          last_failure: string
+          recipient_email: string
         }[]
       }
       has_role: {
