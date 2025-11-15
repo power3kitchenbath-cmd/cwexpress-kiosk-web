@@ -26,7 +26,7 @@ const MODEL_IMAGE_MAP: Record<string, string> = {
 };
 
 // Helper function to upload local images to Supabase storage with compression
-const uploadImageToStorage = async (imagePath: string, fileName: string): Promise<{ imageUrl: string, thumbnailUrl: string } | null> => {
+const uploadImageToStorage = async (imagePath: string, fileName: string): Promise<{ imageUrl: string, thumbnailUrl: string, stats: { originalSize: number, compressedSize: number, saved: number } } | null> => {
   try {
     // Fetch the local image file
     const response = await fetch(imagePath);
@@ -36,11 +36,17 @@ const uploadImageToStorage = async (imagePath: string, fileName: string): Promis
     // Generate compressed thumbnail and full-size images
     const { thumbnail, fullSize, originalSize, thumbnailSize, fullSizeSize } = await generateThumbnailAndFullSize(file);
     
+    const stats = {
+      originalSize,
+      compressedSize: fullSizeSize + thumbnailSize,
+      saved: originalSize - (fullSizeSize + thumbnailSize)
+    };
+    
     console.log(`Compression for ${fileName}:`, {
       original: `${(originalSize / 1024).toFixed(2)} KB`,
       thumbnail: `${(thumbnailSize / 1024).toFixed(2)} KB`,
       fullSize: `${(fullSizeSize / 1024).toFixed(2)} KB`,
-      saved: `${((originalSize - fullSizeSize) / 1024).toFixed(2)} KB`
+      saved: `${(stats.saved / 1024).toFixed(2)} KB`
     });
     
     // Generate unique filenames
@@ -78,7 +84,7 @@ const uploadImageToStorage = async (imagePath: string, fileName: string): Promis
       .from('product-images')
       .getPublicUrl(fullSizeFileName);
     
-    return { imageUrl, thumbnailUrl };
+    return { imageUrl, thumbnailUrl, stats };
   } catch (error) {
     console.error(`Failed to upload ${fileName}:`, error);
     return null;
@@ -134,6 +140,7 @@ export const AutoAssignProductImages = () => {
   const [csvError, setCsvError] = useState<string>("");
   const [undoState, setUndoState] = useState<UndoState | null>(null);
   const [isUndoing, setIsUndoing] = useState(false);
+  const [compressionStats, setCompressionStats] = useState<{ totalOriginal: number, totalCompressed: number, totalSaved: number, count: number } | null>(null);
   const { toast } = useToast();
 
   // Load presets from localStorage on mount
@@ -212,6 +219,7 @@ export const AutoAssignProductImages = () => {
 
   const handlePreview = async () => {
     setIsProcessing(true);
+    setCompressionStats(null);
     
     try {
       const { data: products, error: fetchError } = await supabase
@@ -236,13 +244,29 @@ export const AutoAssignProductImages = () => {
 
       // Upload compressed images to Supabase storage and get their URLs
       const imageUrlMap: Record<string, { imageUrl: string, thumbnailUrl: string }> = {};
+      let totalOriginal = 0;
+      let totalCompressed = 0;
+      let totalSaved = 0;
+      let successCount = 0;
+      
       for (const [prefix, filename] of Object.entries(MODEL_IMAGE_MAP)) {
         const localPath = `/src/assets/shower-doors/${filename}`;
         const uploadedUrls = await uploadImageToStorage(localPath, filename);
         if (uploadedUrls) {
-          imageUrlMap[prefix] = uploadedUrls;
+          imageUrlMap[prefix] = { imageUrl: uploadedUrls.imageUrl, thumbnailUrl: uploadedUrls.thumbnailUrl };
+          totalOriginal += uploadedUrls.stats.originalSize;
+          totalCompressed += uploadedUrls.stats.compressedSize;
+          totalSaved += uploadedUrls.stats.saved;
+          successCount++;
         }
       }
+
+      setCompressionStats({
+        totalOriginal,
+        totalCompressed,
+        totalSaved,
+        count: successCount
+      });
 
       const preview: PreviewItem[] = [];
 
@@ -886,6 +910,41 @@ export const AutoAssignProductImages = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Compression Statistics */}
+        {compressionStats && showPreview && (
+          <Card className="bg-muted/50 border-primary/20">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <TrendingDown className="h-4 w-4 text-green-500" />
+                Compression Statistics
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <div className="text-muted-foreground">Original Size</div>
+                  <div className="font-semibold">{(compressionStats.totalOriginal / 1024 / 1024).toFixed(2)} MB</div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground">Compressed Size</div>
+                  <div className="font-semibold">{(compressionStats.totalCompressed / 1024 / 1024).toFixed(2)} MB</div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground">Storage Saved</div>
+                  <div className="font-semibold text-green-500">{(compressionStats.totalSaved / 1024 / 1024).toFixed(2)} MB</div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground">Compression Ratio</div>
+                  <div className="font-semibold">{((compressionStats.totalSaved / compressionStats.totalOriginal) * 100).toFixed(1)}%</div>
+                </div>
+              </div>
+              <div className="pt-2 text-xs text-muted-foreground">
+                {compressionStats.count} images compressed successfully
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        
         {/* Undo Button */}
         {undoState && !showPreview && (
           <div className="rounded-lg border border-primary/50 bg-primary/5 p-4">
