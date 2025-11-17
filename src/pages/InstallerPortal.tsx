@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, MapPin, Clock, CheckCircle2, AlertCircle, LogOut, User } from "lucide-react";
 import { format } from "date-fns";
+import InstallerNotificationPanel from "@/components/installs/InstallerNotificationPanel";
 
 interface Assignment {
   id: string;
@@ -166,14 +167,17 @@ export default function InstallerPortal() {
                 <p className="text-xs text-primary-foreground/70">{userEmail}</p>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleLogout}
-              className="text-primary-foreground hover:bg-primary-foreground/10"
-            >
-              <LogOut className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <InstallerNotificationPanel />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="text-primary-foreground hover:bg-primary-foreground/10"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>
