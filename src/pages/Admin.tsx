@@ -31,6 +31,7 @@ import { ProductsManager } from "@/components/admin/ProductsManager";
 import { AutoAssignProductImages } from "@/components/admin/AutoAssignProductImages";
 import { CalacattaBannerAnalytics } from "@/components/admin/CalacattaBannerAnalytics";
 import { QuoteRequestsSection } from "@/components/admin/QuoteRequestsSection";
+import InstallationPhotosGallery from "@/components/admin/InstallationPhotosGallery";
 
 interface CabinetType {
   id: string;
@@ -284,12 +285,13 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-10">
+          <TabsList className="grid w-full grid-cols-11">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="orders">Orders</TabsTrigger>
             <TabsTrigger value="quotes">Quotes</TabsTrigger>
             <TabsTrigger value="customers">Pro Customers</TabsTrigger>
             <TabsTrigger value="products">Products</TabsTrigger>
+            <TabsTrigger value="installation-photos">Install Photos</TabsTrigger>
             <TabsTrigger value="banner-analytics">Banner Analytics</TabsTrigger>
             <TabsTrigger value="emails">Email Activity</TabsTrigger>
             <TabsTrigger value="analytics">Email Analytics</TabsTrigger>
@@ -322,6 +324,10 @@ const Admin = () => {
           <TabsContent value="products" className="space-y-4">
             <AutoAssignProductImages />
             <ProductsManager />
+          </TabsContent>
+
+          <TabsContent value="installation-photos">
+            <InstallationPhotosGallery />
           </TabsContent>
 
           <TabsContent value="banner-analytics">
