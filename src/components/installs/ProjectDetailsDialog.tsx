@@ -11,6 +11,8 @@ import { format } from "date-fns";
 import { Mail, Phone, MapPin, Calendar, DollarSign } from "lucide-react";
 import { TaskManagementTab } from "./TaskManagementTab";
 import { ProjectAssignmentsTab } from "./ProjectAssignmentsTab";
+import ProjectLaborSummary from "@/components/admin/ProjectLaborSummary";
+import TimeTrackingLog from "@/components/admin/TimeTrackingLog";
 
 interface ProjectDetailsDialogProps {
   projectId: string;
@@ -105,10 +107,11 @@ export function ProjectDetailsDialog({ projectId, open, onOpenChange, onUpdate }
         </DialogHeader>
 
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="teams">Teams</TabsTrigger>
             <TabsTrigger value="tasks">Tasks</TabsTrigger>
+            <TabsTrigger value="time">Time Tracking</TabsTrigger>
             <TabsTrigger value="kpis">KPIs</TabsTrigger>
           </TabsList>
 
@@ -217,6 +220,11 @@ export function ProjectDetailsDialog({ projectId, open, onOpenChange, onUpdate }
 
           <TabsContent value="tasks">
             <TaskManagementTab projectId={projectId} />
+          </TabsContent>
+
+          <TabsContent value="time" className="space-y-4">
+            <ProjectLaborSummary projectId={projectId} />
+            <TimeTrackingLog projectId={projectId} />
           </TabsContent>
 
           <TabsContent value="kpis">

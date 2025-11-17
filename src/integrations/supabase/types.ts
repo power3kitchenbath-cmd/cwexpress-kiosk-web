@@ -1264,6 +1264,63 @@ export type Database = {
           },
         ]
       }
+      time_tracking_entries: {
+        Row: {
+          clock_in_time: string
+          clock_out_time: string | null
+          created_at: string
+          hourly_rate: number | null
+          hours_worked: number | null
+          id: string
+          labor_cost: number | null
+          notes: string | null
+          task_id: string
+          team_member_id: string
+          updated_at: string
+        }
+        Insert: {
+          clock_in_time?: string
+          clock_out_time?: string | null
+          created_at?: string
+          hourly_rate?: number | null
+          hours_worked?: number | null
+          id?: string
+          labor_cost?: number | null
+          notes?: string | null
+          task_id: string
+          team_member_id: string
+          updated_at?: string
+        }
+        Update: {
+          clock_in_time?: string
+          clock_out_time?: string | null
+          created_at?: string
+          hourly_rate?: number | null
+          hours_worked?: number | null
+          id?: string
+          labor_cost?: number | null
+          notes?: string | null
+          task_id?: string
+          team_member_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_tracking_entries_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "project_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_tracking_entries_team_member_id_fkey"
+            columns: ["team_member_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -1326,6 +1383,14 @@ export type Database = {
           failure_reasons: string[]
           last_failure: string
           recipient_email: string
+        }[]
+      }
+      get_project_labor_summary: {
+        Args: { project_id_param: string }
+        Returns: {
+          team_member_count: number
+          total_cost: number
+          total_hours: number
         }[]
       }
       has_role: {

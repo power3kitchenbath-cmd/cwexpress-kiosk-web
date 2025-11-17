@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft, Camera, CheckCircle2, Clock, MapPin, Phone, Mail, Upload } from "lucide-react";
 import { format } from "date-fns";
 import { Label } from "@/components/ui/label";
+import TimeTrackingCard from "@/components/installs/TimeTrackingCard";
 
 interface Project {
   id: string;
@@ -53,6 +54,7 @@ export default function InstallerProjectDetail() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [teamMemberId, setTeamMemberId] = useState<string | null>(null);
 
   useEffect(() => {
     loadProjectData();
@@ -76,11 +78,13 @@ export default function InstallerProjectDetail() {
 
       const { data: teamMember } = await supabase
         .from("team_members")
-        .select("team_id")
+        .select("id, team_id")
         .eq("email", user.email)
         .single();
 
       if (teamMember) {
+        setTeamMemberId(teamMember.id);
+        
         const { data: tasksData } = await supabase
           .from("project_tasks")
           .select("*")
@@ -328,33 +332,43 @@ export default function InstallerProjectDetail() {
             ) : (
               <div className="space-y-3">
                 {tasks.map((task) => (
-                  <div key={task.id} className="border rounded-lg p-4">
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <h4 className="font-medium">{task.task_name}</h4>
-                      <Badge className={getStatusColor(task.status)}>
-                        {task.status}
-                      </Badge>
+                  <div key={task.id} className="border rounded-lg p-4 space-y-4">
+                    <div>
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <h4 className="font-medium">{task.task_name}</h4>
+                        <Badge className={getStatusColor(task.status)}>
+                          {task.status}
+                        </Badge>
+                      </div>
+                      {task.description && (
+                        <p className="text-sm text-muted-foreground mb-3">{task.description}</p>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor={`task-${task.id}`} className="text-sm">Status:</Label>
+                        <Select
+                          value={task.status}
+                          onValueChange={(value) => updateTaskStatus(task.id, value)}
+                        >
+                          <SelectTrigger id={`task-${task.id}`} className="w-[140px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">Pending</SelectItem>
+                            <SelectItem value="in_progress">In Progress</SelectItem>
+                            <SelectItem value="completed">Completed</SelectItem>
+                            <SelectItem value="blocked">Blocked</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
-                    {task.description && (
-                      <p className="text-sm text-muted-foreground mb-3">{task.description}</p>
+                    
+                    {teamMemberId && (
+                      <TimeTrackingCard
+                        taskId={task.id}
+                        taskName={task.task_name}
+                        teamMemberId={teamMemberId}
+                      />
                     )}
-                    <div className="flex items-center gap-2">
-                      <Label htmlFor={`task-${task.id}`} className="text-sm">Status:</Label>
-                      <Select
-                        value={task.status}
-                        onValueChange={(value) => updateTaskStatus(task.id, value)}
-                      >
-                        <SelectTrigger id={`task-${task.id}`} className="w-[140px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="in_progress">In Progress</SelectItem>
-                          <SelectItem value="completed">Completed</SelectItem>
-                          <SelectItem value="blocked">Blocked</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
                   </div>
                 ))}
               </div>
