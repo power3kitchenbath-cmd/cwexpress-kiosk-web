@@ -111,6 +111,9 @@ export default function Estimator() {
   const [flooringTypes, setFlooringTypes] = useState<FlooringType[]>([]);
   const [hardwareTypes, setHardwareTypes] = useState<HardwareType[]>([]);
   
+  // Installation state
+  const [includeInstallation, setIncludeInstallation] = useState(false);
+  
   const [cabinetType, setCabinetType] = useState("");
   const [cabinetQuantity, setCabinetQuantity] = useState("");
   const [cabinets, setCabinets] = useState<CabinetItem[]>([]);
@@ -272,6 +275,7 @@ export default function Estimator() {
     setFlooring((data.flooring_items as unknown) as FlooringItem[]);
     setCountertops(((data as any).countertop_items as unknown) as CountertopItem[]);
     setHardware(((data as any).hardware_items as unknown) as HardwareItem[] || []);
+    setIncludeInstallation((data as any).installation_requested || false);
   };
 
   const loadImportedCabinets = (importedCabinets: any[]) => {
@@ -812,7 +816,11 @@ export default function Estimator() {
   }
   
   const markupAmount = subtotal * markupPercentage;
-  const grandTotal = subtotal + markupAmount;
+  
+  // Calculate installation cost (15% of materials subtotal)
+  const installationCost = includeInstallation ? subtotal * 0.15 : 0;
+  
+  const grandTotal = subtotal + markupAmount + installationCost;
 
   const formatName = (type: string) => {
     return type.charAt(0).toUpperCase() + type.slice(1);
@@ -1043,6 +1051,8 @@ export default function Estimator() {
           countertop_total: countertopTotal,
           hardware_total: hardwareTotal,
           grand_total: grandTotal,
+          installation_requested: includeInstallation,
+          installation_cost: installationCost,
         } as any)
         .eq("id", editId);
 
@@ -1072,6 +1082,8 @@ export default function Estimator() {
         countertop_total: countertopTotal,
         hardware_total: hardwareTotal,
         grand_total: grandTotal,
+        installation_requested: includeInstallation,
+        installation_cost: installationCost,
       } as any);
 
       if (error) {
@@ -1756,6 +1768,31 @@ export default function Estimator() {
                       <span className="font-semibold">${markupAmount.toFixed(2)}</span>
                     </div>
                   )}
+                  
+                  {/* Installation Option */}
+                  <div className="flex items-center justify-between pt-3 border-t">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="include-installation"
+                        checked={includeInstallation}
+                        onChange={(e) => setIncludeInstallation(e.target.checked)}
+                        className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                      />
+                      <label htmlFor="include-installation" className="cursor-pointer">
+                        Include Installation Service
+                      </label>
+                    </div>
+                    {includeInstallation && (
+                      <span className="font-semibold text-green-600">+${installationCost.toFixed(2)}</span>
+                    )}
+                  </div>
+                  {includeInstallation && (
+                    <div className="text-sm text-muted-foreground pl-6">
+                      Professional installation (15% of materials cost)
+                    </div>
+                  )}
+                  
                   <div className="flex justify-between text-2xl font-bold pt-4 border-t-2">
                     <span>Grand Total:</span>
                     <span className="text-accent">${grandTotal.toFixed(2)}</span>
