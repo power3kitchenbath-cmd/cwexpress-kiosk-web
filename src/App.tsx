@@ -28,6 +28,7 @@ import CabinetVisualizer from "./pages/CabinetVisualizer";
 import InstallProjectsDashboard from "./pages/InstallProjectsDashboard";
 import InstallerPortal from "./pages/InstallerPortal";
 import InstallerProjectDetail from "./pages/InstallerProjectDetail";
+import CustomerProjectTracking from "./pages/CustomerProjectTracking";
 import { ShippingLayout } from "./layouts/ShippingLayout";
 import Dashboard from "./pages/shipping/Dashboard";
 import ShipNow from "./pages/shipping/ShipNow";
@@ -74,6 +75,9 @@ const App = () => (
           {/* Installer Portal */}
           <Route path="/installer" element={<InstallerPortal />} />
           <Route path="/installer/project/:projectId" element={<InstallerProjectDetail />} />
+          
+          {/* Customer Project Tracking */}
+          <Route path="/track/:token" element={<CustomerProjectTracking />} />
           
           {/* CW Express Shipping Platform */}
           <Route path="/shipping" element={<ShippingLayout />}>
