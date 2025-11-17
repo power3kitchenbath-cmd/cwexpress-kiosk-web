@@ -1016,6 +1016,41 @@ export type Database = {
           },
         ]
       }
+      project_share_tokens: {
+        Row: {
+          created_at: string
+          created_by: string
+          expires_at: string | null
+          id: string
+          project_id: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          expires_at?: string | null
+          id?: string
+          project_id: string
+          token: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          expires_at?: string | null
+          id?: string
+          project_id?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_share_tokens_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "install_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_tasks: {
         Row: {
           actual_hours: number | null
@@ -1360,6 +1395,10 @@ export type Database = {
         Returns: number
       }
       check_email_delivery_health: { Args: never; Returns: undefined }
+      generate_project_share_token: {
+        Args: { expires_days?: number; project_id_param: string }
+        Returns: string
+      }
       get_cron_jobs: {
         Args: never
         Returns: {
@@ -1383,6 +1422,24 @@ export type Database = {
           failure_reasons: string[]
           last_failure: string
           recipient_email: string
+        }[]
+      }
+      get_project_by_share_token: {
+        Args: { token_param: string }
+        Returns: {
+          actual_completion_date: string
+          address: Json
+          customer_email: string
+          customer_name: string
+          customer_phone: string
+          notes: string
+          priority: string
+          project_id: string
+          project_name: string
+          services: Json
+          start_date: string
+          status: string
+          target_completion_date: string
         }[]
       }
       get_project_labor_summary: {

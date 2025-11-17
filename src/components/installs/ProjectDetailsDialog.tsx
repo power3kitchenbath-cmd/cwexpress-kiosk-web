@@ -8,11 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { Mail, Phone, MapPin, Calendar, DollarSign } from "lucide-react";
+import { Mail, Phone, MapPin, Calendar, DollarSign, Share2 } from "lucide-react";
 import { TaskManagementTab } from "./TaskManagementTab";
 import { ProjectAssignmentsTab } from "./ProjectAssignmentsTab";
 import ProjectLaborSummary from "@/components/admin/ProjectLaborSummary";
 import TimeTrackingLog from "@/components/admin/TimeTrackingLog";
+import ShareProjectLinkDialog from "@/components/admin/ShareProjectLinkDialog";
 
 interface ProjectDetailsDialogProps {
   projectId: string;
@@ -24,6 +25,7 @@ interface ProjectDetailsDialogProps {
 export function ProjectDetailsDialog({ projectId, open, onOpenChange, onUpdate }: ProjectDetailsDialogProps) {
   const [project, setProject] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
 
   useEffect(() => {
     if (open && projectId) {
@@ -100,9 +102,19 @@ export function ProjectDetailsDialog({ projectId, open, onOpenChange, onUpdate }
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle>{project.project_name}</DialogTitle>
-            <Badge variant="outline" className={getStatusColor(project.status)}>
-              {project.status.replace('_', ' ')}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShareDialogOpen(true)}
+              >
+                <Share2 className="h-4 w-4 mr-2" />
+                Share Tracking
+              </Button>
+              <Badge variant="outline" className={getStatusColor(project.status)}>
+                {project.status.replace('_', ' ')}
+              </Badge>
+            </div>
           </div>
         </DialogHeader>
 
@@ -242,6 +254,14 @@ export function ProjectDetailsDialog({ projectId, open, onOpenChange, onUpdate }
           </TabsContent>
         </Tabs>
       </DialogContent>
+
+      {/* Share Project Link Dialog */}
+      <ShareProjectLinkDialog
+        projectId={projectId}
+        projectName={project.project_name}
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+      />
     </Dialog>
   );
 }
