@@ -26,6 +26,7 @@ const Checkout = () => {
   const { items, totalPrice, clearCart, user } = useCart();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [includeInstallation, setIncludeInstallation] = useState(false);
   const [shippingAddress, setShippingAddress] = useState({
     street: "",
     city: "",
@@ -73,9 +74,10 @@ const Checkout = () => {
 
     try {
       const subtotal = totalPrice;
-      const tax = subtotal * 0.0825;
+      const installationCost = includeInstallation ? subtotal * 0.15 : 0;
+      const tax = (subtotal + installationCost) * 0.0825;
       const shipping = subtotal > 2500 ? 0 : 99;
-      const total = subtotal + tax + shipping;
+      const total = subtotal + installationCost + tax + shipping;
 
       // Create order
       const { data: order, error: orderError } = await supabase
@@ -122,33 +124,76 @@ const Checkout = () => {
         .update({ order_count: (profile?.order_count || 0) + 1 })
         .eq("id", user.id);
 
+      // If installation is included, create install project
+      if (includeInstallation) {
+        const { data: userData } = await supabase.auth.getUser();
+        
+        // Get user email
+        const userEmail = userData.user?.email || "";
+        
+        const { error: projectError } = await supabase
+          .from("install_projects")
+          .insert({
+            project_name: `Installation for Order #${order.id.slice(0, 8)}`,
+            customer_name: shippingAddress.name,
+            customer_email: userEmail,
+            customer_phone: null,
+            project_type: "cabinet_installation",
+            status: "pending",
+            priority: "medium",
+            services: ["cabinet_installation"],
+            address: {
+              street: shippingAddress.street,
+              city: shippingAddress.city,
+              state: shippingAddress.state,
+              zip: shippingAddress.zip,
+            },
+            start_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 1 week from now
+            target_completion_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 2 weeks from now
+            budget: installationCost,
+            actual_cost: 0,
+            created_by: user.id,
+            order_id: order.id,
+            notes: `Auto-generated from online order. Installation cost: $${installationCost.toFixed(2)}`,
+          });
+
+        if (projectError) {
+          console.error("Error creating install project:", projectError);
+          // Don't fail the order if project creation fails, just log it
+          toast({
+            title: "Warning",
+            description: "Order placed successfully, but there was an issue creating the installation project. Please contact support.",
+            variant: "destructive",
+          });
+        }
+      }
+
+      // Send order receipt email
+      try {
+        await supabase.functions.invoke("send-order-receipt", {
+          body: { orderId: order.id },
+        });
+      } catch (emailError) {
+        console.error("Error sending order receipt:", emailError);
+        // Don't fail the order if email fails
+      }
+
       // Clear cart
       await clearCart();
 
-      // Send confirmation email (don't block checkout if it fails)
-      try {
-        await supabase.functions.invoke("send-order-receipt", {
-          body: {
-            orderId: order.id,
-            emailType: "confirmation",
-          },
-        });
-      } catch (emailError) {
-        console.error("Error sending confirmation email:", emailError);
-        // Continue anyway - order was successful
-      }
-
       toast({
-        title: "Order placed successfully!",
-        description: "Thank you for your order. Confirmation email sent.",
+        title: "Order placed!",
+        description: includeInstallation 
+          ? "Your order has been placed successfully and an installation project has been created. We'll contact you soon to schedule the installation."
+          : "Your order has been placed successfully. You will receive a confirmation email shortly.",
       });
 
       navigate("/orders");
-    } catch (error) {
-      console.error("Error placing order:", error);
+    } catch (error: any) {
+      console.error("Order error:", error);
       toast({
         title: "Order failed",
-        description: "Could not place your order. Please try again.",
+        description: error.message || "There was a problem placing your order. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -157,44 +202,34 @@ const Checkout = () => {
   };
 
   const subtotal = totalPrice;
-  const tax = subtotal * 0.0825; // 8.25% tax
-  const shipping = subtotal > 2500 ? 0 : 99; // Free shipping over $2500
-  const total = subtotal + tax + shipping;
+  const installationCost = includeInstallation ? subtotal * 0.15 : 0;
+  const tax = (subtotal + installationCost) * 0.0825;
+  const shipping = subtotal > 2500 ? 0 : 99;
+  const total = subtotal + installationCost + tax + shipping;
 
   if (!user) {
     return null; // Will redirect in useEffect
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-card border-b sticky top-0 z-50 shadow-sm">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <Button
-              variant="ghost"
-              onClick={() => navigate("/online-shop")}
-              className="gap-2"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Shop
-            </Button>
-            <img 
-              src={logoImg} 
-              alt="The Cabinet Store" 
-              className="h-16 w-16"
-            />
-            <div className="w-24" /> {/* Spacer for centering */}
+    <div className="min-h-screen bg-gradient-to-b from-primary via-primary to-primary-dark">
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <img src={logoImg} alt="Logo" className="h-12 w-12 object-contain" />
+            <h1 className="text-3xl font-bold text-primary-foreground">Checkout</h1>
           </div>
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/online-shop")}
+            className="text-primary-foreground hover:bg-primary-foreground/10"
+          >
+            <ArrowLeft className="mr-2" />
+            Back to Shop
+          </Button>
         </div>
-      </header>
-
-      {/* Checkout Content */}
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
-        <h1 className="text-3xl font-bold text-foreground mb-8">Checkout</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Order Items & Shipping */}
           <div className="lg:col-span-2 space-y-6">
             {/* Shipping Address */}
             <Card className="p-6">
@@ -302,6 +337,34 @@ const Checkout = () => {
                   <span className="text-muted-foreground">Subtotal ({items.length} items)</span>
                   <span className="font-medium text-foreground">${subtotal.toFixed(2)}</span>
                 </div>
+                
+                {/* Installation Option */}
+                <div className="bg-accent/5 border border-accent/20 rounded-md p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <input
+                      type="checkbox"
+                      id="include-installation-checkout"
+                      checked={includeInstallation}
+                      onChange={(e) => setIncludeInstallation(e.target.checked)}
+                      className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <label htmlFor="include-installation-checkout" className="cursor-pointer text-sm font-medium text-foreground">
+                      Add Professional Installation
+                    </label>
+                  </div>
+                  {includeInstallation && (
+                    <>
+                      <div className="flex justify-between text-sm mt-2 pl-6">
+                        <span className="text-muted-foreground">Installation (15%)</span>
+                        <span className="font-medium text-green-600">+${installationCost.toFixed(2)}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground pl-6 mt-1">
+                        Project will be scheduled within 1-2 weeks
+                      </p>
+                    </>
+                  )}
+                </div>
+                
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Tax (8.25%)</span>
                   <span className="font-medium text-foreground">${tax.toFixed(2)}</span>

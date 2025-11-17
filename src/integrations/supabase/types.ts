@@ -372,6 +372,8 @@ export type Database = {
           hardware_items: Json
           hardware_total: number
           id: string
+          installation_cost: number
+          installation_requested: boolean
           user_id: string
         }
         Insert: {
@@ -386,6 +388,8 @@ export type Database = {
           hardware_items?: Json
           hardware_total?: number
           id?: string
+          installation_cost?: number
+          installation_requested?: boolean
           user_id: string
         }
         Update: {
@@ -400,6 +404,8 @@ export type Database = {
           hardware_items?: Json
           hardware_total?: number
           id?: string
+          installation_cost?: number
+          installation_requested?: boolean
           user_id?: string
         }
         Relationships: []
