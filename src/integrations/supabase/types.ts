@@ -581,6 +581,54 @@ export type Database = {
         }
         Relationships: []
       }
+      installation_photos: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          photo_type: string
+          photo_url: string
+          project_id: string
+          task_id: string | null
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          photo_type: string
+          photo_url: string
+          project_id: string
+          task_id?: string | null
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          photo_type?: string
+          photo_url?: string
+          project_id?: string
+          task_id?: string | null
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "installation_photos_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "install_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "installation_photos_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "project_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           created_at: string | null

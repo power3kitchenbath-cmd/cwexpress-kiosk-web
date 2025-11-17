@@ -16,6 +16,7 @@ import { CreateProjectDialog } from "@/components/installs/CreateProjectDialog";
 import { ProjectDetailsDialog } from "@/components/installs/ProjectDetailsDialog";
 import { TeamManagementDialog } from "@/components/installs/TeamManagementDialog";
 import { NotificationPanel } from "@/components/installs/NotificationPanel";
+import { InstallerAccountGuide } from "@/components/installs/InstallerAccountGuide";
 
 type Project = {
   id: string;
@@ -256,6 +257,9 @@ export default function InstallProjectsDashboard() {
 
       {/* Notifications */}
       <NotificationPanel />
+      
+      {/* Installer Portal Guide */}
+      <InstallerAccountGuide />
 
       {/* Filters */}
       <Card>
