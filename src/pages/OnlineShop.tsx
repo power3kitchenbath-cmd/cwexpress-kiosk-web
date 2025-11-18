@@ -51,6 +51,7 @@ const OnlineShop = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<string>("category");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const { totalItems, setIsCartOpen, user } = useCart();
   const { cartBadgePulse } = useCart();
 
@@ -100,21 +101,28 @@ const OnlineShop = () => {
     }
   };
 
-  const sortedProducts = [...products].sort((a, b) => {
-    switch (sortBy) {
-      case "sku":
-        return (a.sku || "").localeCompare(b.sku || "");
-      case "name":
-        return a.name.localeCompare(b.name);
-      case "price-low":
-        return a.price - b.price;
-      case "price-high":
-        return b.price - a.price;
-      case "category":
-      default:
-        return a.category.localeCompare(b.category);
-    }
-  });
+  const filteredAndSortedProducts = [...products]
+    .filter(product => {
+      if (categoryFilter === "all") return true;
+      return product.category === categoryFilter;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case "sku":
+          return (a.sku || "").localeCompare(b.sku || "");
+        case "name":
+          return a.name.localeCompare(b.name);
+        case "price-low":
+          return a.price - b.price;
+        case "price-high":
+          return b.price - a.price;
+        case "category":
+        default:
+          return a.category.localeCompare(b.category);
+      }
+    });
+
+  const availableCategories = [...new Set(products.map(p => p.category))].sort();
 
   const getInventoryBadge = (status: string, count: number) => {
     if (status === 'out_of_stock' || count === 0) {
@@ -483,38 +491,73 @@ const OnlineShop = () => {
 
       {/* Products Grid */}
       <section className="container mx-auto px-4 py-12">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-12">
-          <div className="text-center md:text-left">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
-              Our Product Categories
-            </h2>
-            <p className="text-muted-foreground text-lg">
-              Real-time pricing and inventory • Order 24/7
-            </p>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-12">
+            <div className="text-center md:text-left">
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
+                Our Product Categories
+              </h2>
+              <p className="text-muted-foreground text-lg">
+                Real-time pricing and inventory • Order 24/7
+              </p>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto">
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-full sm:w-[200px]">
+                  <SelectValue placeholder="All Categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {availableCategories.map(category => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <div className="flex items-center gap-2">
+                <ArrowUpDown className="w-4 h-4 text-muted-foreground" />
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="w-full sm:w-[200px]">
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="category">Category</SelectItem>
+                    <SelectItem value="sku">SKU Number</SelectItem>
+                    <SelectItem value="name">Name (A-Z)</SelectItem>
+                    <SelectItem value="price-low">Price (Low to High)</SelectItem>
+                    <SelectItem value="price-high">Price (High to Low)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
-          
-          <div className="flex items-center gap-2 w-full md:w-auto">
-            <ArrowUpDown className="w-4 h-4 text-muted-foreground" />
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-full md:w-[200px]">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="category">Category</SelectItem>
-                <SelectItem value="sku">SKU Number</SelectItem>
-                <SelectItem value="name">Name (A-Z)</SelectItem>
-                <SelectItem value="price-low">Price (Low to High)</SelectItem>
-                <SelectItem value="price-high">Price (High to Low)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+
+          {!loading && categoryFilter !== "all" && (
+            <div className="text-center mb-4">
+              <p className="text-sm text-muted-foreground">
+                Showing {filteredAndSortedProducts.length} {filteredAndSortedProducts.length === 1 ? 'product' : 'products'} in <span className="font-semibold">{categoryFilter}</span>
+              </p>
+            </div>
+          )}
 
         {loading ? (
           <ProductGridSkeleton count={6} />
+        ) : filteredAndSortedProducts.length === 0 ? (
+          <div className="text-center py-12">
+            <Package className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+            <h3 className="text-xl font-semibold mb-2">No products found</h3>
+            <p className="text-muted-foreground mb-4">
+              Try adjusting your filters to see more results
+            </p>
+            <Button variant="outline" onClick={() => setCategoryFilter("all")}>
+              Clear Filters
+            </Button>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
-            {sortedProducts.map((product, index) => (
+            {filteredAndSortedProducts.map((product, index) => (
               <Card 
                 key={product.id} 
                 className="overflow-hidden transition-all duration-300 group opacity-0 animate-[fadeInUp_0.5s_ease-out_forwards] hover:shadow-2xl hover:-translate-y-2 cursor-pointer"
