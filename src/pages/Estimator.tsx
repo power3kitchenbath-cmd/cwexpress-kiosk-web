@@ -209,6 +209,11 @@ export default function Estimator() {
   const [cabinetQuantity, setCabinetQuantity] = useState("");
   const [cabinets, setCabinets] = useState<CabinetItem[]>([]);
   
+  // Replacement doors state
+  const [replacementDoorType, setReplacementDoorType] = useState("");
+  const [replacementDoorQuantity, setReplacementDoorQuantity] = useState("");
+  const [replacementDoors, setReplacementDoors] = useState<CabinetItem[]>([]);
+  
   const [flooringType, setFlooringType] = useState("");
   const [flooringSquareFeet, setFlooringSquareFeet] = useState("");
   const [flooring, setFlooring] = useState<FlooringItem[]>([]);
@@ -227,24 +232,24 @@ export default function Estimator() {
   
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
-    type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | null;
+    type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | 'door' | null;
     index: number;
     itemName: string;
   }>({ open: false, type: null, index: -1, itemName: '' });
 
   const [clearAllDialog, setClearAllDialog] = useState<{
     open: boolean;
-    type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | null;
+    type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | 'door' | null;
   }>({ open: false, type: null });
 
   const [undoState, setUndoState] = useState<{
     action: 'remove' | 'clear' | null;
-    type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | null;
+    type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | 'door' | null;
     data: CabinetItem[] | FlooringItem[] | CountertopItem[] | HardwareItem[] | null;
   }>({ action: null, type: null, data: null });
 
   const [editingItem, setEditingItem] = useState<{
-    type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | null;
+    type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | 'door' | null;
     index: number;
     value: string;
   }>({ type: null, index: -1, value: '' });
@@ -526,6 +531,44 @@ export default function Estimator() {
     }
   };
 
+  const addReplacementDoor = () => {
+    if (replacementDoorType && replacementDoorQuantity) {
+      const quantity = parseInt(replacementDoorQuantity);
+      
+      try {
+        cabinetSchema.parse({ quantity });
+        
+        const selectedType = cabinetTypes.find(c => c.name === replacementDoorType);
+        if (selectedType) {
+          setReplacementDoors([...replacementDoors, {
+            type: replacementDoorType,
+            quantity,
+            pricePerUnit: selectedType.price_per_unit,
+          }]);
+          setReplacementDoorQuantity("");
+        }
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          toast({
+            title: "Invalid Input",
+            description: error.errors[0].message,
+            variant: "destructive",
+          });
+        }
+      }
+    }
+  };
+
+  const confirmRemoveReplacementDoor = (index: number) => {
+    const item = replacementDoors[index];
+    setDeleteDialog({
+      open: true,
+      type: 'door',
+      index,
+      itemName: `${formatName(item.type)} x${item.quantity}`
+    });
+  };
+
   const confirmRemoveCabinet = (index: number) => {
     const item = cabinets[index];
     setDeleteDialog({
@@ -576,6 +619,15 @@ export default function Estimator() {
         description: "Cabinet removed from estimate",
         action: <Button variant="outline" size="sm" onClick={handleUndo}>Undo</Button>
       });
+    } else if (deleteDialog.type === 'door') {
+      const removedItem = replacementDoors[deleteDialog.index];
+      setUndoState({ action: 'remove', type: 'door', data: [removedItem] });
+      setReplacementDoors(replacementDoors.filter((_, i) => i !== deleteDialog.index));
+      toast({
+        title: "Item Removed",
+        description: "Replacement door removed from estimate",
+        action: <Button variant="outline" size="sm" onClick={handleUndo}>Undo</Button>
+      });
     } else if (deleteDialog.type === 'flooring') {
       const removedItem = flooring[deleteDialog.index];
       setUndoState({ action: 'remove', type: 'flooring', data: [removedItem] });
@@ -611,7 +663,7 @@ export default function Estimator() {
     setDeleteDialog({ open: false, type: null, index: -1, itemName: '' });
   };
 
-  const confirmClearAll = (type: 'cabinet' | 'flooring' | 'countertop' | 'hardware') => {
+  const confirmClearAll = (type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | 'door') => {
     setClearAllDialog({ open: true, type });
   };
 
@@ -622,6 +674,14 @@ export default function Estimator() {
       toast({
         title: "Cabinets Cleared",
         description: `Removed ${cabinets.length} cabinet item(s)`,
+        action: <Button variant="outline" size="sm" onClick={handleUndo}>Undo</Button>
+      });
+    } else if (clearAllDialog.type === 'door') {
+      setUndoState({ action: 'clear', type: 'door', data: [...replacementDoors] });
+      setReplacementDoors([]);
+      toast({
+        title: "Replacement Doors Cleared",
+        description: `Removed ${replacementDoors.length} door item(s)`,
         action: <Button variant="outline" size="sm" onClick={handleUndo}>Undo</Button>
       });
     } else if (clearAllDialog.type === 'flooring') {
@@ -669,6 +729,16 @@ export default function Estimator() {
         title: "Undo Successful",
         description: "Cabinet items restored"
       });
+    } else if (undoState.type === 'door') {
+      if (undoState.action === 'remove') {
+        setReplacementDoors([...replacementDoors, ...(undoState.data as CabinetItem[])]);
+      } else if (undoState.action === 'clear') {
+        setReplacementDoors(undoState.data as CabinetItem[]);
+      }
+      toast({
+        title: "Undo Successful",
+        description: "Replacement door items restored"
+      });
     } else if (undoState.type === 'flooring') {
       if (undoState.action === 'remove') {
         setFlooring([...flooring, ...(undoState.data as FlooringItem[])]);
@@ -704,7 +774,7 @@ export default function Estimator() {
     setUndoState({ action: null, type: null, data: null });
   };
 
-  const startEditing = (type: 'cabinet' | 'flooring' | 'countertop' | 'hardware', index: number) => {
+  const startEditing = (type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | 'door', index: number) => {
     if (type === 'cabinet') {
       setEditingItem({ type, index, value: cabinets[index].quantity.toString() });
     } else if (type === 'flooring') {
@@ -713,6 +783,8 @@ export default function Estimator() {
       setEditingItem({ type, index, value: countertops[index].linearFeet.toString() });
     } else if (type === 'hardware') {
       setEditingItem({ type, index, value: hardware[index].quantity.toString() });
+    } else if (type === 'door') {
+      setEditingItem({ type, index, value: replacementDoors[index].quantity.toString() });
     }
   };
 
@@ -830,6 +902,20 @@ export default function Estimator() {
           title: "Updated",
           description: "Cabinet quantity updated successfully"
         });
+      } else if (editingItem.type === 'door') {
+        const quantity = parseInt(editingItem.value);
+        cabinetSchema.parse({ quantity });
+        
+        const updatedDoors = [...replacementDoors];
+        updatedDoors[editingItem.index] = {
+          ...updatedDoors[editingItem.index],
+          quantity
+        };
+        setReplacementDoors(updatedDoors);
+        toast({
+          title: "Updated",
+          description: "Replacement door quantity updated successfully"
+        });
       } else if (editingItem.type === 'flooring') {
         const squareFeet = parseFloat(editingItem.value);
         flooringSchema.parse({ squareFeet });
@@ -887,11 +973,12 @@ export default function Estimator() {
   };
 
   const cabinetTotal = cabinets.reduce((sum, item) => sum + (item.quantity * item.pricePerUnit), 0);
+  const replacementDoorsTotal = replacementDoors.reduce((sum, item) => sum + (item.quantity * item.pricePerUnit), 0);
   const flooringTotal = flooring.reduce((sum, item) => sum + (item.squareFeet * item.pricePerSqFt), 0);
   const countertopTotal = countertops.reduce((sum, item) => sum + (item.linearFeet * item.pricePerLinearFt), 0);
   const hardwareTotal = hardware.reduce((sum, item) => sum + (item.quantity * item.pricePerUnit), 0);
-  const totalCabinetQuantity = cabinets.reduce((sum, item) => sum + item.quantity, 0);
-  const subtotal = cabinetTotal + flooringTotal + countertopTotal + hardwareTotal;
+  const totalCabinetQuantity = cabinets.reduce((sum, item) => sum + item.quantity, 0) + replacementDoors.reduce((sum, item) => sum + item.quantity, 0);
+  const subtotal = cabinetTotal + replacementDoorsTotal + flooringTotal + countertopTotal + hardwareTotal;
   
   let markupPercentage = 0;
   let markupLabel = "";
@@ -1276,44 +1363,12 @@ export default function Estimator() {
             <Card className={editingItem.type === 'cabinet' ? 'ring-2 ring-primary shadow-lg transition-all duration-200' : 'transition-all duration-200'}>
               <CardHeader>
                 <CardTitle>Cabinets</CardTitle>
-                <CardDescription>Add cabinets to your estimate</CardDescription>
+                <CardDescription>Add complete cabinets to your estimate</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Door Style Selection */}
-                <div className="space-y-2">
-                  <Label>Door Style</Label>
-                  <ImageSelect value={cabinetType} onValueChange={setCabinetType}>
-                    <ImageSelectTrigger className="w-full">
-                      <SelectValue placeholder="Select door style" />
-                    </ImageSelectTrigger>
-                    <ImageSelectContent>
-                      {cabinetTypes
-                        .filter((cabinet) => cabinet.name.startsWith("Doormark"))
-                        .map((cabinet) => (
-                          <DoorStylePreview
-                            key={cabinet.id}
-                            doorStyle={{
-                              name: formatName(cabinet.name),
-                              price: cabinet.price_per_unit,
-                              image: doorStyleImageMap[cabinet.name],
-                              ...doorStyleSpecs[cabinet.name]
-                            }}
-                          >
-                            <ImageSelectItem
-                              value={cabinet.name}
-                              image={doorStyleImageMap[cabinet.name]}
-                            >
-                              {formatName(cabinet.name)} - ${cabinet.price_per_unit}
-                            </ImageSelectItem>
-                          </DoorStylePreview>
-                        ))}
-                    </ImageSelectContent>
-                  </ImageSelect>
-                </div>
-
                 {/* Cabinet Size Selection */}
                 <div className="space-y-2">
-                  <Label>Cabinet Size (Optional)</Label>
+                  <Label>Cabinet Size</Label>
                   <Select value={cabinetType} onValueChange={setCabinetType}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select cabinet size" />
@@ -1369,34 +1424,19 @@ export default function Estimator() {
                               min="1"
                               max="1000"
                               value={editingItem.value}
-                              onChange={(e) => setEditingItem({ ...editingItem, value: e.target.value })}
+                              onChange={(e) => setEditingItem({...editingItem, value: e.target.value})}
+                              onBlur={() => saveEdit()}
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') saveEdit();
-                                if (e.key === 'Escape') cancelEditing();
-                                handleKeyNavigation(e, index);
+                                else if (e.key === 'Escape') cancelEditing();
+                                else handleKeyNavigation(e, index);
                               }}
-                              className="h-7 w-20"
                               autoFocus
+                              className="w-20 h-8"
                             />
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={saveEdit}
-                              className="h-7 px-2 text-xs"
-                            >
-                              Save
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={cancelEditing}
-                              className="h-7 px-2 text-xs"
-                            >
-                              Cancel
-                            </Button>
                           </div>
                         ) : (
-                          <span 
+                          <span
                             className="flex-1 cursor-pointer hover:bg-muted/50 px-2 py-1 rounded transition-colors"
                             onClick={() => startEditing('cabinet', index)}
                             title="Click to edit quantity"
@@ -1418,6 +1458,124 @@ export default function Estimator() {
                     <div className="flex justify-between font-bold pt-2 border-t">
                       <span>Factory Price:</span>
                       <span>${cabinetTotal.toFixed(2)}</span>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Replacement Cabinet Doors */}
+            <Card className={editingItem.type === 'door' ? 'ring-2 ring-primary shadow-lg transition-all duration-200' : 'transition-all duration-200'}>
+              <CardHeader>
+                <CardTitle>Replacement Cabinet Doors</CardTitle>
+                <CardDescription>Add replacement doors to your estimate</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Door Style Selection */}
+                <div className="space-y-2">
+                  <Label>Door Style</Label>
+                  <ImageSelect value={replacementDoorType} onValueChange={setReplacementDoorType}>
+                    <ImageSelectTrigger className="w-full">
+                      <SelectValue placeholder="Select door style" />
+                    </ImageSelectTrigger>
+                    <ImageSelectContent>
+                      {cabinetTypes
+                        .filter((cabinet) => cabinet.name.startsWith("Doormark"))
+                        .map((cabinet) => (
+                          <DoorStylePreview
+                            key={cabinet.id}
+                            doorStyle={{
+                              name: formatName(cabinet.name),
+                              price: cabinet.price_per_unit,
+                              image: doorStyleImageMap[cabinet.name],
+                              ...doorStyleSpecs[cabinet.name]
+                            }}
+                          >
+                            <ImageSelectItem
+                              value={cabinet.name}
+                              image={doorStyleImageMap[cabinet.name]}
+                            >
+                              {formatName(cabinet.name)} - ${cabinet.price_per_unit}
+                            </ImageSelectItem>
+                          </DoorStylePreview>
+                        ))}
+                    </ImageSelectContent>
+                  </ImageSelect>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Quantity</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="1000"
+                    placeholder="Enter quantity (1-1000)"
+                    value={replacementDoorQuantity}
+                    onChange={(e) => setReplacementDoorQuantity(e.target.value)}
+                  />
+                </div>
+
+                <Button onClick={addReplacementDoor} className="w-full" variant="kiosk">
+                  Add Replacement Door
+                </Button>
+
+                {replacementDoors.length > 0 && (
+                  <div className="space-y-2 pt-4 border-t">
+                    <div className="flex justify-between items-center mb-2">
+                      <h4 className="font-semibold">Added Doors:</h4>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => confirmClearAll('door')}
+                        className="h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        Clear All
+                      </Button>
+                    </div>
+                    {replacementDoors.map((item, index) => (
+                      <div key={index} className="flex justify-between items-center text-sm gap-2">
+                        {editingItem.type === 'door' && editingItem.index === index ? (
+                          <div className="flex-1 flex items-center gap-2">
+                            <span>{formatName(item.type)} x</span>
+                            <Input
+                              type="number"
+                              min="1"
+                              max="1000"
+                              value={editingItem.value}
+                              onChange={(e) => setEditingItem({...editingItem, value: e.target.value})}
+                              onBlur={() => saveEdit()}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') saveEdit();
+                                else if (e.key === 'Escape') cancelEditing();
+                                else handleKeyNavigation(e, index);
+                              }}
+                              autoFocus
+                              className="w-20 h-8"
+                            />
+                          </div>
+                        ) : (
+                          <span
+                            className="flex-1 cursor-pointer hover:bg-muted/50 px-2 py-1 rounded transition-colors"
+                            onClick={() => startEditing('door', index)}
+                            title="Click to edit quantity"
+                          >
+                            {formatName(item.type)} x{item.quantity}
+                          </span>
+                        )}
+                        <span className="font-semibold">${(item.quantity * item.pricePerUnit).toFixed(2)}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => confirmRemoveReplacementDoor(index)}
+                          className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    <div className="flex justify-between font-bold pt-2 border-t">
+                      <span>Factory Price:</span>
+                      <span>${replacementDoorsTotal.toFixed(2)}</span>
                     </div>
                   </div>
                 )}
