@@ -301,21 +301,21 @@ const OnlineShop = () => {
       {/* Featured Collection Banner */}
       <section className="container mx-auto px-4 py-8">
         <Card 
-          className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-background to-muted/30 border-2 border-primary/20 hover:border-primary/40 transition-all duration-300 cursor-pointer group"
+          className="relative overflow-hidden bg-gradient-to-br from-green-50 via-emerald-50/50 to-green-100/80 border-2 border-green-200/50 hover:border-green-300/60 transition-all duration-300 cursor-pointer group"
           onClick={() => {
             trackEvent('click', 'banner_card');
             navigate("/collections/calacatta");
           }}
         >
-          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -z-10" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-accent/5 rounded-full blur-3xl -z-10" />
+          <div className="absolute top-0 right-0 w-64 h-64 bg-green-200/20 rounded-full blur-3xl -z-10" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-200/20 rounded-full blur-3xl -z-10" />
           
           <div className="grid md:grid-cols-2 gap-8 p-8 md:p-12 items-center">
             {/* Left Content */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-primary animate-pulse" />
-                <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+                <Sparkles className="w-5 h-5 text-green-600 animate-pulse" />
+                <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-200">
                   New 2025 Collection
                 </Badge>
               </div>
