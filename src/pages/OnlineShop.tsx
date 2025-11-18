@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, ShoppingCart, Package, AlertCircle, User, LogOut, Building2, Sparkles, ArrowRight, ArrowUpDown } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ArrowLeft, ShoppingCart, Package, AlertCircle, User, LogOut, Building2, Sparkles, ArrowRight, ArrowUpDown, Search, X } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -52,6 +53,7 @@ const OnlineShop = () => {
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<string>("category");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const { totalItems, setIsCartOpen, user } = useCart();
   const { cartBadgePulse } = useCart();
 
@@ -103,8 +105,22 @@ const OnlineShop = () => {
 
   const filteredAndSortedProducts = [...products]
     .filter(product => {
-      if (categoryFilter === "all") return true;
-      return product.category === categoryFilter;
+      // Category filter
+      if (categoryFilter !== "all" && product.category !== categoryFilter) {
+        return false;
+      }
+      
+      // Search filter
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase().trim();
+        const matchesName = product.name.toLowerCase().includes(query);
+        const matchesSKU = product.sku?.toLowerCase().includes(query);
+        const matchesDescription = product.description.toLowerCase().includes(query);
+        
+        return matchesName || matchesSKU || matchesDescription;
+      }
+      
+      return true;
     })
     .sort((a, b) => {
       switch (sortBy) {
@@ -123,6 +139,13 @@ const OnlineShop = () => {
     });
 
   const availableCategories = [...new Set(products.map(p => p.category))].sort();
+
+  const clearAllFilters = () => {
+    setCategoryFilter("all");
+    setSearchQuery("");
+  };
+
+  const hasActiveFilters = categoryFilter !== "all" || searchQuery.trim() !== "";
 
   const getInventoryBadge = (status: string, count: number) => {
     if (status === 'out_of_stock' || count === 0) {
@@ -491,7 +514,8 @@ const OnlineShop = () => {
 
       {/* Products Grid */}
       <section className="container mx-auto px-4 py-12">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-12">
+        <div className="space-y-6 mb-12">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div className="text-center md:text-left">
               <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
                 Our Product Categories
@@ -534,13 +558,84 @@ const OnlineShop = () => {
             </div>
           </div>
 
-          {!loading && categoryFilter !== "all" && (
-            <div className="text-center mb-4">
+          {/* Search Bar */}
+          <div className="max-w-2xl mx-auto">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search by product name, SKU, or description..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 pr-10 h-12 text-base"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Clear search"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Active Filters Display */}
+          {hasActiveFilters && (
+            <div className="flex flex-wrap items-center gap-2 justify-center">
+              <span className="text-sm text-muted-foreground">Active filters:</span>
+              {categoryFilter !== "all" && (
+                <Badge variant="secondary" className="gap-1">
+                  Category: {categoryFilter}
+                  <button
+                    onClick={() => setCategoryFilter("all")}
+                    className="ml-1 hover:text-foreground"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </Badge>
+              )}
+              {searchQuery.trim() && (
+                <Badge variant="secondary" className="gap-1">
+                  Search: "{searchQuery}"
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="ml-1 hover:text-foreground"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </Badge>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearAllFilters}
+                className="h-7"
+              >
+                Clear All
+              </Button>
+            </div>
+          )}
+
+          {/* Results Count */}
+          {!loading && (
+            <div className="text-center">
               <p className="text-sm text-muted-foreground">
-                Showing {filteredAndSortedProducts.length} {filteredAndSortedProducts.length === 1 ? 'product' : 'products'} in <span className="font-semibold">{categoryFilter}</span>
+                {hasActiveFilters ? (
+                  <>
+                    Showing <span className="font-semibold">{filteredAndSortedProducts.length}</span> of{" "}
+                    <span className="font-semibold">{products.length}</span> products
+                  </>
+                ) : (
+                  <>
+                    <span className="font-semibold">{products.length}</span> products available
+                  </>
+                )}
               </p>
             </div>
           )}
+        </div>
 
         {loading ? (
           <ProductGridSkeleton count={6} />
@@ -549,11 +644,16 @@ const OnlineShop = () => {
             <Package className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
             <h3 className="text-xl font-semibold mb-2">No products found</h3>
             <p className="text-muted-foreground mb-4">
-              Try adjusting your filters to see more results
+              {hasActiveFilters 
+                ? "No products match your search criteria. Try adjusting your filters."
+                : "No products available at this time."
+              }
             </p>
-            <Button variant="outline" onClick={() => setCategoryFilter("all")}>
-              Clear Filters
-            </Button>
+            {hasActiveFilters && (
+              <Button variant="outline" onClick={clearAllFilters}>
+                Clear All Filters
+              </Button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
