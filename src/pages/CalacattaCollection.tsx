@@ -5,7 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ProductGridSkeleton } from "@/components/ui/product-card-skeleton";
-import { Download, ArrowLeft, ShoppingCart } from "lucide-react";
+import { Download, ArrowLeft, ShoppingCart, ArrowUpDown } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "sonner";
 
@@ -22,6 +29,7 @@ interface Product {
 const CalacattaCollection = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sortBy, setSortBy] = useState<string>("price-low");
   const { addItem } = useCart();
 
   useEffect(() => {
@@ -34,8 +42,7 @@ const CalacattaCollection = () => {
         .from('products')
         .select('*')
         .eq('category', 'Countertops')
-        .like('sku', 'CAL-%')
-        .order('price', { ascending: true });
+        .like('sku', 'CAL-%');
 
       if (error) throw error;
       setProducts(data || []);
@@ -46,6 +53,21 @@ const CalacattaCollection = () => {
       setLoading(false);
     }
   };
+
+  const sortedProducts = [...products].sort((a, b) => {
+    switch (sortBy) {
+      case "sku":
+        return (a.sku || "").localeCompare(b.sku || "");
+      case "name":
+        return a.name.localeCompare(b.name);
+      case "price-low":
+        return a.price - b.price;
+      case "price-high":
+        return b.price - a.price;
+      default:
+        return 0;
+    }
+  });
 
   const handleAddToCart = (product: Product) => {
     addItem({
@@ -139,15 +161,32 @@ const CalacattaCollection = () => {
       {/* Product Gallery */}
       <section className="py-16 px-4">
         <div className="container mx-auto max-w-7xl">
-          <h2 className="text-3xl font-bold mb-12 text-center">
-            Explore the Collection
-          </h2>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-12">
+            <h2 className="text-3xl font-bold text-center md:text-left">
+              Explore the Collection
+            </h2>
+            
+            <div className="flex items-center gap-2 w-full md:w-auto">
+              <ArrowUpDown className="w-4 h-4 text-muted-foreground" />
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-full md:w-[200px]">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sku">SKU Number</SelectItem>
+                  <SelectItem value="name">Name (A-Z)</SelectItem>
+                  <SelectItem value="price-low">Price (Low to High)</SelectItem>
+                  <SelectItem value="price-high">Price (High to Low)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
           {loading ? (
             <ProductGridSkeleton count={7} />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {products.map((product) => (
+              {sortedProducts.map((product) => (
                 <Card key={product.id} className="overflow-hidden group hover:shadow-xl transition-shadow duration-300">
                   {/* Product Image */}
                   <div className="aspect-[4/3] overflow-hidden bg-muted">
