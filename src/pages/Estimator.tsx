@@ -28,6 +28,7 @@ import caprisImg from "@/assets/cabinet-doors/doormark-capris.png";
 import euroShakerImg from "@/assets/cabinet-doors/doormark-euro-shaker.png";
 import hollyHillImg from "@/assets/cabinet-doors/doormark-holly-hill.png";
 import shakerAbacoaImg from "@/assets/cabinet-doors/doormark-shaker-abacoa.png";
+import { DoorStylePreview } from "@/components/DoorStylePreview";
 
 const cabinetSchema = z.object({
   quantity: z.number().int().min(1, "Quantity must be at least 1").max(1000, "Quantity cannot exceed 1000")
@@ -81,6 +82,81 @@ const doorStyleImageMap: Record<string, string> = {
   "Doormark Euro Shaker": euroShakerImg,
   "Doormark Holly Hill": hollyHillImg,
   "Doormark Shaker Abacoa": shakerAbacoaImg,
+};
+
+const doorStyleSpecs: Record<string, any> = {
+  "Doormark Bal Harbor": {
+    style: "Modern Coastal",
+    material: "MDF with veneer",
+    finish: ["White", "Gray", "Navy", "Natural"],
+    features: [
+      "Clean horizontal lines",
+      "Recessed center panel",
+      "Contemporary coastal design",
+      "Durable moisture-resistant finish"
+    ],
+    description: "Modern coastal style with clean lines perfect for beach-inspired kitchens"
+  },
+  "Doormark Biscayne": {
+    style: "Sleek Contemporary",
+    material: "Thermofoil MDF",
+    finish: ["High Gloss White", "Matte Gray", "Black", "Cappuccino"],
+    features: [
+      "Full overlay frameless design",
+      "Ultra-smooth surface",
+      "Easy to clean and maintain",
+      "Seamless modern appearance"
+    ],
+    description: "Sleek contemporary design with a smooth, seamless finish for modern spaces"
+  },
+  "Doormark Capris": {
+    style: "Classic Shaker",
+    material: "Solid wood frame",
+    finish: ["White", "Dove Gray", "Espresso", "Natural Oak"],
+    features: [
+      "5-piece construction",
+      "Recessed square panel",
+      "Timeless versatile design",
+      "Complements any decor style"
+    ],
+    description: "Classic shaker style that works beautifully in traditional and transitional kitchens"
+  },
+  "Doormark Euro Shaker": {
+    style: "Minimalist European",
+    material: "Premium plywood",
+    finish: ["Pure White", "Light Gray", "Taupe", "Walnut"],
+    features: [
+      "Slim profile frame",
+      "Flat center panel",
+      "European hinges ready",
+      "Minimalist aesthetic"
+    ],
+    description: "Minimalist European design with slim profiles and clean lines"
+  },
+  "Doormark Holly Hill": {
+    style: "Premium Traditional",
+    material: "Solid hardwood",
+    finish: ["Antique White", "Cherry", "Maple", "Mahogany"],
+    features: [
+      "Raised panel design",
+      "Decorative molding details",
+      "Premium solid wood construction",
+      "Heirloom quality craftsmanship"
+    ],
+    description: "Premium traditional style with raised panels and elegant detailing"
+  },
+  "Doormark Shaker Abacoa": {
+    style: "Versatile Transitional",
+    material: "Hybrid wood composite",
+    finish: ["Soft White", "Greige", "Navy Blue", "Sage Green"],
+    features: [
+      "Balanced proportions",
+      "Subtle grain texture",
+      "Works with multiple styles",
+      "Durable everyday finish"
+    ],
+    description: "Versatile transitional design that bridges traditional and contemporary styles"
+  }
 };
 
 interface CountertopItem {
@@ -1214,13 +1290,22 @@ export default function Estimator() {
                       {cabinetTypes
                         .filter((cabinet) => cabinet.name.startsWith("Doormark"))
                         .map((cabinet) => (
-                          <ImageSelectItem
+                          <DoorStylePreview
                             key={cabinet.id}
-                            value={cabinet.name}
-                            image={doorStyleImageMap[cabinet.name]}
+                            doorStyle={{
+                              name: formatName(cabinet.name),
+                              price: cabinet.price_per_unit,
+                              image: doorStyleImageMap[cabinet.name],
+                              ...doorStyleSpecs[cabinet.name]
+                            }}
                           >
-                            {formatName(cabinet.name)} - ${cabinet.price_per_unit}
-                          </ImageSelectItem>
+                            <ImageSelectItem
+                              value={cabinet.name}
+                              image={doorStyleImageMap[cabinet.name]}
+                            >
+                              {formatName(cabinet.name)} - ${cabinet.price_per_unit}
+                            </ImageSelectItem>
+                          </DoorStylePreview>
                         ))}
                     </ImageSelectContent>
                   </ImageSelect>
