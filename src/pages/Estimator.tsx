@@ -22,6 +22,12 @@ import cocoaImg from "@/assets/flooring/lvp/cocoa.png";
 import butternutImg from "@/assets/flooring/lvp/butternut.png";
 import fogImg from "@/assets/flooring/lvp/fog.png";
 import blondieImg from "@/assets/flooring/lvp/blondie.png";
+import balHarborImg from "@/assets/cabinet-doors/doormark-bal-harbor.png";
+import biscayneImg from "@/assets/cabinet-doors/doormark-biscayne.png";
+import caprisImg from "@/assets/cabinet-doors/doormark-capris.png";
+import euroShakerImg from "@/assets/cabinet-doors/doormark-euro-shaker.png";
+import hollyHillImg from "@/assets/cabinet-doors/doormark-holly-hill.png";
+import shakerAbacoaImg from "@/assets/cabinet-doors/doormark-shaker-abacoa.png";
 
 const cabinetSchema = z.object({
   quantity: z.number().int().min(1, "Quantity must be at least 1").max(1000, "Quantity cannot exceed 1000")
@@ -66,6 +72,15 @@ const flooringImageMap: Record<string, string> = {
   "LVP - Butternut": fogImg,
   "LVP - Fog": butternutImg,
   "LVP - Blondie": cocoaImg,
+};
+
+const doorStyleImageMap: Record<string, string> = {
+  "Doormark Bal Harbor": balHarborImg,
+  "Doormark Biscayne": biscayneImg,
+  "Doormark Capris": caprisImg,
+  "Doormark Euro Shaker": euroShakerImg,
+  "Doormark Holly Hill": hollyHillImg,
+  "Doormark Shaker Abacoa": shakerAbacoaImg,
 };
 
 interface CountertopItem {
@@ -1188,18 +1203,44 @@ export default function Estimator() {
                 <CardDescription>Add cabinets to your estimate</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Door Style Selection */}
                 <div className="space-y-2">
-                  <Label>Cabinet Type</Label>
+                  <Label>Door Style</Label>
+                  <ImageSelect value={cabinetType} onValueChange={setCabinetType}>
+                    <ImageSelectTrigger className="w-full">
+                      <SelectValue placeholder="Select door style" />
+                    </ImageSelectTrigger>
+                    <ImageSelectContent>
+                      {cabinetTypes
+                        .filter((cabinet) => cabinet.name.startsWith("Doormark"))
+                        .map((cabinet) => (
+                          <ImageSelectItem
+                            key={cabinet.id}
+                            value={cabinet.name}
+                            image={doorStyleImageMap[cabinet.name]}
+                          >
+                            {formatName(cabinet.name)} - ${cabinet.price_per_unit}
+                          </ImageSelectItem>
+                        ))}
+                    </ImageSelectContent>
+                  </ImageSelect>
+                </div>
+
+                {/* Cabinet Size Selection */}
+                <div className="space-y-2">
+                  <Label>Cabinet Size (Optional)</Label>
                   <Select value={cabinetType} onValueChange={setCabinetType}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select cabinet type" />
+                      <SelectValue placeholder="Select cabinet size" />
                     </SelectTrigger>
                     <SelectContent>
-                      {cabinetTypes.map((cabinet) => (
-                        <SelectItem key={cabinet.id} value={cabinet.name}>
-                          {formatName(cabinet.name)} - ${cabinet.price_per_unit}
-                        </SelectItem>
-                      ))}
+                      {cabinetTypes
+                        .filter((cabinet) => !cabinet.name.startsWith("Doormark"))
+                        .map((cabinet) => (
+                          <SelectItem key={cabinet.id} value={cabinet.name}>
+                            {formatName(cabinet.name)} - ${cabinet.price_per_unit}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
