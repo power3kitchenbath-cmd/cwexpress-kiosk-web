@@ -111,7 +111,7 @@ const CalacattaCollection = () => {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative py-20 px-4 bg-gradient-to-br from-background via-muted/20 to-background">
+      <section className="relative py-20 px-4 bg-gradient-to-br from-amber-50 via-yellow-50/50 to-amber-100/80">
         <div className="container mx-auto max-w-6xl text-center">
           <Badge className="mb-4" variant="secondary">
             2025 Collection
@@ -139,7 +139,7 @@ const CalacattaCollection = () => {
       </section>
 
       {/* Collection Info */}
-      <section className="py-12 px-4 bg-muted/30">
+      <section className="py-12 px-4 bg-amber-100/30 border-y border-amber-200/50">
         <div className="container mx-auto max-w-6xl">
           <div className="grid md:grid-cols-3 gap-8 text-center">
             <div>
@@ -159,7 +159,7 @@ const CalacattaCollection = () => {
       </section>
 
       {/* Product Gallery */}
-      <section className="py-16 px-4">
+      <section className="py-16 px-4 bg-gradient-to-b from-amber-50/50 to-background">
         <div className="container mx-auto max-w-7xl">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-12">
             <h2 className="text-3xl font-bold text-center md:text-left">
