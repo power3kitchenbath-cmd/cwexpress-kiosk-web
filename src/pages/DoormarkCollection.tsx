@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ProductGridSkeleton } from "@/components/ui/product-card-skeleton";
-import { ArrowLeft, ShoppingCart, SlidersHorizontal } from "lucide-react";
+import { ArrowLeft, ShoppingCart, SlidersHorizontal, ArrowUpDown } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "sonner";
 import {
@@ -34,6 +34,7 @@ const DoormarkCollection = () => {
   const [finishFilter, setFinishFilter] = useState<string>("all");
   const [styleFilter, setStyleFilter] = useState<string>("all");
   const [priceFilter, setPriceFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("price-low");
   const { addItem } = useCart();
 
   useEffect(() => {
@@ -42,7 +43,7 @@ const DoormarkCollection = () => {
 
   useEffect(() => {
     applyFilters();
-  }, [products, finishFilter, styleFilter, priceFilter]);
+  }, [products, finishFilter, styleFilter, priceFilter, sortBy]);
 
   const fetchDoormarkProducts = async () => {
     try {
@@ -90,6 +91,22 @@ const DoormarkCollection = () => {
         filtered = filtered.filter(product => product.price >= 100);
       }
     }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case "sku":
+          return (a.sku || "").localeCompare(b.sku || "");
+        case "name":
+          return a.name.localeCompare(b.name);
+        case "price-low":
+          return a.price - b.price;
+        case "price-high":
+          return b.price - a.price;
+        default:
+          return 0;
+      }
+    });
 
     setFilteredProducts(filtered);
   };
@@ -193,7 +210,7 @@ const DoormarkCollection = () => {
                 Try Visualizer
               </Button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {/* Finish Filter */}
               <div>
                 <label className="text-sm font-medium mb-2 block text-muted-foreground">
@@ -245,6 +262,25 @@ const DoormarkCollection = () => {
                     <SelectItem value="under-50">Under $50</SelectItem>
                     <SelectItem value="50-100">$50 - $100</SelectItem>
                     <SelectItem value="over-100">Over $100</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Sort By */}
+              <div>
+                <label className="text-sm font-medium mb-2 block text-muted-foreground">
+                  <ArrowUpDown className="w-4 h-4 inline mr-1" />
+                  Sort By
+                </label>
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sku">SKU Number</SelectItem>
+                    <SelectItem value="name">Name (A-Z)</SelectItem>
+                    <SelectItem value="price-low">Price (Low to High)</SelectItem>
+                    <SelectItem value="price-high">Price (High to Low)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
