@@ -181,14 +181,28 @@ const Checkout = () => {
         }
       }
 
-      // Send order receipt email
+      // Send order receipt email (non-blocking)
       try {
-        await supabase.functions.invoke("send-order-receipt", {
-          body: { orderId: order.id },
+        const { data, error: emailError } = await supabase.functions.invoke("send-order-receipt", {
+          body: { orderId: order.id, emailType: "confirmation" },
         });
+        
+        if (emailError) {
+          console.error("Email service error:", emailError);
+          toast({
+            title: "Order placed successfully",
+            description: "Your order was created, but we couldn't send the confirmation email. Please contact support if you don't receive a copy.",
+            variant: "default",
+          });
+        }
       } catch (emailError) {
         console.error("Error sending order receipt:", emailError);
-        // Don't fail the order if email fails
+        // Order still succeeds even if email fails
+        toast({
+          title: "Order placed successfully",
+          description: "Your order was created, but we couldn't send the confirmation email. Please contact support if you don't receive a copy.",
+          variant: "default",
+        });
       }
 
       // Clear cart

@@ -61,7 +61,7 @@ export const EmailPreviewDialog = ({
         throw new Error("Admin email not found");
       }
 
-      const { error } = await supabase.functions.invoke("send-order-receipt", {
+      const { data, error } = await supabase.functions.invoke("send-order-receipt", {
         body: {
           orderId: order.id,
           emailType: emailType,
@@ -69,17 +69,25 @@ export const EmailPreviewDialog = ({
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Email function error:", error);
+        toast({
+          title: "Email service error",
+          description: error.message || "The email service is currently unavailable. Please verify your Resend API key is configured correctly.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       toast({
         title: "Test email sent",
         description: `Preview sent to ${user.email}`,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error sending test email:", error);
       toast({
-        title: "Error",
-        description: "Failed to send test email",
+        title: "Failed to send test email",
+        description: error.message || "An unexpected error occurred. Check console for details.",
         variant: "destructive",
       });
     } finally {
