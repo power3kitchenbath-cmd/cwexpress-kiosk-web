@@ -14,6 +14,7 @@ import { ArrowLeft, Grid3x3, List, Search, Upload, FolderOpen } from "lucide-rea
 import { useDesignProjects } from "@/hooks/useDesignProjects";
 import { DesignProjectCard } from "@/components/DesignProjectCard";
 import { DesignGalleryDateFilter } from "@/components/DesignGalleryDateFilter";
+import { DesignGalleryCabinetFilter } from "@/components/DesignGalleryCabinetFilter";
 
 export default function DesignGallery() {
   const navigate = useNavigate();
@@ -23,6 +24,8 @@ export default function DesignGallery() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [dateFrom, setDateFrom] = useState<string | undefined>();
   const [dateTo, setDateTo] = useState<string | undefined>();
+  const [cabinetCountMin, setCabinetCountMin] = useState<number | undefined>();
+  const [cabinetCountMax, setCabinetCountMax] = useState<number | undefined>();
 
   const { projects, isLoading, deleteProject } = useDesignProjects({
     searchQuery,
@@ -30,11 +33,18 @@ export default function DesignGallery() {
     sortDirection,
     dateFrom,
     dateTo,
+    cabinetCountMin,
+    cabinetCountMax,
   });
 
   const handleDateChange = (from: string | undefined, to: string | undefined) => {
     setDateFrom(from);
     setDateTo(to);
+  };
+
+  const handleCabinetRangeChange = (min: number | undefined, max: number | undefined) => {
+    setCabinetCountMin(min);
+    setCabinetCountMax(max);
   };
 
   const handleSortChange = (value: string) => {
@@ -122,10 +132,17 @@ export default function DesignGallery() {
                 </div>
               </div>
 
-              {/* Date Range Filter */}
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground whitespace-nowrap">Filter by date:</span>
-                <DesignGalleryDateFilter onDateChange={handleDateChange} />
+              {/* Filters Row */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">Filter by date:</span>
+                  <DesignGalleryDateFilter onDateChange={handleDateChange} />
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">Filter by cabinets:</span>
+                  <DesignGalleryCabinetFilter onRangeChange={handleCabinetRangeChange} />
+                </div>
               </div>
             </div>
           </Card>
