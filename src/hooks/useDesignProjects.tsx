@@ -19,6 +19,8 @@ interface UseDesignProjectsOptions {
   sortDirection?: "asc" | "desc";
   dateFrom?: string;
   dateTo?: string;
+  cabinetCountMin?: number;
+  cabinetCountMax?: number;
 }
 
 export const useDesignProjects = (options: UseDesignProjectsOptions = {}) => {
@@ -63,17 +65,27 @@ export const useDesignProjects = (options: UseDesignProjectsOptions = {}) => {
 
       if (error) throw error;
 
+      // Apply cabinet count filtering
+      let filteredData = (data || []) as DesignProject[];
+      if (options.cabinetCountMin !== undefined || options.cabinetCountMax !== undefined) {
+        filteredData = filteredData.filter((project) => {
+          const count = Array.isArray(project.cabinet_data) ? project.cabinet_data.length : 0;
+          const matchesMin = options.cabinetCountMin === undefined || count >= options.cabinetCountMin;
+          const matchesMax = options.cabinetCountMax === undefined || count <= options.cabinetCountMax;
+          return matchesMin && matchesMax;
+        });
+      }
+
       // Sort by cabinet count if requested
-      let sortedData = (data || []) as DesignProject[];
       if (options.sortBy === "cabinet_count") {
-        sortedData = sortedData.sort((a, b) => {
+        filteredData = filteredData.sort((a, b) => {
           const aCount = Array.isArray(a.cabinet_data) ? a.cabinet_data.length : 0;
           const bCount = Array.isArray(b.cabinet_data) ? b.cabinet_data.length : 0;
           return options.sortDirection === "asc" ? aCount - bCount : bCount - aCount;
         });
       }
 
-      setProjects(sortedData);
+      setProjects(filteredData);
     } catch (error: any) {
       console.error("Error fetching design projects:", error);
       toast({
@@ -136,6 +148,8 @@ export const useDesignProjects = (options: UseDesignProjectsOptions = {}) => {
     options.sortDirection,
     options.dateFrom,
     options.dateTo,
+    options.cabinetCountMin,
+    options.cabinetCountMax,
   ]);
 
   return {
