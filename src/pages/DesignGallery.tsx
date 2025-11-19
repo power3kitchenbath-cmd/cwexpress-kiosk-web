@@ -10,6 +10,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { ArrowLeft, Grid3x3, List, Search, Upload, FolderOpen, CheckSquare, Square } from "lucide-react";
 import { useDesignProjects } from "@/hooks/useDesignProjects";
 import { DesignProjectCard } from "@/components/DesignProjectCard";
@@ -17,11 +26,14 @@ import { DesignGalleryDateFilter } from "@/components/DesignGalleryDateFilter";
 import { DesignGalleryCabinetFilter } from "@/components/DesignGalleryCabinetFilter";
 import { DesignGalleryExport } from "@/components/DesignGalleryExport";
 import { DesignGalleryBulkActions } from "@/components/DesignGalleryBulkActions";
+import { DesignGalleryDragDrop } from "@/components/DesignGalleryDragDrop";
 import { useToast } from "@/hooks/use-toast";
+import { useFileUpload } from "@/hooks/useFileUpload";
 
 export default function DesignGallery() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isUploading, validateFile, uploadFiles } = useFileUpload();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"created_at" | "project_name" | "cabinet_count">("created_at");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
@@ -32,8 +44,15 @@ export default function DesignGallery() {
   const [cabinetCountMax, setCabinetCountMax] = useState<number | undefined>();
   const [selectedProjects, setSelectedProjects] = useState<Set<string>>(new Set());
   const [selectionMode, setSelectionMode] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [showNameDialog, setShowNameDialog] = useState(false);
+  const [droppedFiles, setDroppedFiles] = useState<{ cabinet: File | null; drawing: File | null }>({
+    cabinet: null,
+    drawing: null,
+  });
+  const [projectName, setProjectName] = useState("");
 
-  const { projects, isLoading, deleteProject } = useDesignProjects({
+  const { projects, isLoading, deleteProject, refetch } = useDesignProjects({
     searchQuery,
     sortBy,
     sortDirection,
@@ -115,6 +134,102 @@ export default function DesignGallery() {
     setSelectionMode(false);
   };
 
+  // Drag and drop handlers
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    if (
+      e.clientX <= rect.left ||
+      e.clientX >= rect.right ||
+      e.clientY <= rect.top ||
+      e.clientY >= rect.bottom
+    ) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length === 0) return;
+
+    // Categorize files
+    let cabinetFile: File | null = null;
+    let drawingFile: File | null = null;
+
+    for (const file of files) {
+      const ext = file.name.split(".").pop()?.toLowerCase();
+      
+      if (ext === "csv" || ext === "xlsx" || ext === "xls") {
+        if (!cabinetFile && validateFile(file, "cabinet")) {
+          cabinetFile = file;
+        }
+      } else if (ext === "pdf" || ext === "jpg" || ext === "jpeg" || ext === "png") {
+        if (!drawingFile && validateFile(file, "drawing")) {
+          drawingFile = file;
+        }
+      }
+    }
+
+    if (!cabinetFile && !drawingFile) {
+      toast({
+        title: "Invalid Files",
+        description: "Please drop valid cabinet list (CSV/Excel) or drawing files (PDF/JPG/PNG).",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setDroppedFiles({ cabinet: cabinetFile, drawing: drawingFile });
+    setProjectName(`Design ${new Date().toLocaleDateString()}`);
+    setShowNameDialog(true);
+  };
+
+  const handleUploadConfirm = async () => {
+    if (!projectName.trim()) {
+      toast({
+        title: "Project Name Required",
+        description: "Please enter a name for your project.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await uploadFiles(
+        {
+          cabinetFile: droppedFiles.cabinet,
+          drawingFile: droppedFiles.drawing,
+        },
+        projectName
+      );
+
+      setShowNameDialog(false);
+      setDroppedFiles({ cabinet: null, drawing: null });
+      setProjectName("");
+      refetch();
+    } catch (error) {
+      // Error handled in useFileUpload
+    }
+  };
+
   const handleSortChange = (value: string) => {
     const [newSortBy, newDirection] = value.split("-") as [typeof sortBy, typeof sortDirection];
     setSortBy(newSortBy);
@@ -122,7 +237,15 @@ export default function DesignGallery() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
+    <div
+      className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5"
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      <DesignGalleryDragDrop isDragging={isDragging} onFilesDropped={() => {}} />
+
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-6">
@@ -300,6 +423,57 @@ export default function DesignGallery() {
           onBulkDelete={handleBulkDelete}
         />
       </div>
+
+      {/* Project Name Dialog */}
+      <Dialog open={showNameDialog} onOpenChange={setShowNameDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Name Your Design Project</DialogTitle>
+            <DialogDescription>
+              Give your uploaded design a meaningful name
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="project-name">Project Name</Label>
+              <Input
+                id="project-name"
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+                placeholder="e.g., Kitchen Remodel 2024"
+                autoFocus
+              />
+            </div>
+
+            <div className="text-sm text-muted-foreground space-y-1">
+              <p className="font-medium">Files to upload:</p>
+              {droppedFiles.cabinet && (
+                <p>✓ Cabinet List: {droppedFiles.cabinet.name}</p>
+              )}
+              {droppedFiles.drawing && (
+                <p>✓ Design Drawing: {droppedFiles.drawing.name}</p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowNameDialog(false);
+                setDroppedFiles({ cabinet: null, drawing: null });
+              }}
+              disabled={isUploading}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleUploadConfirm} disabled={isUploading || !projectName.trim()}>
+              {isUploading ? "Uploading..." : "Upload Project"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
