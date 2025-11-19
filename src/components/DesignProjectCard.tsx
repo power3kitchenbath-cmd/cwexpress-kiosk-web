@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,13 +24,23 @@ import {
 import { FileText, Image as ImageIcon, MoreVertical, Eye, Download, Trash2, Calculator } from "lucide-react";
 import { format } from "date-fns";
 import type { DesignProject } from "@/hooks/useDesignProjects";
+import { cn } from "@/lib/utils";
 
 interface DesignProjectCardProps {
   project: DesignProject;
   onDelete: (id: string) => void;
+  isSelected?: boolean;
+  onToggleSelect?: (id: string) => void;
+  selectionMode?: boolean;
 }
 
-export function DesignProjectCard({ project, onDelete }: DesignProjectCardProps) {
+export function DesignProjectCard({
+  project,
+  onDelete,
+  isSelected = false,
+  onToggleSelect,
+  selectionMode = false,
+}: DesignProjectCardProps) {
   const navigate = useNavigate();
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -83,9 +94,35 @@ export function DesignProjectCard({ project, onDelete }: DesignProjectCardProps)
     setShowDeleteDialog(false);
   };
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    if (selectionMode && onToggleSelect) {
+      e.preventDefault();
+      onToggleSelect(project.id);
+    }
+  };
+
   return (
     <>
-      <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+      <Card
+        className={cn(
+          "group overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1",
+          selectionMode && "cursor-pointer",
+          isSelected && "ring-2 ring-primary"
+        )}
+        onClick={handleCardClick}
+      >
+        {/* Selection Checkbox */}
+        {selectionMode && (
+          <div className="absolute top-4 left-4 z-10">
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={() => onToggleSelect?.(project.id)}
+              className="h-5 w-5 bg-background border-2 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        )}
+
         {/* Thumbnail */}
         <div className="relative h-48 bg-muted overflow-hidden">
           {thumbnailUrl ? (
