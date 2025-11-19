@@ -27,6 +27,7 @@ import { DeliverabilityInsights } from "@/components/admin/DeliverabilityInsight
 import { EmailReputationMonitor } from "@/components/admin/EmailReputationMonitor";
 import { EmailWarmupTracker } from "@/components/admin/EmailWarmupTracker";
 import { EmailAuthenticationValidator } from "@/components/admin/EmailAuthenticationValidator";
+import { EmailDiagnosticsDashboard } from "@/components/admin/EmailDiagnosticsDashboard";
 import { ProductsManager } from "@/components/admin/ProductsManager";
 import { AutoAssignProductImages } from "@/components/admin/AutoAssignProductImages";
 import { CalacattaBannerAnalytics } from "@/components/admin/CalacattaBannerAnalytics";
@@ -540,6 +541,7 @@ const Admin = () => {
 
           <TabsContent value="analytics">
             <div className="space-y-6">
+              <EmailDiagnosticsDashboard />
               <EmailAnalyticsDashboard />
               <EmailWarmupTracker />
               <EmailReputationMonitor />
