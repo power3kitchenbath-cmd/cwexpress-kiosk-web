@@ -10,15 +10,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Grid3x3, List, Search, Upload, FolderOpen } from "lucide-react";
+import { ArrowLeft, Grid3x3, List, Search, Upload, FolderOpen, CheckSquare, Square } from "lucide-react";
 import { useDesignProjects } from "@/hooks/useDesignProjects";
 import { DesignProjectCard } from "@/components/DesignProjectCard";
 import { DesignGalleryDateFilter } from "@/components/DesignGalleryDateFilter";
 import { DesignGalleryCabinetFilter } from "@/components/DesignGalleryCabinetFilter";
 import { DesignGalleryExport } from "@/components/DesignGalleryExport";
+import { DesignGalleryBulkActions } from "@/components/DesignGalleryBulkActions";
+import { useToast } from "@/hooks/use-toast";
 
 export default function DesignGallery() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"created_at" | "project_name" | "cabinet_count">("created_at");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
@@ -27,6 +30,8 @@ export default function DesignGallery() {
   const [dateTo, setDateTo] = useState<string | undefined>();
   const [cabinetCountMin, setCabinetCountMin] = useState<number | undefined>();
   const [cabinetCountMax, setCabinetCountMax] = useState<number | undefined>();
+  const [selectedProjects, setSelectedProjects] = useState<Set<string>>(new Set());
+  const [selectionMode, setSelectionMode] = useState(false);
 
   const { projects, isLoading, deleteProject } = useDesignProjects({
     searchQuery,
@@ -46,6 +51,68 @@ export default function DesignGallery() {
   const handleCabinetRangeChange = (min: number | undefined, max: number | undefined) => {
     setCabinetCountMin(min);
     setCabinetCountMax(max);
+  };
+
+  const toggleSelectionMode = () => {
+    setSelectionMode(!selectionMode);
+    if (selectionMode) {
+      setSelectedProjects(new Set());
+    }
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedProjects.size === projects.length) {
+      setSelectedProjects(new Set());
+    } else {
+      setSelectedProjects(new Set(projects.map((p) => p.id)));
+    }
+  };
+
+  const toggleSelectProject = (projectId: string) => {
+    const newSelected = new Set(selectedProjects);
+    if (newSelected.has(projectId)) {
+      newSelected.delete(projectId);
+    } else {
+      newSelected.add(projectId);
+    }
+    setSelectedProjects(newSelected);
+  };
+
+  const handleBulkDelete = async () => {
+    const projectsToDelete = Array.from(selectedProjects);
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const projectId of projectsToDelete) {
+      try {
+        await deleteProject(projectId);
+        successCount++;
+      } catch (error) {
+        errorCount++;
+        console.error(`Error deleting project ${projectId}:`, error);
+      }
+    }
+
+    setSelectedProjects(new Set());
+    setSelectionMode(false);
+
+    if (errorCount === 0) {
+      toast({
+        title: "Projects Deleted",
+        description: `Successfully deleted ${successCount} ${successCount === 1 ? "project" : "projects"}.`,
+      });
+    } else {
+      toast({
+        title: "Partial Success",
+        description: `Deleted ${successCount} projects. ${errorCount} failed.`,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const clearSelection = () => {
+    setSelectedProjects(new Set());
+    setSelectionMode(false);
   };
 
   const handleSortChange = (value: string) => {
@@ -76,11 +143,43 @@ export default function DesignGallery() {
               </p>
             </div>
             <div className="flex gap-2">
-              <DesignGalleryExport projects={projects} />
-              <Button onClick={() => navigate("/design-import")}>
-                <Upload className="mr-2 h-4 w-4" />
-                Import Design
-              </Button>
+              {selectionMode ? (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={toggleSelectAll}
+                    className="gap-2"
+                  >
+                    {selectedProjects.size === projects.length ? (
+                      <>
+                        <CheckSquare className="h-4 w-4" />
+                        Deselect All
+                      </>
+                    ) : (
+                      <>
+                        <Square className="h-4 w-4" />
+                        Select All
+                      </>
+                    )}
+                  </Button>
+                  <Button variant="outline" onClick={toggleSelectionMode}>
+                    Cancel
+                  </Button>
+                </>
+              ) : (
+                <>
+                  {projects.length > 0 && (
+                    <Button variant="outline" onClick={toggleSelectionMode}>
+                      Select Projects
+                    </Button>
+                  )}
+                  <DesignGalleryExport projects={projects} />
+                  <Button onClick={() => navigate("/design-import")}>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Import Design
+                  </Button>
+                </>
+              )}
             </div>
           </div>
 
@@ -186,10 +285,20 @@ export default function DesignGallery() {
                 key={project.id}
                 project={project}
                 onDelete={deleteProject}
+                isSelected={selectedProjects.has(project.id)}
+                onToggleSelect={toggleSelectProject}
+                selectionMode={selectionMode}
               />
             ))}
           </div>
         )}
+
+        {/* Floating Bulk Actions Bar */}
+        <DesignGalleryBulkActions
+          selectedCount={selectedProjects.size}
+          onClearSelection={clearSelection}
+          onBulkDelete={handleBulkDelete}
+        />
       </div>
     </div>
   );
