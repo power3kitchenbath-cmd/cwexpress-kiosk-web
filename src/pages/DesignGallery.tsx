@@ -15,6 +15,7 @@ import { useDesignProjects } from "@/hooks/useDesignProjects";
 import { DesignProjectCard } from "@/components/DesignProjectCard";
 import { DesignGalleryDateFilter } from "@/components/DesignGalleryDateFilter";
 import { DesignGalleryCabinetFilter } from "@/components/DesignGalleryCabinetFilter";
+import { DesignGalleryExport } from "@/components/DesignGalleryExport";
 
 export default function DesignGallery() {
   const navigate = useNavigate();
@@ -74,10 +75,13 @@ export default function DesignGallery() {
                 {isLoading ? "Loading..." : `${projects.length} ${projects.length === 1 ? "project" : "projects"}`}
               </p>
             </div>
-            <Button onClick={() => navigate("/design-import")}>
-              <Upload className="mr-2 h-4 w-4" />
-              Import Design
-            </Button>
+            <div className="flex gap-2">
+              <DesignGalleryExport projects={projects} />
+              <Button onClick={() => navigate("/design-import")}>
+                <Upload className="mr-2 h-4 w-4" />
+                Import Design
+              </Button>
+            </div>
           </div>
 
           {/* Controls */}
