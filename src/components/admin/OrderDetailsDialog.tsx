@@ -132,24 +132,32 @@ export const OrderDetailsDialog = ({
 
     setSendingEmail(true);
     try {
-      const { error } = await supabase.functions.invoke("send-order-receipt", {
+      const { data, error } = await supabase.functions.invoke("send-order-receipt", {
         body: {
           orderId: order.id,
           emailType: "manual",
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Email function error:", error);
+        toast({
+          title: "Email service error",
+          description: error.message || "The email service is currently unavailable. Please check your API key configuration in the backend.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       toast({
         title: "Receipt sent",
         description: `Receipt sent to ${customerEmail}`,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error sending receipt:", error);
       toast({
-        title: "Error",
-        description: "Failed to send receipt email",
+        title: "Failed to send receipt",
+        description: error.message || "An unexpected error occurred while sending the email.",
         variant: "destructive",
       });
     } finally {
