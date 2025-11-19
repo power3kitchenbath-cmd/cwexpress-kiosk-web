@@ -209,7 +209,7 @@ export default function DesignImport() {
       if (cabinetData.length > 0) {
         navigate("/estimator", { state: { importedCabinets: cabinetData } });
       } else {
-        navigate("/estimates");
+        navigate("/design-gallery");
       }
     } catch (error: any) {
       console.error("Upload error:", error);

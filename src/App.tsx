@@ -10,6 +10,7 @@ import Admin from "./pages/Admin";
 import Estimates from "./pages/Estimates";
 import DesignImport from "./pages/DesignImport";
 import DesignViewer from "./pages/DesignViewer";
+import DesignGallery from "./pages/DesignGallery";
 import LaunchPlan from "./pages/LaunchPlan";
 import InvestorDeck from "./pages/InvestorDeck";
 import Presentations from "./pages/Presentations";
@@ -55,6 +56,7 @@ const App = () => (
           <Route path="/admin" element={<Admin />} />
           <Route path="/estimates" element={<Estimates />} />
           <Route path="/design-import" element={<DesignImport />} />
+          <Route path="/design-gallery" element={<DesignGallery />} />
           <Route path="/design/:id" element={<DesignViewer />} />
           <Route path="/launch-plan" element={<LaunchPlan />} />
           <Route path="/investor-deck" element={<InvestorDeck />} />
