@@ -13,6 +13,7 @@ import { Card } from "@/components/ui/card";
 import { ArrowLeft, Grid3x3, List, Search, Upload, FolderOpen } from "lucide-react";
 import { useDesignProjects } from "@/hooks/useDesignProjects";
 import { DesignProjectCard } from "@/components/DesignProjectCard";
+import { DesignGalleryDateFilter } from "@/components/DesignGalleryDateFilter";
 
 export default function DesignGallery() {
   const navigate = useNavigate();
@@ -20,12 +21,21 @@ export default function DesignGallery() {
   const [sortBy, setSortBy] = useState<"created_at" | "project_name" | "cabinet_count">("created_at");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [dateFrom, setDateFrom] = useState<string | undefined>();
+  const [dateTo, setDateTo] = useState<string | undefined>();
 
   const { projects, isLoading, deleteProject } = useDesignProjects({
     searchQuery,
     sortBy,
     sortDirection,
+    dateFrom,
+    dateTo,
   });
+
+  const handleDateChange = (from: string | undefined, to: string | undefined) => {
+    setDateFrom(from);
+    setDateTo(to);
+  };
 
   const handleSortChange = (value: string) => {
     const [newSortBy, newDirection] = value.split("-") as [typeof sortBy, typeof sortDirection];
@@ -62,52 +72,60 @@ export default function DesignGallery() {
 
           {/* Controls */}
           <Card className="p-4">
-            <div className="flex flex-col md:flex-row gap-4">
-              {/* Search */}
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search projects..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9"
-                />
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col md:flex-row gap-4">
+                {/* Search */}
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search projects..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+
+                {/* Sort */}
+                <Select
+                  value={`${sortBy}-${sortDirection}`}
+                  onValueChange={handleSortChange}
+                >
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Sort by..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="created_at-desc">Newest First</SelectItem>
+                    <SelectItem value="created_at-asc">Oldest First</SelectItem>
+                    <SelectItem value="project_name-asc">Name A-Z</SelectItem>
+                    <SelectItem value="project_name-desc">Name Z-A</SelectItem>
+                    <SelectItem value="cabinet_count-desc">Most Cabinets</SelectItem>
+                    <SelectItem value="cabinet_count-asc">Least Cabinets</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* View Mode Toggle */}
+                <div className="flex gap-1 border rounded-md p-1">
+                  <Button
+                    variant={viewMode === "grid" ? "secondary" : "ghost"}
+                    size="sm"
+                    onClick={() => setViewMode("grid")}
+                  >
+                    <Grid3x3 className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={viewMode === "list" ? "secondary" : "ghost"}
+                    size="sm"
+                    onClick={() => setViewMode("list")}
+                  >
+                    <List className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
 
-              {/* Sort */}
-              <Select
-                value={`${sortBy}-${sortDirection}`}
-                onValueChange={handleSortChange}
-              >
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Sort by..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="created_at-desc">Newest First</SelectItem>
-                  <SelectItem value="created_at-asc">Oldest First</SelectItem>
-                  <SelectItem value="project_name-asc">Name A-Z</SelectItem>
-                  <SelectItem value="project_name-desc">Name Z-A</SelectItem>
-                  <SelectItem value="cabinet_count-desc">Most Cabinets</SelectItem>
-                  <SelectItem value="cabinet_count-asc">Least Cabinets</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* View Mode Toggle */}
-              <div className="flex gap-1 border rounded-md p-1">
-                <Button
-                  variant={viewMode === "grid" ? "secondary" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewMode("grid")}
-                >
-                  <Grid3x3 className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={viewMode === "list" ? "secondary" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewMode("list")}
-                >
-                  <List className="h-4 w-4" />
-                </Button>
+              {/* Date Range Filter */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground whitespace-nowrap">Filter by date:</span>
+                <DesignGalleryDateFilter onDateChange={handleDateChange} />
               </div>
             </div>
           </Card>
