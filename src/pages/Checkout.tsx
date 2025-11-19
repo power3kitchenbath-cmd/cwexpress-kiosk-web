@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, ShoppingBag } from "lucide-react";
+import { ArrowLeft, ShoppingBag, Truck, Zap, Gift } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
 import { useEffect, useState } from "react";
@@ -11,6 +11,7 @@ import logoImg from "@/assets/logo.png";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 // Shipping address validation schema
 const shippingSchema = z.object({
@@ -27,6 +28,7 @@ const Checkout = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [includeInstallation, setIncludeInstallation] = useState(false);
+  const [shippingMethod, setShippingMethod] = useState<"standard" | "express" | "free">("standard");
   const [shippingAddress, setShippingAddress] = useState({
     street: "",
     city: "",
@@ -76,7 +78,18 @@ const Checkout = () => {
       const subtotal = totalPrice;
       const installationCost = includeInstallation ? subtotal * 0.15 : 0;
       const tax = (subtotal + installationCost) * 0.0825;
-      const shipping = subtotal > 2500 ? 0 : 99;
+      
+      // Calculate shipping based on method and subtotal
+      let shipping = 0;
+      if (shippingMethod === "free") {
+        shipping = 0;
+      } else if (shippingMethod === "express") {
+        shipping = 199;
+      } else {
+        // Standard shipping: free over $2500, otherwise $99
+        shipping = subtotal > 2500 ? 0 : 99;
+      }
+      
       const total = subtotal + installationCost + tax + shipping;
 
       // Create order
@@ -204,7 +217,18 @@ const Checkout = () => {
   const subtotal = totalPrice;
   const installationCost = includeInstallation ? subtotal * 0.15 : 0;
   const tax = (subtotal + installationCost) * 0.0825;
-  const shipping = subtotal > 2500 ? 0 : 99;
+  
+  // Calculate shipping based on method and subtotal
+  let shipping = 0;
+  if (shippingMethod === "free") {
+    shipping = 0;
+  } else if (shippingMethod === "express") {
+    shipping = 199;
+  } else {
+    // Standard shipping: free over $2500, otherwise $99
+    shipping = subtotal > 2500 ? 0 : 99;
+  }
+  
   const total = subtotal + installationCost + tax + shipping;
 
   if (!user) {
@@ -298,6 +322,94 @@ const Checkout = () => {
                   </div>
                 </div>
               </div>
+            </Card>
+
+            {/* Shipping Options */}
+            <Card className="p-6">
+              <h2 className="text-xl font-bold text-foreground mb-4">Shipping Method</h2>
+              <RadioGroup value={shippingMethod} onValueChange={(value: any) => setShippingMethod(value)}>
+                <div className="space-y-3">
+                  {/* Standard Shipping */}
+                  <Label
+                    htmlFor="standard"
+                    className={`flex items-start gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                      shippingMethod === "standard" 
+                        ? "border-primary bg-primary/5" 
+                        : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    <RadioGroupItem value="standard" id="standard" className="mt-1" />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Truck className="h-5 w-5 text-primary" />
+                        <span className="font-semibold text-foreground">Standard Shipping</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-1">
+                        5-7 business days
+                      </p>
+                      <p className="text-sm font-medium text-foreground">
+                        {subtotal > 2500 ? (
+                          <span className="text-green-600">FREE</span>
+                        ) : (
+                          "$99.00"
+                        )}
+                      </p>
+                      {subtotal <= 2500 && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Free shipping on orders over $2,500
+                        </p>
+                      )}
+                    </div>
+                  </Label>
+
+                  {/* Express Shipping */}
+                  <Label
+                    htmlFor="express"
+                    className={`flex items-start gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                      shippingMethod === "express" 
+                        ? "border-primary bg-primary/5" 
+                        : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    <RadioGroupItem value="express" id="express" className="mt-1" />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Zap className="h-5 w-5 text-accent" />
+                        <span className="font-semibold text-foreground">Express Shipping</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-1">
+                        2-3 business days
+                      </p>
+                      <p className="text-sm font-medium text-foreground">$199.00</p>
+                    </div>
+                  </Label>
+
+                  {/* Free Shipping (Admin Override) */}
+                  <Label
+                    htmlFor="free"
+                    className={`flex items-start gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                      shippingMethod === "free" 
+                        ? "border-accent bg-accent/5" 
+                        : "border-border hover:border-accent/50"
+                    }`}
+                  >
+                    <RadioGroupItem value="free" id="free" className="mt-1" />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Gift className="h-5 w-5 text-accent" />
+                        <span className="font-semibold text-foreground">Free Shipping</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-1">
+                        5-7 business days
+                      </p>
+                      <p className="text-sm font-medium text-green-600">FREE</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Promotional or admin override
+                      </p>
+                    </div>
+                  </Label>
+                </div>
+              </RadioGroup>
             </Card>
 
             {/* Order Items */}
