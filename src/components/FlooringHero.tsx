@@ -76,7 +76,7 @@ export const FlooringHero = ({
             <div
               key={index}
               onClick={() => handleFlooringClick(flooring.name)}
-              className={`group relative cursor-pointer overflow-hidden rounded-lg shadow-lg transition-all duration-300 border-2 ${
+              className={`group relative cursor-pointer overflow-hidden rounded-lg shadow-lg transition-all duration-300 border-2 bg-gradient-to-br from-[hsl(225,75%,42%)] to-[hsl(225,80%,32%)] ${
                 isSelected(flooring.name)
                   ? "border-accent ring-2 ring-accent ring-offset-2 shadow-[0_0_20px_rgba(251,191,36,0.4)] scale-105"
                   : "border-white/40 shadow-[0_0_15px_rgba(255,255,255,0.2)] hover:border-accent hover:shadow-[0_0_25px_rgba(251,191,36,0.5)] hover:scale-105"
