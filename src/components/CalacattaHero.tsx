@@ -77,7 +77,7 @@ export const CalacattaHero = ({ onFilterCalacatta, onSelectCountertop, onCompare
           <div className="flex items-center gap-3 flex-1 justify-center">
             <Sparkles className="w-8 h-8 text-accent" />
             <h2 className="text-3xl font-bold text-white">
-              Premium Calacatta Collection
+              Calacatta Premium Collection
             </h2>
             <Sparkles className="w-8 h-8 text-accent" />
           </div>
@@ -105,7 +105,7 @@ export const CalacattaHero = ({ onFilterCalacatta, onSelectCountertop, onCompare
         <p className="text-center text-white/90 mb-6 max-w-2xl mx-auto">
           {compareMode 
             ? "Select up to 4 countertops to compare side by side"
-            : "Discover our exclusive collection of 7 stunning Calacatta quartz countertops. Timeless elegance meets modern durability."
+            : "Discover 7 exquisite Calacatta quartz variations combining Italian marble elegance with modern durability. From $85/ft."
           }
         </p>
 
@@ -168,15 +168,26 @@ export const CalacattaHero = ({ onFilterCalacatta, onSelectCountertop, onCompare
               </Button>
             </>
           ) : (
-            <Button
-              variant="default"
-              size="lg"
-              className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold"
-              onClick={handleCTAClick}
-              disabled={compareMode}
-            >
-              Add Calacatta to Your Estimate
-            </Button>
+            <>
+              <Button
+                variant="default"
+                size="lg"
+                className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold"
+                onClick={handleCTAClick}
+                disabled={compareMode}
+              >
+                Explore Collection
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                className="bg-white/10 backdrop-blur-sm border-2 border-white/40 text-white hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all"
+                onClick={handleCTAClick}
+                disabled={compareMode}
+              >
+                Get Quote
+              </Button>
+            </>
           )}
         </div>
       </div>
