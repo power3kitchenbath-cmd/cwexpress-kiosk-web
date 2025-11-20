@@ -203,7 +203,7 @@ const OnlineShop = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Promotional Banner */}
-      <div className="bg-primary text-primary-foreground py-3 text-center">
+      <div className="bg-gradient-to-r from-[hsl(225,75%,42%)] to-[hsl(225,80%,32%)] text-white py-3 text-center">
         <p className="text-sm md:text-base font-semibold">
           ✨ Get 10% off Cabinets, Countertops, & Flooring this month when you order $2500 or more ✨
         </p>
