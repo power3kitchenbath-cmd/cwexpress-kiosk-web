@@ -52,13 +52,16 @@ export const FlooringHero = ({
   const isSelected = (name: string) => selectedForComparison.includes(name);
 
   return (
-    <section className="bg-gradient-to-br from-secondary via-secondary/90 to-secondary/80 py-16">
-      <div className="container mx-auto px-4">
+    <section className="bg-gradient-to-br from-[hsl(225,75%,42%)] to-[hsl(225,80%,32%)] py-16 relative">
+      {/* Soft white vignette effect */}
+      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_0%,transparent_50%,rgba(255,255,255,0.12)_100%)]" />
+      
+      <div className="container mx-auto px-4 relative z-10">
         <div className="text-center mb-12">
-          <h2 className="text-4xl md:text-5xl font-extrabold text-secondary-foreground mb-4 tracking-tight">
+          <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-4 tracking-tight">
             FEATURED LUXURY VINYL PLANK
           </h2>
-          <p className="text-lg text-secondary-foreground/80 max-w-2xl mx-auto mb-6">
+          <p className="text-lg text-white/90 max-w-2xl mx-auto mb-6">
             Premium waterproof flooring with authentic wood look. Durable, easy to install, and perfect for any room.
           </p>
           {compareMode && (
@@ -73,10 +76,10 @@ export const FlooringHero = ({
             <div
               key={index}
               onClick={() => handleFlooringClick(flooring.name)}
-              className={`group relative cursor-pointer overflow-hidden rounded-lg shadow-lg transition-all duration-300 ${
+              className={`group relative cursor-pointer overflow-hidden rounded-lg shadow-lg transition-all duration-300 border-2 ${
                 isSelected(flooring.name)
-                  ? "ring-4 ring-accent scale-105"
-                  : "hover:scale-105 hover:shadow-2xl"
+                  ? "border-accent ring-2 ring-accent ring-offset-2 shadow-[0_0_20px_rgba(251,191,36,0.4)] scale-105"
+                  : "border-white/40 shadow-[0_0_15px_rgba(255,255,255,0.2)] hover:border-accent hover:shadow-[0_0_25px_rgba(251,191,36,0.5)] hover:scale-105"
               }`}
             >
               <div className="aspect-square">
@@ -121,7 +124,7 @@ export const FlooringHero = ({
               onClick={onOpenComparison}
               variant="outline"
               size="lg"
-              className="bg-background/10 backdrop-blur-sm border-2 border-accent text-secondary-foreground hover:bg-accent hover:text-accent-foreground transition-all"
+              className="bg-white/10 backdrop-blur-sm border-2 border-white/40 text-white hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all"
             >
               <Eye className="mr-2 h-5 w-5" />
               Compare LVP Options
