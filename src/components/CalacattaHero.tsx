@@ -112,10 +112,10 @@ export const CalacattaHero = ({ onFilterCalacatta, onSelectCountertop, onCompare
             return (
               <div
                 key={index}
-                className={`group relative aspect-square overflow-hidden rounded-lg border-2 transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer ${
+                className={`group relative aspect-square overflow-hidden rounded-lg border-2 transition-all duration-300 hover:scale-105 cursor-pointer ${
                   isSelected 
-                    ? 'border-accent ring-2 ring-accent ring-offset-2' 
-                    : 'border-border hover:border-accent'
+                    ? 'border-accent ring-2 ring-accent ring-offset-2 shadow-[0_0_20px_rgba(251,191,36,0.4)]' 
+                    : 'border-white/40 hover:border-accent shadow-[0_0_15px_rgba(255,255,255,0.2)] hover:shadow-[0_0_25px_rgba(251,191,36,0.5)]'
                 }`}
                 onClick={() => handleImageClick(image.name, index)}
               >
