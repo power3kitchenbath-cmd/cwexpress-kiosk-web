@@ -68,12 +68,12 @@ export const CalacattaHero = ({ onFilterCalacatta, onSelectCountertop, onCompare
     setSelectedForCompare([]);
   };
   return (
-    <Card className="mb-8 overflow-hidden border-2 border-accent/30 bg-gradient-to-br from-background via-background to-accent/5">
+    <Card className="mb-8 overflow-hidden border-2 border-blue-400/40 bg-gradient-to-br from-[hsl(225,73%,57%)] to-[hsl(225,73%,47%)]">
       <div className="p-8">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3 flex-1 justify-center">
             <Sparkles className="w-8 h-8 text-accent" />
-            <h2 className="text-3xl font-bold text-foreground">
+            <h2 className="text-3xl font-bold text-white">
               Premium Calacatta Collection
             </h2>
             <Sparkles className="w-8 h-8 text-accent" />
@@ -99,7 +99,7 @@ export const CalacattaHero = ({ onFilterCalacatta, onSelectCountertop, onCompare
           </Button>
         </div>
         
-        <p className="text-center text-muted-foreground mb-6 max-w-2xl mx-auto">
+        <p className="text-center text-white/90 mb-6 max-w-2xl mx-auto">
           {compareMode 
             ? "Select up to 4 countertops to compare side by side"
             : "Discover our exclusive collection of 7 stunning Calacatta quartz countertops. Timeless elegance meets modern durability."
@@ -129,9 +129,9 @@ export const CalacattaHero = ({ onFilterCalacatta, onSelectCountertop, onCompare
                   alt={image.name}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <div className="absolute bottom-0 left-0 right-0 p-2">
-                    <p className="text-xs font-semibold text-foreground text-center">
+                    <p className="text-xs font-semibold text-white text-center">
                       {image.name}
                     </p>
                     <p className="text-[10px] text-accent text-center mt-1 font-medium">
