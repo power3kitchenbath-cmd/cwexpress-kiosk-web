@@ -68,8 +68,11 @@ export const CalacattaHero = ({ onFilterCalacatta, onSelectCountertop, onCompare
     setSelectedForCompare([]);
   };
   return (
-    <Card className="mb-8 overflow-hidden border-2 border-blue-400/40 bg-gradient-to-br from-[hsl(225,73%,57%)] to-[hsl(225,73%,47%)]">
-      <div className="p-8">
+    <Card className="mb-8 overflow-hidden border-2 border-blue-400/40 bg-gradient-to-br from-[hsl(225,73%,57%)] to-[hsl(225,73%,47%)] relative">
+      {/* Soft white vignette effect */}
+      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_0%,transparent_50%,rgba(255,255,255,0.15)_100%)]" />
+      
+      <div className="p-8 relative z-10">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3 flex-1 justify-center">
             <Sparkles className="w-8 h-8 text-accent" />
