@@ -153,15 +153,18 @@ const DoormarkCollection = () => {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative py-20 px-4 bg-gradient-to-br from-background via-muted/20 to-background">
-        <div className="container mx-auto max-w-6xl text-center">
-          <Badge className="mb-4" variant="secondary">
+      <section className="relative py-20 px-4 bg-gradient-to-br from-[hsl(225,75%,42%)] to-[hsl(225,80%,32%)]">
+        {/* Soft white vignette effect */}
+        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_0%,transparent_50%,rgba(255,255,255,0.12)_100%)]" />
+        
+        <div className="container mx-auto max-w-6xl text-center relative z-10">
+          <Badge className="mb-4 bg-accent/10 text-accent border-accent/20" variant="secondary">
             Premium Quality
           </Badge>
-          <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+          <h1 className="text-5xl md:text-6xl font-bold mb-6 text-white">
             Doormark Cabinet Doors
           </h1>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
+          <p className="text-xl text-white/90 max-w-3xl mx-auto mb-8">
             Transform your kitchen with premium replacement cabinet doors and drawer fronts 
             from Doormark. Proudly crafted in South Florida with precision and quality that 
             stands the test of time.
@@ -170,7 +173,7 @@ const DoormarkCollection = () => {
             <Button 
               size="lg"
               onClick={() => navigate("/cabinet-visualizer")}
-              className="gap-2"
+              className="gap-2 bg-accent hover:bg-accent/90 text-accent-foreground"
             >
               Try Virtual Visualizer
             </Button>
@@ -181,6 +184,7 @@ const DoormarkCollection = () => {
                 const element = document.getElementById('products-section');
                 element?.scrollIntoView({ behavior: 'smooth' });
               }}
+              className="bg-white/10 backdrop-blur-sm border-2 border-white/40 text-white hover:bg-accent hover:text-accent-foreground hover:border-accent"
             >
               Browse Styles
             </Button>

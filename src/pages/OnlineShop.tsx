@@ -284,8 +284,11 @@ const OnlineShop = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-primary via-primary to-[hsl(215,85%,45%)] text-primary-foreground py-16">
-        <div className="container mx-auto px-4 text-center">
+      <section className="bg-gradient-to-br from-[hsl(225,75%,42%)] to-[hsl(225,80%,32%)] text-white py-16 relative">
+        {/* Soft white vignette effect */}
+        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_0%,transparent_50%,rgba(255,255,255,0.12)_100%)]" />
+        
+        <div className="container mx-auto px-4 text-center relative z-10">
           <h1 className="text-4xl md:text-6xl font-extrabold mb-4 tracking-tight">
             ELIMINATE THE MIDDLEMAN
           </h1>
@@ -301,30 +304,30 @@ const OnlineShop = () => {
       {/* Featured Collection Banner */}
       <section className="container mx-auto px-4 py-8">
         <Card 
-          className="relative overflow-hidden bg-gradient-to-br from-amber-50 via-yellow-50/50 to-amber-100/80 border-2 border-amber-200/50 hover:border-amber-300/60 transition-all duration-300 cursor-pointer group"
+          className="relative overflow-hidden bg-gradient-to-br from-[hsl(225,75%,42%)] to-[hsl(225,80%,32%)] border-2 border-white/20 hover:border-accent/40 transition-all duration-300 cursor-pointer group"
           onClick={() => {
             trackEvent('click', 'banner_card');
             navigate("/collections/calacatta");
           }}
         >
-          <div className="absolute top-0 right-0 w-64 h-64 bg-amber-200/20 rounded-full blur-3xl -z-10" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-yellow-200/20 rounded-full blur-3xl -z-10" />
+          {/* Soft white vignette effect */}
+          <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_0%,transparent_50%,rgba(255,255,255,0.08)_100%)]" />
           
-          <div className="grid md:grid-cols-2 gap-8 p-8 md:p-12 items-center">
+          <div className="grid md:grid-cols-2 gap-8 p-8 md:p-12 items-center relative z-10">
             {/* Left Content */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-amber-600 animate-pulse" />
-                <Badge variant="secondary" className="bg-amber-100 text-amber-700 border-amber-200">
+                <Sparkles className="w-5 h-5 text-accent animate-pulse" />
+                <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20">
                   New 2025 Collection
                 </Badge>
               </div>
               
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground">
+              <h2 className="text-3xl md:text-4xl font-bold text-white">
                 Calacatta Premium Collection
               </h2>
               
-              <p className="text-muted-foreground text-lg">
+              <p className="text-white/90 text-lg">
                 Discover 7 exquisite Calacatta quartz variations combining Italian marble elegance 
                 with modern durability. From $85/ft.
               </p>
@@ -337,7 +340,7 @@ const OnlineShop = () => {
                     trackEvent('click', 'explore_collection_button');
                     navigate("/collections/calacatta");
                   }}
-                  className="group/btn"
+                  className="group/btn bg-accent hover:bg-accent/90 text-accent-foreground"
                 >
                   Explore Collection
                   <ArrowRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
@@ -350,6 +353,7 @@ const OnlineShop = () => {
                     trackEvent('click', 'get_quote_button');
                     navigate("/estimator");
                   }}
+                  className="bg-white/10 backdrop-blur-sm border-2 border-white/40 text-white hover:bg-accent hover:text-accent-foreground hover:border-accent"
                 >
                   Get Quote
                 </Button>
@@ -394,7 +398,7 @@ const OnlineShop = () => {
               </div>
               
               {/* Overlay badge */}
-              <div className="absolute -bottom-2 -right-2 bg-primary text-primary-foreground rounded-full p-3 shadow-lg group-hover:scale-110 transition-transform">
+              <div className="absolute -bottom-2 -right-2 bg-accent text-accent-foreground rounded-full p-3 shadow-lg group-hover:scale-110 transition-transform">
                 <span className="text-xl font-bold">7</span>
               </div>
             </div>
@@ -405,30 +409,30 @@ const OnlineShop = () => {
       {/* Doormark Featured Collection Banner */}
       <section className="container mx-auto px-4 py-8">
         <Card 
-          className="relative overflow-hidden bg-gradient-to-br from-amber-500/10 via-background to-orange-500/10 border-2 border-amber-500/20 hover:border-amber-500/40 transition-all duration-300 cursor-pointer group"
+          className="relative overflow-hidden bg-gradient-to-br from-[hsl(225,75%,38%)] to-[hsl(225,80%,28%)] border-2 border-white/20 hover:border-accent/40 transition-all duration-300 cursor-pointer group"
           onClick={() => {
             trackEvent('click', 'doormark_banner_card');
             navigate("/collections/doormark");
           }}
         >
-          <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl -z-10" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-orange-500/5 rounded-full blur-3xl -z-10" />
+          {/* Soft white vignette effect */}
+          <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_0%,transparent_50%,rgba(255,255,255,0.08)_100%)]" />
           
-          <div className="grid md:grid-cols-2 gap-8 p-8 md:p-12 items-center">
+          <div className="grid md:grid-cols-2 gap-8 p-8 md:p-12 items-center relative z-10">
             {/* Left Content */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-amber-600 animate-pulse" />
-                <Badge variant="secondary" className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20">
+                <Sparkles className="w-5 h-5 text-accent animate-pulse" />
+                <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20">
                   Made in South Florida
                 </Badge>
               </div>
               
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground">
+              <h2 className="text-3xl md:text-4xl font-bold text-white">
                 Doormark Cabinet Doors
               </h2>
               
-              <p className="text-muted-foreground text-lg">
+              <p className="text-white/90 text-lg">
                 Premium replacement cabinet doors and drawer fronts. Transform your kitchen 
                 with quality craftsmanship. Multiple styles and finishes available.
               </p>
@@ -441,7 +445,7 @@ const OnlineShop = () => {
                     trackEvent('click', 'doormark_explore_button');
                     navigate("/collections/doormark");
                   }}
-                  className="group/btn bg-amber-600 hover:bg-amber-700"
+                  className="group/btn bg-accent hover:bg-accent/90 text-accent-foreground"
                 >
                   Explore Door Styles
                   <ArrowRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
@@ -454,7 +458,7 @@ const OnlineShop = () => {
                     trackEvent('click', 'doormark_contact_button');
                     navigate("/collections/doormark");
                   }}
-                  className="border-amber-500/30 hover:bg-amber-500/10"
+                  className="bg-white/10 backdrop-blur-sm border-2 border-white/40 text-white hover:bg-accent hover:text-accent-foreground hover:border-accent"
                 >
                   View Pricing
                 </Button>
