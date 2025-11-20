@@ -113,9 +113,6 @@ const CalacattaCollection = () => {
       {/* Hero Section */}
       <section className="relative py-20 px-4 bg-gradient-to-br from-amber-50 via-yellow-50/50 to-amber-100/80">
         <div className="container mx-auto max-w-6xl text-center">
-          <Badge className="mb-4" variant="secondary">
-            2025 Collection
-          </Badge>
           <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
             Calacatta Collection
           </h1>
