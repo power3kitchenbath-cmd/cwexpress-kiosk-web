@@ -111,23 +111,26 @@ const CalacattaCollection = () => {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative py-20 px-4 bg-gradient-to-br from-amber-50 via-yellow-50/50 to-amber-100/80">
-        <div className="container mx-auto max-w-6xl text-center">
-          <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+      <section className="relative py-20 px-4 bg-gradient-to-br from-[hsl(225,75%,42%)] to-[hsl(225,80%,32%)]">
+        {/* Soft white vignette effect */}
+        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_0%,transparent_50%,rgba(255,255,255,0.12)_100%)]" />
+        
+        <div className="container mx-auto max-w-6xl text-center relative z-10">
+          <h1 className="text-5xl md:text-6xl font-bold mb-6 text-white">
             Calacatta Collection
           </h1>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
+          <p className="text-xl text-white/90 max-w-3xl mx-auto mb-8">
             Discover our premium Calacatta quartz countertop collection. Seven exquisite 
             variations combining the timeless elegance of Italian marble with modern durability 
             and performance. Each surface tells a unique story of luxury and craftsmanship.
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
-            <Button size="lg" onClick={handleDownloadBrochure}>
+            <Button size="lg" onClick={handleDownloadBrochure} className="bg-accent hover:bg-accent/90 text-accent-foreground">
               <Download className="w-5 h-5 mr-2" />
               Download Brochure
             </Button>
             <Link to="/estimator">
-              <Button size="lg" variant="outline">
+              <Button size="lg" variant="outline" className="bg-white/10 backdrop-blur-sm border-2 border-white/40 text-white hover:bg-accent hover:text-accent-foreground hover:border-accent">
                 Request Quote
               </Button>
             </Link>
@@ -136,30 +139,30 @@ const CalacattaCollection = () => {
       </section>
 
       {/* Collection Info */}
-      <section className="py-12 px-4 bg-amber-100/30 border-y border-amber-200/50">
+      <section className="py-12 px-4 bg-gradient-to-br from-[hsl(225,75%,38%)] to-[hsl(225,80%,28%)] border-y border-white/20">
         <div className="container mx-auto max-w-6xl">
           <div className="grid md:grid-cols-3 gap-8 text-center">
             <div>
-              <h3 className="text-3xl font-bold mb-2">7</h3>
-              <p className="text-muted-foreground">Unique Variations</p>
+              <h3 className="text-3xl font-bold mb-2 text-accent">7</h3>
+              <p className="text-white/80">Unique Variations</p>
             </div>
             <div>
-              <h3 className="text-3xl font-bold mb-2">3cm</h3>
-              <p className="text-muted-foreground">Premium Thickness</p>
+              <h3 className="text-3xl font-bold mb-2 text-accent">3cm</h3>
+              <p className="text-white/80">Premium Thickness</p>
             </div>
             <div>
-              <h3 className="text-3xl font-bold mb-2">100%</h3>
-              <p className="text-muted-foreground">Polished Finish</p>
+              <h3 className="text-3xl font-bold mb-2 text-accent">100%</h3>
+              <p className="text-white/80">Polished Finish</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* Product Gallery */}
-      <section className="py-16 px-4 bg-gradient-to-b from-amber-50/50 to-background">
+      <section className="py-16 px-4 bg-gradient-to-b from-[hsl(225,75%,35%)] to-background">
         <div className="container mx-auto max-w-7xl">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-12">
-            <h2 className="text-3xl font-bold text-center md:text-left">
+            <h2 className="text-3xl font-bold text-center md:text-left text-white">
               Explore the Collection
             </h2>
             
@@ -257,22 +260,22 @@ const CalacattaCollection = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 px-4 bg-muted/30">
+      <section className="py-16 px-4 bg-gradient-to-br from-[hsl(225,75%,42%)] to-[hsl(225,80%,32%)]">
         <div className="container mx-auto max-w-4xl text-center">
-          <h2 className="text-3xl font-bold mb-4">
+          <h2 className="text-3xl font-bold mb-4 text-white">
             Ready to Transform Your Space?
           </h2>
-          <p className="text-lg text-muted-foreground mb-8">
+          <p className="text-lg text-white/90 mb-8">
             Our design team is ready to help you select the perfect Calacatta variation 
             for your project. Get a detailed quote or schedule a consultation.
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
             <Link to="/estimator">
-              <Button size="lg">
+              <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground">
                 Get Free Estimate
               </Button>
             </Link>
-            <Button size="lg" variant="outline" onClick={handleDownloadBrochure}>
+            <Button size="lg" variant="outline" onClick={handleDownloadBrochure} className="bg-white/10 backdrop-blur-sm border-2 border-white/40 text-white hover:bg-accent hover:text-accent-foreground hover:border-accent">
               <Download className="w-5 h-5 mr-2" />
               Download Full Specs
             </Button>
