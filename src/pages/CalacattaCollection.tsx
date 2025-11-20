@@ -187,9 +187,9 @@ const CalacattaCollection = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {sortedProducts.map((product) => (
-                <Card key={product.id} className="overflow-hidden group hover:shadow-xl transition-shadow duration-300">
+                <Card key={product.id} className="overflow-hidden group hover:shadow-xl transition-shadow duration-300 bg-gradient-to-br from-[hsl(225,75%,42%)] to-[hsl(225,80%,32%)] p-3">
                   {/* Product Image */}
-                  <div className="aspect-[4/3] overflow-hidden bg-muted">
+                  <div className="aspect-[4/3] rounded-md overflow-hidden bg-muted">
                     <img
                       src={product.image_url || '/placeholder.svg'}
                       alt={product.name}
@@ -198,7 +198,7 @@ const CalacattaCollection = () => {
                   </div>
 
                   {/* Product Details */}
-                  <div className="p-6 space-y-4">
+                  <div className="p-6 space-y-4 bg-background rounded-md">
                     <div className="flex items-start justify-between">
                       <div>
                         <Badge variant="outline" className="mb-2">
