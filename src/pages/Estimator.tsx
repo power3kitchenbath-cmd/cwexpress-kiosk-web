@@ -408,6 +408,7 @@ export default function Estimator() {
     setCountertops(((data as any).countertop_items as unknown) as CountertopItem[]);
     setHardware(((data as any).hardware_items as unknown) as HardwareItem[] || []);
     setVanities(((data as any).vanity_items as unknown) as VanityItem[] || []);
+    setKitchens(((data as any).kitchen_items as unknown) as KitchenItem[] || []);
     setIncludeInstallation((data as any).installation_requested || false);
   };
 
@@ -745,6 +746,17 @@ export default function Estimator() {
     });
   };
 
+  const confirmRemoveKitchen = (index: number) => {
+    const item = kitchens[index];
+    const tierLabel = item.tier.charAt(0).toUpperCase() + item.tier.slice(1);
+    setDeleteDialog({
+      open: true,
+      type: 'kitchen',
+      index,
+      itemName: `${tierLabel} Kitchen x${item.quantity}`
+    });
+  };
+
   const handleDeleteConfirm = () => {
     if (deleteDialog.type === 'cabinet') {
       const removedItem = cabinets[deleteDialog.index];
@@ -800,6 +812,15 @@ export default function Estimator() {
         description: "Vanity removed from estimate",
         action: <Button variant="outline" size="sm" onClick={handleUndo}>Undo</Button>
       });
+    } else if (deleteDialog.type === 'kitchen') {
+      const removedItem = kitchens[deleteDialog.index];
+      setUndoState({ action: 'remove', type: 'kitchen', data: [removedItem] });
+      setKitchens(kitchens.filter((_, i) => i !== deleteDialog.index));
+      toast({
+        title: "Item Removed",
+        description: "Kitchen removed from estimate",
+        action: <Button variant="outline" size="sm" onClick={handleUndo}>Undo</Button>
+      });
     }
     setDeleteDialog({ open: false, type: null, index: -1, itemName: '' });
   };
@@ -808,7 +829,7 @@ export default function Estimator() {
     setDeleteDialog({ open: false, type: null, index: -1, itemName: '' });
   };
 
-  const confirmClearAll = (type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | 'door' | 'vanity') => {
+  const confirmClearAll = (type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | 'door' | 'vanity' | 'kitchen') => {
     setClearAllDialog({ open: true, type });
   };
 
@@ -859,6 +880,14 @@ export default function Estimator() {
       toast({
         title: "Vanities Cleared",
         description: `Removed ${vanities.length} vanity item(s)`,
+        action: <Button variant="outline" size="sm" onClick={handleUndo}>Undo</Button>
+      });
+    } else if (clearAllDialog.type === 'kitchen') {
+      setUndoState({ action: 'clear', type: 'kitchen', data: [...kitchens] });
+      setKitchens([]);
+      toast({
+        title: "Kitchens Cleared",
+        description: `Removed ${kitchens.length} kitchen item(s)`,
         action: <Button variant="outline" size="sm" onClick={handleUndo}>Undo</Button>
       });
     }
@@ -931,6 +960,16 @@ export default function Estimator() {
       toast({
         title: "Undo Successful",
         description: "Vanity items restored"
+      });
+    } else if (undoState.type === 'kitchen') {
+      if (undoState.action === 'remove') {
+        setKitchens([...kitchens, ...(undoState.data as KitchenItem[])]);
+      } else if (undoState.action === 'clear') {
+        setKitchens(undoState.data as KitchenItem[]);
+      }
+      toast({
+        title: "Undo Successful",
+        description: "Kitchen items restored"
       });
     }
 
@@ -1061,6 +1100,16 @@ export default function Estimator() {
     });
   };
 
+  const updateKitchen = (index: number, updatedKitchen: KitchenItem) => {
+    const updatedKitchens = [...kitchens];
+    updatedKitchens[index] = updatedKitchen;
+    setKitchens(updatedKitchens);
+    toast({
+      title: "Updated",
+      description: "Kitchen updated successfully"
+    });
+  };
+
   const saveEdit = () => {
     if (!editingItem.type || editingItem.index === -1) return;
     
@@ -1148,6 +1197,20 @@ export default function Estimator() {
         toast({
           title: "Updated",
           description: "Vanity quantity updated successfully"
+        });
+      } else if (editingItem.type === 'kitchen') {
+        const quantity = parseInt(editingItem.value);
+        cabinetSchema.parse({ quantity });
+        
+        const updatedKitchens = [...kitchens];
+        updatedKitchens[editingItem.index] = {
+          ...updatedKitchens[editingItem.index],
+          quantity
+        };
+        setKitchens(updatedKitchens);
+        toast({
+          title: "Updated",
+          description: "Kitchen quantity updated successfully"
         });
       }
       
@@ -1347,6 +1410,45 @@ export default function Estimator() {
       yPosition += 10;
     }
     
+    // Kitchen section
+    if (kitchens.length > 0) {
+      if (yPosition > 240) {
+        doc.addPage();
+        yPosition = 20;
+      }
+      
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('10×10 Kitchen Installations', 15, yPosition);
+      yPosition += 7;
+      
+      const kitchenRows = kitchens.map(item => {
+        const tierLabel = item.tier.charAt(0).toUpperCase() + item.tier.slice(1);
+        const itemTotal = item.quantity * (item.basePrice + item.cabinetCost + item.countertopCost);
+        return [
+          `${tierLabel} Package`,
+          item.quantity.toString(),
+          `$${(item.basePrice + item.cabinetCost + item.countertopCost).toFixed(2)}`,
+          `$${itemTotal.toFixed(2)}`
+        ];
+      });
+      
+      autoTable(doc, {
+        startY: yPosition,
+        head: [['Package Type', 'Quantity', 'Unit Price', 'Total']],
+        body: kitchenRows,
+        theme: 'striped',
+        headStyles: { fillColor: [79, 70, 229] },
+        margin: { left: 15, right: 15 }
+      });
+      
+      yPosition = (doc as any).lastAutoTable.finalY + 5;
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Kitchen Total: $${kitchenTotal.toFixed(2)}`, pageWidth - 15, yPosition, { align: 'right' });
+      yPosition += 10;
+    }
+    
     // Total summary
     yPosition += 5;
     doc.setDrawColor(79, 70, 229);
@@ -1457,11 +1559,13 @@ export default function Estimator() {
           countertop_items: countertops as any,
           hardware_items: hardware as any,
           vanity_items: vanities as any,
+          kitchen_items: kitchens as any,
           cabinet_total: cabinetTotal,
           flooring_total: flooringTotal,
           countertop_total: countertopTotal,
           hardware_total: hardwareTotal,
           vanity_total: vanityTotal,
+          kitchen_total: kitchenTotal,
           grand_total: grandTotal,
           installation_requested: includeInstallation,
           installation_cost: installationCost,
@@ -1490,11 +1594,13 @@ export default function Estimator() {
         countertop_items: countertops as any,
         hardware_items: hardware as any,
         vanity_items: vanities as any,
+        kitchen_items: kitchens as any,
         cabinet_total: cabinetTotal,
         flooring_total: flooringTotal,
         countertop_total: countertopTotal,
         hardware_total: hardwareTotal,
         vanity_total: vanityTotal,
+        kitchen_total: kitchenTotal,
         grand_total: grandTotal,
         installation_requested: includeInstallation,
         installation_cost: installationCost,
@@ -2505,6 +2611,14 @@ export default function Estimator() {
                   <div className="space-y-2 mt-4">
                     <div className="flex justify-between items-center mb-2">
                       <h4 className="font-semibold">Added Kitchens:</h4>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => confirmClearAll('kitchen')}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        Clear All
+                      </Button>
                     </div>
                     {kitchens.map((item, index) => (
                       <div key={index} className="space-y-3">
@@ -2513,7 +2627,17 @@ export default function Estimator() {
                             <span className="text-sm font-medium">
                               {item.tier.charAt(0).toUpperCase() + item.tier.slice(1)} Kitchen x{item.quantity}
                             </span>
-                            <span className="font-semibold">${(item.quantity * (item.basePrice + item.cabinetCost + item.countertopCost)).toFixed(2)}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold">${(item.quantity * (item.basePrice + item.cabinetCost + item.countertopCost)).toFixed(2)}</span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => confirmRemoveKitchen(index)}
+                                className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
                           <div className="text-xs text-muted-foreground pl-2 space-y-0.5">
                             <div>Base: ${item.basePrice.toFixed(2)}</div>
@@ -2524,6 +2648,7 @@ export default function Estimator() {
                         <KitchenLineItemBreakdown 
                           kitchen={item} 
                           index={index}
+                          onUpdate={updateKitchen}
                         />
                       </div>
                     ))}
@@ -2538,7 +2663,7 @@ export default function Estimator() {
           </div>
 
           {/* Total Summary */}
-          {(cabinets.length > 0 || flooring.length > 0 || countertops.length > 0 || hardware.length > 0 || vanities.length > 0) && (
+          {(cabinets.length > 0 || flooring.length > 0 || countertops.length > 0 || hardware.length > 0 || vanities.length > 0 || kitchens.length > 0) && (
             <Card className="border-accent border-2">
               <CardHeader>
                 <CardTitle className="text-2xl">Total Estimate</CardTitle>
@@ -2561,6 +2686,12 @@ export default function Estimator() {
                     <div className="flex justify-between">
                       <span>Vanities:</span>
                       <span className="font-semibold">${vanityTotal.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {kitchenTotal > 0 && (
+                    <div className="flex justify-between">
+                      <span>Kitchens:</span>
+                      <span className="font-semibold">${kitchenTotal.toFixed(2)}</span>
                     </div>
                   )}
                   <div className="flex justify-between pt-2 border-t">
@@ -2607,7 +2738,7 @@ export default function Estimator() {
                   onClick={saveEstimate} 
                   className="mt-6 w-full"
                   variant="kiosk"
-                  disabled={cabinets.length === 0 && flooring.length === 0 && countertops.length === 0 && vanities.length === 0}
+                  disabled={cabinets.length === 0 && flooring.length === 0 && countertops.length === 0 && vanities.length === 0 && kitchens.length === 0}
                 >
                   {editId ? "Update Estimate" : "Save Estimate"}
                 </Button>
@@ -2616,7 +2747,7 @@ export default function Estimator() {
                     onClick={exportToPDF} 
                     className="flex-1"
                     variant="outline"
-                    disabled={cabinets.length === 0 && flooring.length === 0 && countertops.length === 0 && vanities.length === 0}
+                    disabled={cabinets.length === 0 && flooring.length === 0 && countertops.length === 0 && vanities.length === 0 && kitchens.length === 0}
                   >
                     Export to PDF
                   </Button>
@@ -2624,7 +2755,7 @@ export default function Estimator() {
                     onClick={() => setEmailDialog(true)} 
                     className="flex-1"
                     variant="outline"
-                    disabled={cabinets.length === 0 && flooring.length === 0 && countertops.length === 0 && vanities.length === 0}
+                    disabled={cabinets.length === 0 && flooring.length === 0 && countertops.length === 0 && vanities.length === 0 && kitchens.length === 0}
                   >
                     Email Estimate
                   </Button>
