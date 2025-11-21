@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Bell, X, AlertTriangle, Info, AlertCircle } from "lucide-react";
+import { Bell, X, AlertTriangle, Info, AlertCircle, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -235,6 +235,40 @@ export const NotificationCenter = () => {
                       <p className="text-sm text-muted-foreground mb-2">
                         {notification.message}
                       </p>
+                      
+                      {/* Special rendering for draft quote reminders */}
+                      {notification.type === "draft_quote_reminder" && notification.data?.quotes && (
+                        <div className="mt-3 space-y-2">
+                          <div className="text-xs font-medium text-muted-foreground mb-2">
+                            Draft Quotes:
+                          </div>
+                          {notification.data.quotes.map((quote: any) => (
+                            <div
+                              key={quote.id}
+                              className="flex items-center justify-between p-2 bg-background/50 rounded border text-xs"
+                            >
+                              <div className="flex items-center gap-2">
+                                <FileText className="h-3 w-3" />
+                                <div>
+                                  <div className="font-medium">{quote.customer_name}</div>
+                                  <div className="text-muted-foreground">{quote.customer_email}</div>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="font-semibold text-accent">
+                                  ${Number(quote.grand_total).toLocaleString("en-US", {
+                                    minimumFractionDigits: 2,
+                                  })}
+                                </div>
+                                <div className="text-muted-foreground">
+                                  {quote.tier.charAt(0).toUpperCase() + quote.tier.slice(1)}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-muted-foreground">
                           {format(
