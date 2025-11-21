@@ -30,6 +30,7 @@ import hollyHillImg from "@/assets/cabinet-doors/doormark-holly-hill.png";
 import shakerAbacoaImg from "@/assets/cabinet-doors/doormark-shaker-abacoa.png";
 import { DoorStylePreview } from "@/components/DoorStylePreview";
 import { VanityLineItemBreakdown } from "@/components/VanityLineItemBreakdown";
+import { KitchenLineItemBreakdown } from "@/components/KitchenLineItemBreakdown";
 
 const cabinetSchema = z.object({
   quantity: z.number().int().min(1, "Quantity must be at least 1").max(1000, "Quantity cannot exceed 1000")
@@ -197,6 +198,16 @@ interface VanityItem {
   plumbingCost: number;
 }
 
+interface KitchenItem {
+  tier: 'good' | 'better' | 'best';
+  quantity: number;
+  basePrice: number;
+  cabinetUpgrade: boolean;
+  countertopUpgrade: boolean;
+  cabinetCost: number;
+  countertopCost: number;
+}
+
 export default function Estimator() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -247,27 +258,34 @@ export default function Estimator() {
   const [vanitySingleToDouble, setVanitySingleToDouble] = useState(false);
   const [vanityPlumbingWallChange, setVanityPlumbingWallChange] = useState(false);
   const [vanities, setVanities] = useState<VanityItem[]>([]);
+
+  // Kitchen state
+  const [kitchenTier, setKitchenTier] = useState<'good' | 'better' | 'best'>('better');
+  const [kitchenQuantity, setKitchenQuantity] = useState("");
+  const [kitchenCabinetUpgrade, setKitchenCabinetUpgrade] = useState(false);
+  const [kitchenCountertopUpgrade, setKitchenCountertopUpgrade] = useState(false);
+  const [kitchens, setKitchens] = useState<KitchenItem[]>([]);
   
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
-    type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | 'door' | 'vanity' | null;
+    type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | 'door' | 'vanity' | 'kitchen' | null;
     index: number;
     itemName: string;
   }>({ open: false, type: null, index: -1, itemName: '' });
 
   const [clearAllDialog, setClearAllDialog] = useState<{
     open: boolean;
-    type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | 'door' | 'vanity' | null;
+    type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | 'door' | 'vanity' | 'kitchen' | null;
   }>({ open: false, type: null });
 
   const [undoState, setUndoState] = useState<{
     action: 'remove' | 'clear' | null;
-    type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | 'door' | 'vanity' | null;
-    data: CabinetItem[] | FlooringItem[] | CountertopItem[] | HardwareItem[] | VanityItem[] | null;
+    type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | 'door' | 'vanity' | 'kitchen' | null;
+    data: CabinetItem[] | FlooringItem[] | CountertopItem[] | HardwareItem[] | VanityItem[] | KitchenItem[] | null;
   }>({ action: null, type: null, data: null });
 
   const [editingItem, setEditingItem] = useState<{
-    type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | 'door' | 'vanity' | null;
+    type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | 'door' | 'vanity' | 'kitchen' | null;
     index: number;
     value: string;
   }>({ type: null, index: -1, value: '' });
@@ -594,6 +612,50 @@ export default function Estimator() {
     }
   };
 
+  const getKitchenPricing = (tier: 'good' | 'better' | 'best') => {
+    const basePrices = {
+      good: { min: 8500, max: 10500, base: 9500 },
+      better: { min: 11000, max: 14500, base: 12750 },
+      best: { min: 15000, max: 22000, base: 18500 }
+    };
+    return basePrices[tier];
+  };
+
+  const addKitchen = () => {
+    if (kitchenQuantity) {
+      const quantity = parseInt(kitchenQuantity);
+      
+      try {
+        cabinetSchema.parse({ quantity });
+        
+        const pricing = getKitchenPricing(kitchenTier);
+        const cabinetCost = kitchenCabinetUpgrade ? (kitchenTier === 'good' ? 1200 : kitchenTier === 'better' ? 1850 : 2500) : 0;
+        const countertopCost = kitchenCountertopUpgrade ? (kitchenTier === 'good' ? 1800 : kitchenTier === 'better' ? 2650 : 3500) : 0;
+        
+        setKitchens([...kitchens, {
+          tier: kitchenTier,
+          quantity,
+          basePrice: pricing.base,
+          cabinetUpgrade: kitchenCabinetUpgrade,
+          countertopUpgrade: kitchenCountertopUpgrade,
+          cabinetCost,
+          countertopCost,
+        }]);
+        setKitchenQuantity("");
+        setKitchenCabinetUpgrade(false);
+        setKitchenCountertopUpgrade(false);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          toast({
+            title: "Invalid Input",
+            description: error.errors[0].message,
+            variant: "destructive",
+          });
+        }
+      }
+    }
+  };
+
   const addReplacementDoor = () => {
     if (replacementDoorType && replacementDoorQuantity) {
       const quantity = parseInt(replacementDoorQuantity);
@@ -875,7 +937,7 @@ export default function Estimator() {
     setUndoState({ action: null, type: null, data: null });
   };
 
-  const startEditing = (type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | 'door' | 'vanity', index: number) => {
+  const startEditing = (type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | 'door' | 'vanity' | 'kitchen', index: number) => {
     if (type === 'cabinet') {
       setEditingItem({ type, index, value: cabinets[index].quantity.toString() });
     } else if (type === 'flooring') {
@@ -888,6 +950,8 @@ export default function Estimator() {
       setEditingItem({ type, index, value: replacementDoors[index].quantity.toString() });
     } else if (type === 'vanity') {
       setEditingItem({ type, index, value: vanities[index].quantity.toString() });
+    } else if (type === 'kitchen') {
+      setEditingItem({ type, index, value: kitchens[index].quantity.toString() });
     }
   };
 
@@ -1105,8 +1169,9 @@ export default function Estimator() {
   const countertopTotal = countertops.reduce((sum, item) => sum + (item.linearFeet * item.pricePerLinearFt), 0);
   const hardwareTotal = hardware.reduce((sum, item) => sum + (item.quantity * item.pricePerUnit), 0);
   const vanityTotal = vanities.reduce((sum, item) => sum + (item.quantity * (item.basePrice + item.conversionCost + item.plumbingCost)), 0);
+  const kitchenTotal = kitchens.reduce((sum, item) => sum + (item.quantity * (item.basePrice + item.cabinetCost + item.countertopCost)), 0);
   const totalCabinetQuantity = cabinets.reduce((sum, item) => sum + item.quantity, 0) + replacementDoors.reduce((sum, item) => sum + item.quantity, 0);
-  const subtotal = cabinetTotal + replacementDoorsTotal + flooringTotal + countertopTotal + hardwareTotal + vanityTotal;
+  const subtotal = cabinetTotal + replacementDoorsTotal + flooringTotal + countertopTotal + hardwareTotal + vanityTotal + kitchenTotal;
   
   let markupPercentage = 0;
   let markupLabel = "";
@@ -2348,6 +2413,123 @@ export default function Estimator() {
                     <div className="flex justify-between font-bold pt-2 border-t">
                       <span>Vanity Total:</span>
                       <span>${vanityTotal.toFixed(2)}</span>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Kitchen Install Estimator */}
+          <div className="col-span-1">
+            <Card>
+              <CardHeader>
+                <CardTitle>10×10 Kitchen Install</CardTitle>
+                <CardDescription>Complete kitchen packages for standard 10'×10' layouts (Atlanta market)</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="kitchen-tier">Package Quality</Label>
+                    <Select value={kitchenTier} onValueChange={(value) => setKitchenTier(value as 'good' | 'better' | 'best')}>
+                      <SelectTrigger id="kitchen-tier">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="good">
+                          <div className="flex flex-col">
+                            <span className="font-semibold">Good ($8,500-$10,500)</span>
+                            <span className="text-xs text-muted-foreground">Basic builder-grade kitchen</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="better">
+                          <div className="flex flex-col">
+                            <span className="font-semibold">Better ($11,000-$14,500)</span>
+                            <span className="text-xs text-muted-foreground">Mid-range quality kitchen</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="best">
+                          <div className="flex flex-col">
+                            <span className="font-semibold">Best ($15,000-$22,000+)</span>
+                            <span className="text-xs text-muted-foreground">Premium custom kitchen</span>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="kitchen-quantity">Quantity</Label>
+                    <Input
+                      id="kitchen-quantity"
+                      type="number"
+                      min="1"
+                      value={kitchenQuantity}
+                      onChange={(e) => setKitchenQuantity(e.target.value)}
+                      placeholder="Enter quantity"
+                    />
+                  </div>
+
+                  <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                    <input
+                      type="checkbox"
+                      id="cabinet-upgrade"
+                      checked={kitchenCabinetUpgrade}
+                      onChange={(e) => setKitchenCabinetUpgrade(e.target.checked)}
+                      className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <label htmlFor="cabinet-upgrade" className="flex-1 cursor-pointer">
+                      <div className="font-medium">Premium Cabinet Door Upgrade</div>
+                      <div className="text-xs text-muted-foreground">Upgrade to premium doors (+$1,200-$2,500)</div>
+                    </label>
+                  </div>
+
+                  <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                    <input
+                      type="checkbox"
+                      id="countertop-upgrade"
+                      checked={kitchenCountertopUpgrade}
+                      onChange={(e) => setKitchenCountertopUpgrade(e.target.checked)}
+                      className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <label htmlFor="countertop-upgrade" className="flex-1 cursor-pointer">
+                      <div className="font-medium">Quartz/Granite Countertop Upgrade</div>
+                      <div className="text-xs text-muted-foreground">Upgrade to premium material (+$1,800-$3,500)</div>
+                    </label>
+                  </div>
+
+                  <Button onClick={addKitchen} variant="kiosk" className="w-full">Add Kitchen</Button>
+                </div>
+
+                {kitchens.length > 0 && (
+                  <div className="space-y-2 mt-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <h4 className="font-semibold">Added Kitchens:</h4>
+                    </div>
+                    {kitchens.map((item, index) => (
+                      <div key={index} className="space-y-3">
+                        <div className="p-3 bg-muted/50 rounded space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium">
+                              {item.tier.charAt(0).toUpperCase() + item.tier.slice(1)} Kitchen x{item.quantity}
+                            </span>
+                            <span className="font-semibold">${(item.quantity * (item.basePrice + item.cabinetCost + item.countertopCost)).toFixed(2)}</span>
+                          </div>
+                          <div className="text-xs text-muted-foreground pl-2 space-y-0.5">
+                            <div>Base: ${item.basePrice.toFixed(2)}</div>
+                            {item.cabinetUpgrade && <div>+ Cabinet upgrade: ${item.cabinetCost.toFixed(2)}</div>}
+                            {item.countertopUpgrade && <div>+ Countertop upgrade: ${item.countertopCost.toFixed(2)}</div>}
+                          </div>
+                        </div>
+                        <KitchenLineItemBreakdown 
+                          kitchen={item} 
+                          index={index}
+                        />
+                      </div>
+                    ))}
+                    <div className="flex justify-between font-bold pt-2 border-t">
+                      <span>Kitchen Total:</span>
+                      <span>${kitchenTotal.toFixed(2)}</span>
                     </div>
                   </div>
                 )}

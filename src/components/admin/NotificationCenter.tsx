@@ -235,40 +235,74 @@ export const NotificationCenter = () => {
                       <p className="text-sm text-muted-foreground mb-2">
                         {notification.message}
                       </p>
-                      
                       {/* Special rendering for draft quote reminders */}
-                      {notification.type === "draft_quote_reminder" && notification.data?.quotes && (
+                      {notification.type === "draft_quote_reminder" && (notification.data?.vanity_quotes || notification.data?.kitchen_quotes) && (
                         <div className="mt-3 space-y-2">
-                          <div className="text-xs font-medium text-muted-foreground mb-2">
-                            Draft Quotes:
-                          </div>
-                          {notification.data.quotes.map((quote: any) => (
-                            <div
-                              key={quote.id}
-                              className="flex items-center justify-between p-2 bg-background/50 rounded border text-xs"
-                            >
-                              <div className="flex items-center gap-2">
-                                <FileText className="h-3 w-3" />
-                                <div>
-                                  <div className="font-medium">{quote.customer_name}</div>
-                                  <div className="text-muted-foreground">{quote.customer_email}</div>
-                                </div>
+                          {notification.data.vanity_quotes && notification.data.vanity_quotes.length > 0 && (
+                            <div>
+                              <div className="text-xs font-medium text-muted-foreground mb-2">
+                                Vanity Quotes:
                               </div>
-                              <div className="text-right">
-                                <div className="font-semibold text-accent">
-                                  ${Number(quote.grand_total).toLocaleString("en-US", {
-                                    minimumFractionDigits: 2,
-                                  })}
+                              {notification.data.vanity_quotes.map((quote: any) => (
+                                <div
+                                  key={quote.id}
+                                  className="flex items-center justify-between p-2 bg-background/50 rounded border text-xs mb-1"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <FileText className="h-3 w-3" />
+                                    <div>
+                                      <div className="font-medium">{quote.customer_name}</div>
+                                      <div className="text-muted-foreground">{quote.customer_email}</div>
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="font-semibold text-accent">
+                                      ${Number(quote.grand_total).toLocaleString("en-US", {
+                                        minimumFractionDigits: 2,
+                                      })}
+                                    </div>
+                                    <div className="text-muted-foreground">
+                                      {quote.tier.charAt(0).toUpperCase() + quote.tier.slice(1)}
+                                    </div>
+                                  </div>
                                 </div>
-                                <div className="text-muted-foreground">
-                                  {quote.tier.charAt(0).toUpperCase() + quote.tier.slice(1)}
-                                </div>
-                              </div>
+                              ))}
                             </div>
-                          ))}
+                          )}
+                          
+                          {notification.data.kitchen_quotes && notification.data.kitchen_quotes.length > 0 && (
+                            <div>
+                              <div className="text-xs font-medium text-muted-foreground mb-2 mt-3">
+                                Kitchen Quotes:
+                              </div>
+                              {notification.data.kitchen_quotes.map((quote: any) => (
+                                <div
+                                  key={quote.id}
+                                  className="flex items-center justify-between p-2 bg-background/50 rounded border text-xs mb-1"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <FileText className="h-3 w-3" />
+                                    <div>
+                                      <div className="font-medium">{quote.customer_name}</div>
+                                      <div className="text-muted-foreground">{quote.customer_email}</div>
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="font-semibold text-accent">
+                                      ${Number(quote.grand_total).toLocaleString("en-US", {
+                                        minimumFractionDigits: 2,
+                                      })}
+                                    </div>
+                                    <div className="text-muted-foreground">
+                                      {quote.tier.charAt(0).toUpperCase() + quote.tier.slice(1)}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       )}
-                      
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-muted-foreground">
                           {format(
