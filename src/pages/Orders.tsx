@@ -191,16 +191,21 @@ const Orders = () => {
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/10">
       <header className="border-b bg-card/50 backdrop-blur">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/online-shop")}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold">My Orders</h1>
-              <p className="text-sm text-muted-foreground">
-                View your order history and track shipments
-              </p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="icon" onClick={() => navigate("/online-shop")}>
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <div>
+                <h1 className="text-2xl font-bold">My Orders</h1>
+                <p className="text-sm text-muted-foreground">
+                  View your order history and track shipments
+                </p>
+              </div>
             </div>
+            <Button variant="outline" onClick={() => navigate("/quote-comparison")}>
+              Compare Quotes
+            </Button>
           </div>
         </div>
       </header>
