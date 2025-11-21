@@ -2682,6 +2682,12 @@ export default function Estimator() {
                     <span>Countertops:</span>
                     <span className="font-semibold">${countertopTotal.toFixed(2)}</span>
                   </div>
+                  {hardwareTotal > 0 && (
+                    <div className="flex justify-between">
+                      <span>Cabinet Hardware:</span>
+                      <span className="font-semibold">${hardwareTotal.toFixed(2)}</span>
+                    </div>
+                  )}
                   {vanityTotal > 0 && (
                     <div className="flex justify-between">
                       <span>Vanities:</span>
