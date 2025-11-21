@@ -1,12 +1,14 @@
 import { OrderingOption } from "@/components/OrderingOption";
-import { Monitor, Store, Globe } from "lucide-react";
+import { Monitor, Store, Globe, LayoutDashboard } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
 import showroomImg from "@/assets/showroom.jpg";
 import kioskImg from "@/assets/kiosk-screen.jpg";
 import logoImg from "@/assets/logo.png";
 import { FlooringHero } from "@/components/FlooringHero";
 import { FlooringComparisonModal } from "@/components/FlooringComparisonModal";
-import { useState } from "react";
 import cocoaImg from "@/assets/flooring/lvp/cocoa.png";
 import butternutImg from "@/assets/flooring/lvp/butternut.png";
 import fogImg from "@/assets/flooring/lvp/fog.png";
@@ -31,6 +33,13 @@ const Index = () => {
   const [compareMode, setCompareMode] = useState(false);
   const [selectedForComparison, setSelectedForComparison] = useState<string[]>([]);
   const [isComparisonModalOpen, setIsComparisonModalOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session);
+    });
+  }, []);
   
   const handleKioskClick = () => {
     navigate("/estimator");
@@ -81,6 +90,18 @@ const Index = () => {
       {/* Hero Header */}
       <header className="py-12 text-center">
         <div className="container mx-auto px-4">
+          {isAuthenticated && (
+            <div className="flex justify-end mb-4">
+              <Button 
+                variant="secondary" 
+                onClick={() => navigate("/portal")}
+                className="flex items-center gap-2"
+              >
+                <LayoutDashboard className="w-4 h-4" />
+                My Dashboard
+              </Button>
+            </div>
+          )}
           <img 
             src={logoImg} 
             alt="3 Power Logo" 
