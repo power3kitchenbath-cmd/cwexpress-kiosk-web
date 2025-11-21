@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Edit2, Check, X, FileDown, Mail } from "lucide-react";
+import { Edit2, Check, X, FileDown, Mail, Save } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import logo from "@/assets/logo.png";
@@ -46,6 +46,7 @@ export function VanityLineItemBreakdown({ vanity, index, onUpdate }: VanityLineI
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [isSavingQuote, setIsSavingQuote] = useState(false);
 
   const tierLabels = {
     good: "Value Package ($1,400-$1,800)",
@@ -240,6 +241,37 @@ export function VanityLineItemBreakdown({ vanity, index, onUpdate }: VanityLineI
     setIsSendingEmail(true);
 
     try {
+      // First, save the quote to database
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+
+      const { data: savedQuote, error: saveError } = await supabase
+        .from("vanity_quotes")
+        .insert({
+          user_id: user.id,
+          customer_name: customerName.trim(),
+          customer_email: customerEmail.trim(),
+          tier: vanity.tier,
+          quantity: vanity.quantity,
+          base_price: vanity.basePrice,
+          single_to_double: vanity.singleToDouble,
+          plumbing_wall_change: vanity.plumbingWallChange,
+          conversion_cost: vanity.conversionCost,
+          plumbing_cost: vanity.plumbingCost,
+          line_items: lineItems,
+          grand_total: grandTotal,
+          status: "sent",
+          email_sent_at: new Date().toISOString(),
+        } as any)
+        .select()
+        .single();
+
+      if (saveError) throw saveError;
+
+      // Then send the email
       const { data, error } = await supabase.functions.invoke("send-vanity-quote", {
         body: {
           customerName: customerName.trim(),
@@ -253,8 +285,8 @@ export function VanityLineItemBreakdown({ vanity, index, onUpdate }: VanityLineI
       if (error) throw error;
 
       toast({
-        title: "Email Sent",
-        description: `Vanity quote successfully sent to ${customerEmail}`,
+        title: "Quote Sent & Saved",
+        description: `Vanity quote sent to ${customerEmail} and saved to database`,
       });
 
       setEmailDialogOpen(false);
@@ -269,6 +301,67 @@ export function VanityLineItemBreakdown({ vanity, index, onUpdate }: VanityLineI
       });
     } finally {
       setIsSendingEmail(false);
+    }
+  };
+
+  const handleSaveQuote = async () => {
+    if (!customerName.trim() || !customerEmail.trim()) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter both customer name and email",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSavingQuote(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+
+      const { data, error } = await supabase
+        .from("vanity_quotes")
+        .insert({
+          user_id: user.id,
+          customer_name: customerName.trim(),
+          customer_email: customerEmail.trim(),
+          tier: vanity.tier,
+          quantity: vanity.quantity,
+          base_price: vanity.basePrice,
+          single_to_double: vanity.singleToDouble,
+          plumbing_wall_change: vanity.plumbingWallChange,
+          conversion_cost: vanity.conversionCost,
+          plumbing_cost: vanity.plumbingCost,
+          line_items: lineItems,
+          grand_total: grandTotal,
+          status: "draft",
+        } as any)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "Quote Saved",
+        description: "Vanity quote saved successfully as draft",
+      });
+
+      setEmailDialogOpen(false);
+      setCustomerName("");
+      setCustomerEmail("");
+    } catch (error: any) {
+      console.error("Error saving vanity quote:", error);
+      toast({
+        title: "Save Failed",
+        description: error.message || "Failed to save vanity quote. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingQuote(false);
     }
   };
 
@@ -435,11 +528,20 @@ export function VanityLineItemBreakdown({ vanity, index, onUpdate }: VanityLineI
           <Button
             variant="outline"
             onClick={() => setEmailDialogOpen(false)}
-            disabled={isSendingEmail}
+            disabled={isSendingEmail || isSavingQuote}
           >
             Cancel
           </Button>
-          <Button onClick={handleSendEmail} disabled={isSendingEmail}>
+          <Button
+            variant="secondary"
+            onClick={handleSaveQuote}
+            disabled={isSendingEmail || isSavingQuote}
+            className="gap-2"
+          >
+            <Save className="h-4 w-4" />
+            {isSavingQuote ? "Saving..." : "Save Draft"}
+          </Button>
+          <Button onClick={handleSendEmail} disabled={isSendingEmail || isSavingQuote}>
             {isSendingEmail ? "Sending..." : "Send Quote"}
           </Button>
         </DialogFooter>

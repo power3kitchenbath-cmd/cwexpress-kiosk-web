@@ -1383,6 +1383,69 @@ export type Database = {
         }
         Relationships: []
       }
+      vanity_quotes: {
+        Row: {
+          base_price: number
+          conversion_cost: number
+          created_at: string
+          customer_email: string
+          customer_name: string
+          email_sent_at: string | null
+          grand_total: number
+          id: string
+          line_items: Json
+          notes: string | null
+          plumbing_cost: number
+          plumbing_wall_change: boolean
+          quantity: number
+          single_to_double: boolean
+          status: string
+          tier: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          base_price: number
+          conversion_cost?: number
+          created_at?: string
+          customer_email: string
+          customer_name: string
+          email_sent_at?: string | null
+          grand_total: number
+          id?: string
+          line_items?: Json
+          notes?: string | null
+          plumbing_cost?: number
+          plumbing_wall_change?: boolean
+          quantity: number
+          single_to_double?: boolean
+          status?: string
+          tier: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          base_price?: number
+          conversion_cost?: number
+          created_at?: string
+          customer_email?: string
+          customer_name?: string
+          email_sent_at?: string | null
+          grand_total?: number
+          id?: string
+          line_items?: Json
+          notes?: string | null
+          plumbing_cost?: number
+          plumbing_wall_change?: boolean
+          quantity?: number
+          single_to_double?: boolean
+          status?: string
+          tier?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
