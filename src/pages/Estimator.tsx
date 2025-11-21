@@ -186,6 +186,16 @@ interface HardwareType {
   category: string;
 }
 
+interface VanityItem {
+  tier: 'good' | 'better' | 'best';
+  quantity: number;
+  basePrice: number;
+  singleToDouble: boolean;
+  plumbingWallChange: boolean;
+  conversionCost: number;
+  plumbingCost: number;
+}
+
 export default function Estimator() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -230,26 +240,33 @@ export default function Estimator() {
   const [hardwareQuantity, setHardwareQuantity] = useState("");
   const [hardware, setHardware] = useState<HardwareItem[]>([]);
   
+  // Vanity state
+  const [vanityTier, setVanityTier] = useState<'good' | 'better' | 'best'>('better');
+  const [vanityQuantity, setVanityQuantity] = useState("");
+  const [vanitySingleToDouble, setVanitySingleToDouble] = useState(false);
+  const [vanityPlumbingWallChange, setVanityPlumbingWallChange] = useState(false);
+  const [vanities, setVanities] = useState<VanityItem[]>([]);
+  
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
-    type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | 'door' | null;
+    type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | 'door' | 'vanity' | null;
     index: number;
     itemName: string;
   }>({ open: false, type: null, index: -1, itemName: '' });
 
   const [clearAllDialog, setClearAllDialog] = useState<{
     open: boolean;
-    type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | 'door' | null;
+    type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | 'door' | 'vanity' | null;
   }>({ open: false, type: null });
 
   const [undoState, setUndoState] = useState<{
     action: 'remove' | 'clear' | null;
-    type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | 'door' | null;
-    data: CabinetItem[] | FlooringItem[] | CountertopItem[] | HardwareItem[] | null;
+    type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | 'door' | 'vanity' | null;
+    data: CabinetItem[] | FlooringItem[] | CountertopItem[] | HardwareItem[] | VanityItem[] | null;
   }>({ action: null, type: null, data: null });
 
   const [editingItem, setEditingItem] = useState<{
-    type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | 'door' | null;
+    type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | 'door' | 'vanity' | null;
     index: number;
     value: string;
   }>({ type: null, index: -1, value: '' });
@@ -371,6 +388,7 @@ export default function Estimator() {
     setFlooring((data.flooring_items as unknown) as FlooringItem[]);
     setCountertops(((data as any).countertop_items as unknown) as CountertopItem[]);
     setHardware(((data as any).hardware_items as unknown) as HardwareItem[] || []);
+    setVanities(((data as any).vanity_items as unknown) as VanityItem[] || []);
     setIncludeInstallation((data as any).installation_requested || false);
   };
 
@@ -531,6 +549,50 @@ export default function Estimator() {
     }
   };
 
+  const getVanityPricing = (tier: 'good' | 'better' | 'best') => {
+    const basePrices = {
+      good: { min: 1400, max: 1800, base: 1600 },
+      better: { min: 1900, max: 2600, base: 2250 },
+      best: { min: 2700, max: 4000, base: 3350 }
+    };
+    return basePrices[tier];
+  };
+
+  const addVanity = () => {
+    if (vanityQuantity) {
+      const quantity = parseInt(vanityQuantity);
+      
+      try {
+        cabinetSchema.parse({ quantity });
+        
+        const pricing = getVanityPricing(vanityTier);
+        const conversionCost = vanitySingleToDouble ? (vanityTier === 'good' ? 450 : vanityTier === 'better' ? 450 : 650) : 0;
+        const plumbingCost = vanityPlumbingWallChange ? (vanityTier === 'good' ? 300 : vanityTier === 'better' ? 450 : 500) : 0;
+        
+        setVanities([...vanities, {
+          tier: vanityTier,
+          quantity,
+          basePrice: pricing.base,
+          singleToDouble: vanitySingleToDouble,
+          plumbingWallChange: vanityPlumbingWallChange,
+          conversionCost,
+          plumbingCost,
+        }]);
+        setVanityQuantity("");
+        setVanitySingleToDouble(false);
+        setVanityPlumbingWallChange(false);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          toast({
+            title: "Invalid Input",
+            description: error.errors[0].message,
+            variant: "destructive",
+          });
+        }
+      }
+    }
+  };
+
   const addReplacementDoor = () => {
     if (replacementDoorType && replacementDoorQuantity) {
       const quantity = parseInt(replacementDoorQuantity);
@@ -609,6 +671,17 @@ export default function Estimator() {
     });
   };
 
+  const confirmRemoveVanity = (index: number) => {
+    const item = vanities[index];
+    const tierLabel = item.tier.charAt(0).toUpperCase() + item.tier.slice(1);
+    setDeleteDialog({
+      open: true,
+      type: 'vanity',
+      index,
+      itemName: `${tierLabel} Vanity x${item.quantity}`
+    });
+  };
+
   const handleDeleteConfirm = () => {
     if (deleteDialog.type === 'cabinet') {
       const removedItem = cabinets[deleteDialog.index];
@@ -655,6 +728,15 @@ export default function Estimator() {
         description: "Hardware removed from estimate",
         action: <Button variant="outline" size="sm" onClick={handleUndo}>Undo</Button>
       });
+    } else if (deleteDialog.type === 'vanity') {
+      const removedItem = vanities[deleteDialog.index];
+      setUndoState({ action: 'remove', type: 'vanity', data: [removedItem] });
+      setVanities(vanities.filter((_, i) => i !== deleteDialog.index));
+      toast({
+        title: "Item Removed",
+        description: "Vanity removed from estimate",
+        action: <Button variant="outline" size="sm" onClick={handleUndo}>Undo</Button>
+      });
     }
     setDeleteDialog({ open: false, type: null, index: -1, itemName: '' });
   };
@@ -663,7 +745,7 @@ export default function Estimator() {
     setDeleteDialog({ open: false, type: null, index: -1, itemName: '' });
   };
 
-  const confirmClearAll = (type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | 'door') => {
+  const confirmClearAll = (type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | 'door' | 'vanity') => {
     setClearAllDialog({ open: true, type });
   };
 
@@ -706,6 +788,14 @@ export default function Estimator() {
       toast({
         title: "Hardware Cleared",
         description: `Removed ${hardware.length} hardware item(s)`,
+        action: <Button variant="outline" size="sm" onClick={handleUndo}>Undo</Button>
+      });
+    } else if (clearAllDialog.type === 'vanity') {
+      setUndoState({ action: 'clear', type: 'vanity', data: [...vanities] });
+      setVanities([]);
+      toast({
+        title: "Vanities Cleared",
+        description: `Removed ${vanities.length} vanity item(s)`,
         action: <Button variant="outline" size="sm" onClick={handleUndo}>Undo</Button>
       });
     }
@@ -769,12 +859,22 @@ export default function Estimator() {
         title: "Undo Successful",
         description: "Hardware items restored"
       });
+    } else if (undoState.type === 'vanity') {
+      if (undoState.action === 'remove') {
+        setVanities([...vanities, ...(undoState.data as VanityItem[])]);
+      } else if (undoState.action === 'clear') {
+        setVanities(undoState.data as VanityItem[]);
+      }
+      toast({
+        title: "Undo Successful",
+        description: "Vanity items restored"
+      });
     }
 
     setUndoState({ action: null, type: null, data: null });
   };
 
-  const startEditing = (type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | 'door', index: number) => {
+  const startEditing = (type: 'cabinet' | 'flooring' | 'countertop' | 'hardware' | 'door' | 'vanity', index: number) => {
     if (type === 'cabinet') {
       setEditingItem({ type, index, value: cabinets[index].quantity.toString() });
     } else if (type === 'flooring') {
@@ -785,6 +885,8 @@ export default function Estimator() {
       setEditingItem({ type, index, value: hardware[index].quantity.toString() });
     } else if (type === 'door') {
       setEditingItem({ type, index, value: replacementDoors[index].quantity.toString() });
+    } else if (type === 'vanity') {
+      setEditingItem({ type, index, value: vanities[index].quantity.toString() });
     }
   };
 
@@ -958,6 +1060,20 @@ export default function Estimator() {
           title: "Updated",
           description: "Hardware quantity updated successfully"
         });
+      } else if (editingItem.type === 'vanity') {
+        const quantity = parseInt(editingItem.value);
+        cabinetSchema.parse({ quantity });
+        
+        const updatedVanities = [...vanities];
+        updatedVanities[editingItem.index] = {
+          ...updatedVanities[editingItem.index],
+          quantity
+        };
+        setVanities(updatedVanities);
+        toast({
+          title: "Updated",
+          description: "Vanity quantity updated successfully"
+        });
       }
       
       cancelEditing();
@@ -977,8 +1093,9 @@ export default function Estimator() {
   const flooringTotal = flooring.reduce((sum, item) => sum + (item.squareFeet * item.pricePerSqFt), 0);
   const countertopTotal = countertops.reduce((sum, item) => sum + (item.linearFeet * item.pricePerLinearFt), 0);
   const hardwareTotal = hardware.reduce((sum, item) => sum + (item.quantity * item.pricePerUnit), 0);
+  const vanityTotal = vanities.reduce((sum, item) => sum + (item.quantity * (item.basePrice + item.conversionCost + item.plumbingCost)), 0);
   const totalCabinetQuantity = cabinets.reduce((sum, item) => sum + item.quantity, 0) + replacementDoors.reduce((sum, item) => sum + item.quantity, 0);
-  const subtotal = cabinetTotal + replacementDoorsTotal + flooringTotal + countertopTotal + hardwareTotal;
+  const subtotal = cabinetTotal + replacementDoorsTotal + flooringTotal + countertopTotal + hardwareTotal + vanityTotal;
   
   let markupPercentage = 0;
   let markupLabel = "";
@@ -1116,6 +1233,44 @@ export default function Estimator() {
       yPosition += 10;
     }
     
+    // Vanities section
+    if (vanities.length > 0) {
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Bathroom Vanities', 15, yPosition);
+      yPosition += 7;
+      
+      const vanityRows = vanities.map(item => {
+        const tierLabel = item.tier.charAt(0).toUpperCase() + item.tier.slice(1);
+        const extras: string[] = [];
+        if (item.singleToDouble) extras.push('Single→Double');
+        if (item.plumbingWallChange) extras.push('Wall Change');
+        const extrasText = extras.length > 0 ? ` (${extras.join(', ')})` : '';
+        
+        return [
+          `${tierLabel} Package${extrasText}`,
+          item.quantity.toString(),
+          `$${(item.basePrice + item.conversionCost + item.plumbingCost).toFixed(2)}`,
+          `$${(item.quantity * (item.basePrice + item.conversionCost + item.plumbingCost)).toFixed(2)}`
+        ];
+      });
+      
+      autoTable(doc, {
+        startY: yPosition,
+        head: [['Package', 'Quantity', 'Unit Price', 'Total']],
+        body: vanityRows,
+        theme: 'striped',
+        headStyles: { fillColor: [79, 70, 229] },
+        margin: { left: 15, right: 15 }
+      });
+      
+      yPosition = (doc as any).lastAutoTable.finalY + 5;
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Vanities Subtotal: $${vanityTotal.toFixed(2)}`, pageWidth - 15, yPosition, { align: 'right' });
+      yPosition += 10;
+    }
+    
     // Total summary
     yPosition += 5;
     doc.setDrawColor(79, 70, 229);
@@ -1224,10 +1379,13 @@ export default function Estimator() {
           cabinet_items: cabinets as any,
           flooring_items: flooring as any,
           countertop_items: countertops as any,
+          hardware_items: hardware as any,
+          vanity_items: vanities as any,
           cabinet_total: cabinetTotal,
           flooring_total: flooringTotal,
           countertop_total: countertopTotal,
           hardware_total: hardwareTotal,
+          vanity_total: vanityTotal,
           grand_total: grandTotal,
           installation_requested: includeInstallation,
           installation_cost: installationCost,
@@ -1255,10 +1413,12 @@ export default function Estimator() {
         flooring_items: flooring as any,
         countertop_items: countertops as any,
         hardware_items: hardware as any,
+        vanity_items: vanities as any,
         cabinet_total: cabinetTotal,
         flooring_total: flooringTotal,
         countertop_total: countertopTotal,
         hardware_total: hardwareTotal,
+        vanity_total: vanityTotal,
         grand_total: grandTotal,
         installation_requested: includeInstallation,
         installation_cost: installationCost,
@@ -2022,8 +2182,163 @@ export default function Estimator() {
             </Card>
           </div>
 
+          {/* Vanity Estimator */}
+          <div className="col-span-1">
+            <Card>
+              <CardHeader>
+                <CardTitle>Bathroom Vanities</CardTitle>
+                <CardDescription>72" Double-Sink Vanity packages (Atlanta market)</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-4">
+                  {/* Tier Selection */}
+                  <div>
+                    <Label htmlFor="vanity-tier">Package Quality</Label>
+                    <Select value={vanityTier} onValueChange={(value) => setVanityTier(value as 'good' | 'better' | 'best')}>
+                      <SelectTrigger id="vanity-tier">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="good">
+                          <div className="flex flex-col">
+                            <span className="font-semibold">Good ($1,400-$1,800)</span>
+                            <span className="text-xs text-muted-foreground">Value package for rentals & flips</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="better">
+                          <div className="flex flex-col">
+                            <span className="font-semibold">Better ($1,900-$2,600)</span>
+                            <span className="text-xs text-muted-foreground">Mid-range with quality construction</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="best">
+                          <div className="flex flex-col">
+                            <span className="font-semibold">Best ($2,700-$4,000+)</span>
+                            <span className="text-xs text-muted-foreground">Premium showroom-grade</span>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Quantity */}
+                  <div>
+                    <Label htmlFor="vanity-quantity">Quantity</Label>
+                    <Input
+                      id="vanity-quantity"
+                      type="number"
+                      min="1"
+                      value={vanityQuantity}
+                      onChange={(e) => setVanityQuantity(e.target.value)}
+                      placeholder="Enter quantity"
+                    />
+                  </div>
+
+                  {/* Single to Double Conversion */}
+                  <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                    <input
+                      type="checkbox"
+                      id="single-to-double"
+                      checked={vanitySingleToDouble}
+                      onChange={(e) => setVanitySingleToDouble(e.target.checked)}
+                      className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <label htmlFor="single-to-double" className="flex-1 cursor-pointer">
+                      <div className="font-medium">Single to Double Conversion</div>
+                      <div className="text-xs text-muted-foreground">Add second sink hookup (+$450-$650)</div>
+                    </label>
+                  </div>
+
+                  {/* Plumbing Wall Change */}
+                  <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                    <input
+                      type="checkbox"
+                      id="plumbing-wall-change"
+                      checked={vanityPlumbingWallChange}
+                      onChange={(e) => setVanityPlumbingWallChange(e.target.checked)}
+                      className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <label htmlFor="plumbing-wall-change" className="flex-1 cursor-pointer">
+                      <div className="font-medium">Plumbing Wall Change</div>
+                      <div className="text-xs text-muted-foreground">Move plumbing to different wall (+$300-$500)</div>
+                    </label>
+                  </div>
+
+                  <Button onClick={addVanity} variant="kiosk" className="w-full">Add Vanity</Button>
+                </div>
+
+                {vanities.length > 0 && (
+                  <div className="space-y-2 mt-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <h4 className="font-semibold">Added Vanities:</h4>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => confirmClearAll('vanity')}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        Clear All
+                      </Button>
+                    </div>
+                    {vanities.map((item, index) => (
+                      <div key={index} className="p-3 bg-muted/50 rounded space-y-1">
+                        <div className="flex items-center justify-between">
+                          {editingItem.type === 'vanity' && editingItem.index === index ? (
+                            <div className="flex items-center gap-2 flex-1">
+                              <span className="text-sm font-medium">{item.tier.charAt(0).toUpperCase() + item.tier.slice(1)} Vanity x</span>
+                              <Input
+                                type="number"
+                                min="1"
+                                value={editingItem.value}
+                                onChange={(e) => setEditingItem({ ...editingItem, value: e.target.value })}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') saveEdit();
+                                  if (e.key === 'Escape') cancelEditing();
+                                }}
+                                className="h-7 w-24"
+                                autoFocus
+                              />
+                              <Button variant="ghost" size="sm" onClick={saveEdit} className="h-7 px-2 text-xs">Save</Button>
+                              <Button variant="ghost" size="sm" onClick={cancelEditing} className="h-7 px-2 text-xs">Cancel</Button>
+                            </div>
+                          ) : (
+                            <span 
+                              className="flex-1 text-sm font-medium cursor-pointer hover:bg-muted/50 px-2 py-1 rounded transition-colors"
+                              onClick={() => startEditing('vanity', index)}
+                              title="Click to edit quantity"
+                            >
+                              {item.tier.charAt(0).toUpperCase() + item.tier.slice(1)} Vanity x{item.quantity}
+                            </span>
+                          )}
+                          <span className="font-semibold">${(item.quantity * (item.basePrice + item.conversionCost + item.plumbingCost)).toFixed(2)}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => confirmRemoveVanity(index)}
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <div className="text-xs text-muted-foreground pl-2 space-y-0.5">
+                          <div>Base: ${item.basePrice.toFixed(2)}</div>
+                          {item.singleToDouble && <div>+ Single to double: ${item.conversionCost.toFixed(2)}</div>}
+                          {item.plumbingWallChange && <div>+ Plumbing wall change: ${item.plumbingCost.toFixed(2)}</div>}
+                        </div>
+                      </div>
+                    ))}
+                    <div className="flex justify-between font-bold pt-2 border-t">
+                      <span>Vanity Total:</span>
+                      <span>${vanityTotal.toFixed(2)}</span>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Total Summary */}
-          {(cabinets.length > 0 || flooring.length > 0 || countertops.length > 0 || hardware.length > 0) && (
+          {(cabinets.length > 0 || flooring.length > 0 || countertops.length > 0 || hardware.length > 0 || vanities.length > 0) && (
             <Card className="border-accent border-2">
               <CardHeader>
                 <CardTitle className="text-2xl">Total Estimate</CardTitle>
@@ -2042,6 +2357,12 @@ export default function Estimator() {
                     <span>Countertops:</span>
                     <span className="font-semibold">${countertopTotal.toFixed(2)}</span>
                   </div>
+                  {vanityTotal > 0 && (
+                    <div className="flex justify-between">
+                      <span>Vanities:</span>
+                      <span className="font-semibold">${vanityTotal.toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between pt-2 border-t">
                     <span>Subtotal:</span>
                     <span className="font-semibold">${subtotal.toFixed(2)}</span>
@@ -2086,7 +2407,7 @@ export default function Estimator() {
                   onClick={saveEstimate} 
                   className="mt-6 w-full"
                   variant="kiosk"
-                  disabled={cabinets.length === 0 && flooring.length === 0 && countertops.length === 0}
+                  disabled={cabinets.length === 0 && flooring.length === 0 && countertops.length === 0 && vanities.length === 0}
                 >
                   {editId ? "Update Estimate" : "Save Estimate"}
                 </Button>
@@ -2095,7 +2416,7 @@ export default function Estimator() {
                     onClick={exportToPDF} 
                     className="flex-1"
                     variant="outline"
-                    disabled={cabinets.length === 0 && flooring.length === 0 && countertops.length === 0}
+                    disabled={cabinets.length === 0 && flooring.length === 0 && countertops.length === 0 && vanities.length === 0}
                   >
                     Export to PDF
                   </Button>
@@ -2103,7 +2424,7 @@ export default function Estimator() {
                     onClick={() => setEmailDialog(true)} 
                     className="flex-1"
                     variant="outline"
-                    disabled={cabinets.length === 0 && flooring.length === 0 && countertops.length === 0}
+                    disabled={cabinets.length === 0 && flooring.length === 0 && countertops.length === 0 && vanities.length === 0}
                   >
                     Email Estimate
                   </Button>

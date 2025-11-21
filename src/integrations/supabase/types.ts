@@ -375,6 +375,8 @@ export type Database = {
           installation_cost: number
           installation_requested: boolean
           user_id: string
+          vanity_items: Json
+          vanity_total: number
         }
         Insert: {
           cabinet_items?: Json
@@ -391,6 +393,8 @@ export type Database = {
           installation_cost?: number
           installation_requested?: boolean
           user_id: string
+          vanity_items?: Json
+          vanity_total?: number
         }
         Update: {
           cabinet_items?: Json
@@ -407,6 +411,8 @@ export type Database = {
           installation_cost?: number
           installation_requested?: boolean
           user_id?: string
+          vanity_items?: Json
+          vanity_total?: number
         }
         Relationships: []
       }
