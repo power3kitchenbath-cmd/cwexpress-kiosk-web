@@ -1518,7 +1518,7 @@ export default function Estimator() {
           recipientEmail,
           recipientName: recipientName || undefined,
           pdfBase64,
-          estimateDate: new Date().toLocaleDateString(),
+          estimateDate: new Date().toISOString().split('T')[0], // Format as YYYY-MM-DD
           grandTotal
         }
       });
