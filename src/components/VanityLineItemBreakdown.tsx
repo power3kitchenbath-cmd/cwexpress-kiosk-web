@@ -4,11 +4,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Edit2, Check, X, FileDown } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Edit2, Check, X, FileDown, Mail } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import logo from "@/assets/logo.png";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface VanityItem {
   tier: 'good' | 'better' | 'best';
@@ -40,6 +42,10 @@ export function VanityLineItemBreakdown({ vanity, index, onUpdate }: VanityLineI
   const [editingLineId, setEditingLineId] = useState<string | null>(null);
   const [editedQuantity, setEditedQuantity] = useState<number>(0);
   const [editedNotes, setEditedNotes] = useState<string>("");
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [customerName, setCustomerName] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   const tierLabels = {
     good: "Value Package ($1,400-$1,800)",
@@ -221,23 +227,80 @@ export function VanityLineItemBreakdown({ vanity, index, onUpdate }: VanityLineI
     });
   };
 
+  const handleSendEmail = async () => {
+    if (!customerName.trim() || !customerEmail.trim()) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter both customer name and email",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSendingEmail(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("send-vanity-quote", {
+        body: {
+          customerName: customerName.trim(),
+          customerEmail: customerEmail.trim(),
+          vanity,
+          lineItems,
+          grandTotal,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Email Sent",
+        description: `Vanity quote successfully sent to ${customerEmail}`,
+      });
+
+      setEmailDialogOpen(false);
+      setCustomerName("");
+      setCustomerEmail("");
+    } catch (error: any) {
+      console.error("Error sending vanity quote email:", error);
+      toast({
+        title: "Email Failed",
+        description: error.message || "Failed to send vanity quote. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
   return (
-    <Card className="border-accent/20">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Line-Item Breakdown</CardTitle>
-          <Button
-            onClick={generateVanityPDF}
-            variant="outline"
-            size="sm"
-            className="gap-2"
-          >
-            <FileDown className="h-4 w-4" />
-            Export PDF
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
+    <>
+      <Card className="border-accent/20">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">Line-Item Breakdown</CardTitle>
+            <div className="flex gap-2">
+              <Button
+                onClick={generateVanityPDF}
+                variant="outline"
+                size="sm"
+                className="gap-2"
+              >
+                <FileDown className="h-4 w-4" />
+                Export PDF
+              </Button>
+              <Button
+                onClick={() => setEmailDialogOpen(true)}
+                variant="default"
+                size="sm"
+                className="gap-2"
+              >
+                <Mail className="h-4 w-4" />
+                Email Quote
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
         <div className="space-y-4">
           {/* Table Header */}
           <div className="grid grid-cols-12 gap-2 pb-2 border-b text-sm font-medium text-muted-foreground">
@@ -338,5 +401,50 @@ export function VanityLineItemBreakdown({ vanity, index, onUpdate }: VanityLineI
         </div>
       </CardContent>
     </Card>
+
+    <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Email Vanity Quote</DialogTitle>
+          <DialogDescription>
+            Send this vanity quote directly to your customer
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="customerName">Customer Name</Label>
+            <Input
+              id="customerName"
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              placeholder="Enter customer name"
+            />
+          </div>
+          <div>
+            <Label htmlFor="customerEmail">Customer Email</Label>
+            <Input
+              id="customerEmail"
+              type="email"
+              value={customerEmail}
+              onChange={(e) => setCustomerEmail(e.target.value)}
+              placeholder="customer@example.com"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => setEmailDialogOpen(false)}
+            disabled={isSendingEmail}
+          >
+            Cancel
+          </Button>
+          <Button onClick={handleSendEmail} disabled={isSendingEmail}>
+            {isSendingEmail ? "Sending..." : "Send Quote"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  </>
   );
 }
