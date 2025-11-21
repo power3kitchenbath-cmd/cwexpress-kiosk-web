@@ -374,6 +374,8 @@ export type Database = {
           id: string
           installation_cost: number
           installation_requested: boolean
+          kitchen_items: Json
+          kitchen_total: number
           user_id: string
           vanity_items: Json
           vanity_total: number
@@ -392,6 +394,8 @@ export type Database = {
           id?: string
           installation_cost?: number
           installation_requested?: boolean
+          kitchen_items?: Json
+          kitchen_total?: number
           user_id: string
           vanity_items?: Json
           vanity_total?: number
@@ -410,6 +414,8 @@ export type Database = {
           id?: string
           installation_cost?: number
           installation_requested?: boolean
+          kitchen_items?: Json
+          kitchen_total?: number
           user_id?: string
           vanity_items?: Json
           vanity_total?: number
@@ -634,6 +640,69 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      kitchen_quotes: {
+        Row: {
+          base_price: number
+          cabinet_cost: number
+          cabinet_upgrade: boolean
+          countertop_cost: number
+          countertop_upgrade: boolean
+          created_at: string
+          customer_email: string
+          customer_name: string
+          email_sent_at: string | null
+          grand_total: number
+          id: string
+          line_items: Json
+          notes: string | null
+          quantity: number
+          status: string
+          tier: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          base_price: number
+          cabinet_cost?: number
+          cabinet_upgrade?: boolean
+          countertop_cost?: number
+          countertop_upgrade?: boolean
+          created_at?: string
+          customer_email: string
+          customer_name: string
+          email_sent_at?: string | null
+          grand_total: number
+          id?: string
+          line_items?: Json
+          notes?: string | null
+          quantity?: number
+          status?: string
+          tier: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          base_price?: number
+          cabinet_cost?: number
+          cabinet_upgrade?: boolean
+          countertop_cost?: number
+          countertop_upgrade?: boolean
+          created_at?: string
+          customer_email?: string
+          customer_name?: string
+          email_sent_at?: string | null
+          grand_total?: number
+          id?: string
+          line_items?: Json
+          notes?: string | null
+          quantity?: number
+          status?: string
+          tier?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       order_items: {
         Row: {
