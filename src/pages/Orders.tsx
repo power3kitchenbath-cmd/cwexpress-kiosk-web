@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Package, ShoppingBag, History } from "lucide-react";
+import { ArrowLeft, Package, ShoppingBag, History, LayoutDashboard } from "lucide-react";
 import { format } from "date-fns";
 import { OrderStatusHistory } from "@/components/admin/OrderStatusHistory";
 
@@ -203,9 +203,15 @@ const Orders = () => {
                 </p>
               </div>
             </div>
-            <Button variant="outline" onClick={() => navigate("/quote-comparison")}>
-              Compare Quotes
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => navigate("/portal")}>
+                <LayoutDashboard className="mr-2 h-4 w-4" />
+                Dashboard
+              </Button>
+              <Button variant="outline" onClick={() => navigate("/quote-comparison")}>
+                Compare Quotes
+              </Button>
+            </div>
           </div>
         </div>
       </header>

@@ -21,6 +21,7 @@ import Checkout from "./pages/Checkout";
 import Orders from "./pages/Orders";
 import ProProfile from "./pages/ProProfile";
 import QuoteComparison from "./pages/QuoteComparison";
+import CustomerPortal from "./pages/CustomerPortal";
 import NotFound from "./pages/NotFound";
 import ImageOrganizer from "./pages/ImageOrganizer";
 import CalacattaCollection from "./pages/CalacattaCollection";
@@ -69,6 +70,7 @@ const App = () => (
           <Route path="/orders" element={<Orders />} />
           <Route path="/profile" element={<ProProfile />} />
           <Route path="/quote-comparison" element={<QuoteComparison />} />
+          <Route path="/portal" element={<CustomerPortal />} />
           <Route path="/image-organizer" element={<ImageOrganizer />} />
           <Route path="/collections/calacatta" element={<CalacattaCollection />} />
           <Route path="/flooring-visualizer" element={<FlooringVisualizer />} />
