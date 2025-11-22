@@ -7,6 +7,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { toast } from "sonner";
 import { PricingGuideEmailForm } from "./PricingGuideEmailForm";
+import { RoomSizeCalculator } from "./RoomSizeCalculator";
 import { supabase } from "@/integrations/supabase/client";
 
 // Import LVP flooring images
@@ -586,72 +587,78 @@ export function PricingComparisonChart() {
         />
       </div>
 
-      {pricingData.map((section) => (
-        <Card key={section.category} className="overflow-hidden">
-          <CardHeader className="bg-primary/5">
-            <CardTitle className="text-2xl">{section.category}</CardTitle>
-            <CardDescription>
-              Fair market pricing with guaranteed quality and service
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b bg-muted/50">
-                    <th className="text-left p-4 font-semibold">Service/Product</th>
-                    <th className="text-center p-4 font-semibold">Home Depot</th>
-                    <th className="text-center p-4 font-semibold">Lowe's</th>
-                    <th className="text-center p-4 font-semibold">Cabinets to Go</th>
-                    <th className="text-center p-4 font-semibold bg-primary/10">
-                      <div className="flex items-center justify-center gap-2">
-                        <Check className="w-5 h-5 text-primary" />
-                        Our Price
-                      </div>
-                    </th>
-                    <th className="text-center p-4 font-semibold">Your Savings</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {section.items.map((item, index) => (
-                    <tr key={index} className="border-b hover:bg-muted/30 transition-colors">
-                      <td className="p-4">
-                        <div className="flex items-center gap-3">
-                          {item.imageUrl && (
-                            <img 
-                              src={item.imageUrl} 
-                              alt={item.name}
-                              className="w-16 h-16 object-cover rounded-md border border-border"
-                            />
-                          )}
-                          <div>
-                            <div className="font-medium">{item.name}</div>
-                            <div className="text-sm text-muted-foreground">{item.unit}</div>
-                          </div>
+      {pricingData.map((section, index) => (
+        <div key={section.category} className="space-y-8">
+          <Card className="overflow-hidden">
+            <CardHeader className="bg-primary/5">
+              <CardTitle className="text-2xl">{section.category}</CardTitle>
+              <CardDescription>
+                Fair market pricing with guaranteed quality and service
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b bg-muted/50">
+                      <th className="text-left p-4 font-semibold">Service/Product</th>
+                      <th className="text-center p-4 font-semibold">Home Depot</th>
+                      <th className="text-center p-4 font-semibold">Lowe's</th>
+                      <th className="text-center p-4 font-semibold">Cabinets to Go</th>
+                      <th className="text-center p-4 font-semibold bg-primary/10">
+                        <div className="flex items-center justify-center gap-2">
+                          <Check className="w-5 h-5 text-primary" />
+                          Our Price
                         </div>
-                      </td>
-                      <td className="text-center p-4 text-muted-foreground">{item.prices.homeDepot}</td>
-                      <td className="text-center p-4 text-muted-foreground">{item.prices.lowes}</td>
-                      <td className="text-center p-4 text-muted-foreground">{item.prices.cabinetsToGo}</td>
-                      <td className="text-center p-4 bg-primary/5">
-                        <div className="font-bold text-primary">{item.prices.ourPrice}</div>
-                        <Badge variant="outline" className="mt-1 text-xs">
-                          {item.prices.profitMargin} margin
-                        </Badge>
-                      </td>
-                      <td className="text-center p-4">
-                        <Badge variant="secondary" className="gap-1">
-                          <TrendingDown className="w-4 h-4" />
-                          {item.savings}
-                        </Badge>
-                      </td>
+                      </th>
+                      <th className="text-center p-4 font-semibold">Your Savings</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+                  </thead>
+                  <tbody>
+                    {section.items.map((item, itemIndex) => (
+                      <tr key={itemIndex} className="border-b hover:bg-muted/30 transition-colors">
+                        <td className="p-4">
+                          <div className="flex items-center gap-3">
+                            {item.imageUrl && (
+                              <img 
+                                src={item.imageUrl} 
+                                alt={item.name}
+                                className="w-16 h-16 object-cover rounded-md border border-border"
+                              />
+                            )}
+                            <div>
+                              <div className="font-medium">{item.name}</div>
+                              <div className="text-sm text-muted-foreground">{item.unit}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="text-center p-4 text-muted-foreground">{item.prices.homeDepot}</td>
+                        <td className="text-center p-4 text-muted-foreground">{item.prices.lowes}</td>
+                        <td className="text-center p-4 text-muted-foreground">{item.prices.cabinetsToGo}</td>
+                        <td className="text-center p-4 bg-primary/5">
+                          <div className="font-bold text-primary">{item.prices.ourPrice}</div>
+                          <Badge variant="outline" className="mt-1 text-xs">
+                            {item.prices.profitMargin} margin
+                          </Badge>
+                        </td>
+                        <td className="text-center p-4">
+                          <Badge variant="secondary" className="gap-1">
+                            <TrendingDown className="w-4 h-4" />
+                            {item.savings}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+          
+          {section.category === "LVP Luxury Vinyl Plank Flooring" && (
+            <RoomSizeCalculator />
+          )}
+        </div>
       ))}
 
       <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
