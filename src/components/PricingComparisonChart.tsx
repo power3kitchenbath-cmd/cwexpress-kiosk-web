@@ -208,6 +208,124 @@ const pricingData: PricingData[] = [
         savings: "Up to $25/ft"
       }
     ]
+  },
+  {
+    category: "LVP Luxury Vinyl Plank Flooring",
+    items: [
+      {
+        name: "LVP Flooring - Standard Grade (Cocoa, Butternut, Fog, Blondie)",
+        unit: "Per Square Foot (Floor Decor: $2.99-$3.99, Empire: $4.99-$5.99)",
+        prices: {
+          homeDepot: "$3.49-$4.49",
+          lowes: "$3.29-$4.29",
+          cabinetsToGo: "N/A",
+          ourPrice: "$3.49",
+          profitMargin: "45%"
+        },
+        savings: "Up to $2.50/sqft vs Empire"
+      },
+      {
+        name: "LVP Flooring - Premium Grade",
+        unit: "Per Square Foot (Floor Decor: $4.99-$6.99)",
+        prices: {
+          homeDepot: "$5.49-$7.49",
+          lowes: "$5.29-$7.29",
+          cabinetsToGo: "N/A",
+          ourPrice: "$4.99-$6.49",
+          profitMargin: "45%"
+        },
+        savings: "Up to $1.00/sqft"
+      },
+      {
+        name: "LVP Installation - Labor Only",
+        unit: "Per Square Foot (We handle all installations in-house)",
+        prices: {
+          homeDepot: "N/A",
+          lowes: "N/A",
+          cabinetsToGo: "N/A",
+          ourPrice: "$2.00-$3.50",
+          profitMargin: "45%"
+        },
+        savings: "Professional quality, competitive pricing"
+      },
+      {
+        name: "Complete LVP Package (Material + Labor)",
+        unit: "Average Room (200-300 sqft)",
+        prices: {
+          homeDepot: "$1,800-$3,600",
+          lowes: "$1,700-$3,400",
+          cabinetsToGo: "N/A",
+          ourPrice: "$1,100-$3,000",
+          profitMargin: "45%"
+        },
+        savings: "$500-$1,500 per room"
+      }
+    ]
+  },
+  {
+    category: "Shower Doors & Enclosures",
+    items: [
+      {
+        name: "DS01 Double Sliding (56-60\" x 76\")",
+        unit: "Complete Unit",
+        prices: {
+          homeDepot: "$750-$850",
+          lowes: "$725-$825",
+          cabinetsToGo: "$700-$800",
+          ourPrice: "$647.50-$722.50",
+          profitMargin: "45%"
+        },
+        savings: "Up to $202"
+      },
+      {
+        name: "DS08 Double Sliding (50-55\" x 76\")",
+        unit: "Complete Unit",
+        prices: {
+          homeDepot: "$550-$650",
+          lowes: "$525-$625",
+          cabinetsToGo: "$500-$600",
+          ourPrice: "$441.25-$491.25",
+          profitMargin: "45%"
+        },
+        savings: "Up to $208"
+      },
+      {
+        name: "H07 Single Swing (28\" x 76\")",
+        unit: "Complete Unit",
+        prices: {
+          homeDepot: "$550-$650",
+          lowes: "$525-$625",
+          cabinetsToGo: "$500-$600",
+          ourPrice: "$441.25",
+          profitMargin: "45%"
+        },
+        savings: "Up to $208"
+      },
+      {
+        name: "SS03 Single Sliding (56-60\" x 76\")",
+        unit: "Complete Unit",
+        prices: {
+          homeDepot: "$650-$750",
+          lowes: "$625-$725",
+          cabinetsToGo: "$600-$700",
+          ourPrice: "$541.25-$641.25",
+          profitMargin: "45%"
+        },
+        savings: "Up to $208"
+      },
+      {
+        name: "DS01-66 Double Sliding (66-72\" x 76\")",
+        unit: "Complete Unit",
+        prices: {
+          homeDepot: "$850-$950",
+          lowes: "$825-$925",
+          cabinetsToGo: "$800-$900",
+          ourPrice: "$722.50-$797.50",
+          profitMargin: "45%"
+        },
+        savings: "Up to $227"
+      }
+    ]
   }
 ];
 
