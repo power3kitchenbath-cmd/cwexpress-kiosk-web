@@ -69,6 +69,18 @@ const handler = async (req: Request): Promise<Response> => {
       console.error("Database error:", dbError);
     }
 
+    // Create email tracking record for bounce detection
+    await supabase
+      .from("email_tracking")
+      .insert({
+        email_type: "pricing_guide",
+        recipient_email: email,
+        status: "sent",
+        tracking_token: trackingToken,
+        sent_at: new Date().toISOString(),
+        order_id: "00000000-0000-0000-0000-000000000000", // Placeholder for pricing guide emails
+      });
+
     // Create email HTML
     const emailHtml = `
       <!DOCTYPE html>
