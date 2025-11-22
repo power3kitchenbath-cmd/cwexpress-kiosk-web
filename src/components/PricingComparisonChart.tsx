@@ -8,6 +8,7 @@ import autoTable from "jspdf-autotable";
 import { toast } from "sonner";
 import { PricingGuideEmailForm } from "./PricingGuideEmailForm";
 import { RoomSizeCalculator } from "./RoomSizeCalculator";
+import { KitchenSizeCalculator } from "./KitchenSizeCalculator";
 import { supabase } from "@/integrations/supabase/client";
 
 // Import LVP flooring images
@@ -654,6 +655,10 @@ export function PricingComparisonChart() {
               </div>
             </CardContent>
           </Card>
+          
+          {section.category === "Kitchen Cabinet Installation" && (
+            <KitchenSizeCalculator />
+          )}
           
           {section.category === "LVP Luxury Vinyl Plank Flooring" && (
             <RoomSizeCalculator />
