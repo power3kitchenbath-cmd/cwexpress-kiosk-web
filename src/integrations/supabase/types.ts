@@ -834,6 +834,7 @@ export type Database = {
           company_name: string | null
           created_at: string | null
           email: string
+          follow_ups_sent: Json | null
           id: string
           name: string | null
           opened_at: string | null
@@ -848,6 +849,7 @@ export type Database = {
           company_name?: string | null
           created_at?: string | null
           email: string
+          follow_ups_sent?: Json | null
           id?: string
           name?: string | null
           opened_at?: string | null
@@ -862,6 +864,7 @@ export type Database = {
           company_name?: string | null
           created_at?: string | null
           email?: string
+          follow_ups_sent?: Json | null
           id?: string
           name?: string | null
           opened_at?: string | null
