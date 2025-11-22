@@ -15,6 +15,7 @@ interface PricingGuideRequest {
   sent_at: string | null;
   opened_at: string | null;
   created_at: string;
+  follow_ups_sent?: any[] | null;
 }
 
 export function PricingGuideAnalytics() {
@@ -26,6 +27,9 @@ export function PricingGuideAnalytics() {
     emailsOpened: 0,
     openRate: 0,
     downloadsOnly: 0,
+    followUp2Sent: 0,
+    followUp5Sent: 0,
+    followUp7Sent: 0,
   });
 
   useEffect(() => {
@@ -41,7 +45,7 @@ export function PricingGuideAnalytics() {
 
       if (error) throw error;
 
-      setRequests(data || []);
+      setRequests((data || []) as PricingGuideRequest[]);
 
       // Calculate stats
       const totalRequests = data?.length || 0;
@@ -49,6 +53,20 @@ export function PricingGuideAnalytics() {
       const emailsOpened = data?.filter(r => r.opened_at).length || 0;
       const openRate = emailsSent > 0 ? (emailsOpened / emailsSent) * 100 : 0;
       const downloadsOnly = data?.filter(r => r.request_type === "download").length || 0;
+      
+      // Calculate drip campaign stats
+      let followUp2Sent = 0;
+      let followUp5Sent = 0;
+      let followUp7Sent = 0;
+      
+      data?.forEach(req => {
+        const followUps = (req.follow_ups_sent as any[]) || [];
+        followUps.forEach((f: any) => {
+          if (f.day === 2) followUp2Sent++;
+          if (f.day === 5) followUp5Sent++;
+          if (f.day === 7) followUp7Sent++;
+        });
+      });
 
       setStats({
         totalRequests,
@@ -56,6 +74,9 @@ export function PricingGuideAnalytics() {
         emailsOpened,
         openRate,
         downloadsOnly,
+        followUp2Sent,
+        followUp5Sent,
+        followUp7Sent,
       });
     } catch (error: any) {
       console.error("Error fetching pricing guide requests:", error);
@@ -135,6 +156,49 @@ export function PricingGuideAnalytics() {
         </Card>
       </div>
 
+      {/* Drip Campaign Stats */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Automated Follow-Up Campaign</CardTitle>
+          <CardDescription>
+            Track automated follow-up emails sent to customers who opened the guide but haven't requested a quote
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="p-4 border rounded-lg bg-blue-50 dark:bg-blue-950">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium">Day 2 Follow-Up</span>
+                <Badge variant="secondary">{stats.followUp2Sent}</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                "Still interested in your cabinet project?"
+              </p>
+            </div>
+            
+            <div className="p-4 border rounded-lg bg-purple-50 dark:bg-purple-950">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium">Day 5 Follow-Up</span>
+                <Badge variant="secondary">{stats.followUp5Sent}</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                "Schedule your FREE consultation"
+              </p>
+            </div>
+            
+            <div className="p-4 border rounded-lg bg-orange-50 dark:bg-orange-950">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium">Day 7 Follow-Up</span>
+                <Badge variant="secondary">{stats.followUp7Sent}</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                "Don't miss out - Special pricing"
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Recent Requests */}
       <Card>
         <CardHeader>
@@ -199,6 +263,15 @@ export function PricingGuideAnalytics() {
                     )}
                     {request.sent_at && !request.opened_at && (
                       <span className="text-xs text-muted-foreground">Sent, not opened</span>
+                    )}
+                    {request.follow_ups_sent && request.follow_ups_sent.length > 0 && (
+                      <div className="flex gap-1">
+                        {request.follow_ups_sent.map((f: any) => (
+                          <Badge key={f.day} variant="outline" className="text-xs">
+                            Day {f.day}
+                          </Badge>
+                        ))}
+                      </div>
                     )}
                   </div>
                 </div>
