@@ -34,6 +34,7 @@ import { CalacattaBannerAnalytics } from "@/components/admin/CalacattaBannerAnal
 import { QuoteRequestsSection } from "@/components/admin/QuoteRequestsSection";
 import InstallationPhotosGallery from "@/components/admin/InstallationPhotosGallery";
 import { PricingGuideAnalytics } from "@/components/admin/PricingGuideAnalytics";
+import { MultiProjectEstimatesSection } from "@/components/admin/MultiProjectEstimatesSection";
 
 interface CabinetType {
   id: string;
@@ -287,10 +288,11 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-11">
+          <TabsList className="grid w-full grid-cols-12">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="orders">Orders</TabsTrigger>
             <TabsTrigger value="quotes">Quotes</TabsTrigger>
+            <TabsTrigger value="multi-estimates">Multi-Project</TabsTrigger>
             <TabsTrigger value="customers">Pro Customers</TabsTrigger>
             <TabsTrigger value="products">Products</TabsTrigger>
             <TabsTrigger value="installation-photos">Install Photos</TabsTrigger>
@@ -318,6 +320,10 @@ const Admin = () => {
 
           <TabsContent value="quotes">
             <QuoteRequestsSection />
+          </TabsContent>
+
+          <TabsContent value="multi-estimates">
+            <MultiProjectEstimatesSection />
           </TabsContent>
 
           <TabsContent value="customers">
