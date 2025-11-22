@@ -42,6 +42,7 @@ import Policies from "./pages/shipping/Policies";
 import ReturnPolicy from "./pages/shipping/policies/ReturnPolicy";
 import ShippingProcedures from "./pages/shipping/policies/ShippingProcedures";
 import Contact from "./pages/shipping/Contact";
+import KioskManual from "./pages/KioskManual";
 
 const queryClient = new QueryClient();
 
@@ -84,6 +85,9 @@ const App = () => (
           
           {/* Customer Project Tracking */}
           <Route path="/track/:token" element={<CustomerProjectTracking />} />
+          
+          {/* Kiosk Manual */}
+          <Route path="/kiosk-manual" element={<KioskManual />} />
           
           {/* CW Express Shipping Platform */}
           <Route path="/shipping" element={<ShippingLayout />}>
