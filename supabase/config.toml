@@ -2,3 +2,9 @@ project_id = "ofgncyruijfnkiutnkxa"
 
 [functions.track-email-open]
 verify_jwt = false
+
+[functions.track-pricing-guide-open]
+verify_jwt = false
+
+[functions.unsubscribe-pricing-guide]
+verify_jwt = false

@@ -103,6 +103,12 @@ const handler = async (req: Request): Promise<Response> => {
     const now = new Date();
 
     for (const request of openedRequests || []) {
+      // Skip if unsubscribed
+      if (request.unsubscribed) {
+        console.log(`Skipping ${request.email} - unsubscribed`);
+        continue;
+      }
+
       // Check if customer has requested a quote
       const { data: quoteRequests } = await supabase
         .from("quote_requests")
@@ -209,7 +215,7 @@ const handler = async (req: Request): Promise<Response> => {
                   <p>Factory Direct Pricing - Professional Quality</p>
                   <p style="font-size: 12px; color: #9ca3af; margin-top: 15px;">
                     You received this follow-up because you requested our pricing guide.<br>
-                    <a href="#" style="color: #193a82;">Unsubscribe</a>
+                    <a href="${supabaseUrl}/functions/v1/unsubscribe-pricing-guide?email=${encodeURIComponent(request.email)}&token=${request.tracking_token}" style="color: #193a82; text-decoration: underline;">Unsubscribe from follow-ups</a>
                   </p>
                 </div>
               </body>
