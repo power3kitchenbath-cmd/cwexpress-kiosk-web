@@ -33,6 +33,7 @@ import { AutoAssignProductImages } from "@/components/admin/AutoAssignProductIma
 import { CalacattaBannerAnalytics } from "@/components/admin/CalacattaBannerAnalytics";
 import { QuoteRequestsSection } from "@/components/admin/QuoteRequestsSection";
 import InstallationPhotosGallery from "@/components/admin/InstallationPhotosGallery";
+import { PricingGuideAnalytics } from "@/components/admin/PricingGuideAnalytics";
 
 interface CabinetType {
   id: string;
@@ -298,6 +299,7 @@ const Admin = () => {
             <TabsTrigger value="analytics">Email Analytics</TabsTrigger>
             <TabsTrigger value="cabinets">Cabinet Types</TabsTrigger>
             <TabsTrigger value="flooring">Flooring Types</TabsTrigger>
+            <TabsTrigger value="pricing-analytics">Pricing Guide Analytics</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -549,6 +551,9 @@ const Admin = () => {
               <DeliverabilityInsights />
               <AnalyticsReportConfig />
             </div>
+          </TabsContent>
+          <TabsContent value="pricing-analytics" className="space-y-4">
+            <PricingGuideAnalytics />
           </TabsContent>
         </Tabs>
       </div>
