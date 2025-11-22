@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Calculator, Plus, Trash2, Home, ChefHat, Bath, TrendingDown, FileText, Download, Eye } from "lucide-react";
+import { Calculator, Plus, Trash2, Home, ChefHat, Bath, TrendingDown, FileText, Download, Eye, Mail } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface RoomEstimate {
   id: string;
@@ -54,6 +55,11 @@ export function MultiProjectEstimator() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [estimateName, setEstimateName] = useState("");
   const [estimateNotes, setEstimateNotes] = useState("");
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [customerName, setCustomerName] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerCompany, setCustomerCompany] = useState("");
 
   // Room form state
   const [roomName, setRoomName] = useState("");
@@ -448,6 +454,260 @@ export function MultiProjectEstimator() {
     }
   };
 
+  const sendQuoteEmail = async () => {
+    if (!customerName.trim() || !customerEmail.trim()) {
+      toast.error("Please enter customer name and email");
+      return;
+    }
+
+    if (projects.length === 0) {
+      toast.error("Please add at least one project to the estimate");
+      return;
+    }
+
+    setSendingEmail(true);
+
+    try {
+      // Generate PDF as base64
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      let yPosition = 20;
+
+      // Header with company branding
+      doc.setFillColor(25, 58, 130);
+      doc.rect(0, 0, pageWidth, 50, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(28);
+      doc.setFont('helvetica', 'bold');
+      doc.text('3 Power Cabinet Store', pageWidth / 2, 22, { align: 'center' });
+      
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'normal');
+      const displayName = estimateName || 'Multi-Project Estimate';
+      doc.text(displayName, pageWidth / 2, 35, { align: 'center' });
+
+      doc.setFontSize(10);
+      doc.text('CABINETS • COUNTERTOPS • FLOORS', pageWidth / 2, 43, { align: 'center' });
+
+      yPosition = 60;
+
+      const today = new Date().toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+      
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(10);
+      doc.text(`Estimate Date: ${today}`, 20, yPosition);
+      yPosition += 8;
+
+      if (estimateNotes) {
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Customer Notes:', 20, yPosition);
+        yPosition += 6;
+        
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        const splitNotes = doc.splitTextToSize(estimateNotes, pageWidth - 40);
+        doc.text(splitNotes, 20, yPosition);
+        yPosition += splitNotes.length * 5 + 8;
+      }
+
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Project Summary:', 20, yPosition);
+      yPosition += 7;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      const roomCount = getProjectsByType("room").length;
+      const kitchenCount = getProjectsByType("kitchen").length;
+      const vanityCount = getProjectsByType("vanity").length;
+      
+      doc.text(`• ${roomCount} Room${roomCount !== 1 ? 's' : ''} (LVP Flooring)`, 25, yPosition);
+      yPosition += 6;
+      doc.text(`• ${kitchenCount} Kitchen${kitchenCount !== 1 ? 's' : ''}`, 25, yPosition);
+      yPosition += 6;
+      doc.text(`• ${vanityCount} Bathroom${vanityCount !== 1 ? 's' : ''} (Vanity Installation)`, 25, yPosition);
+      yPosition += 12;
+
+      const categories = [
+        { type: 'room', title: 'LVP Flooring Projects', icon: '🏠' },
+        { type: 'kitchen', title: 'Kitchen Installations', icon: '👨‍🍳' },
+        { type: 'vanity', title: 'Bathroom Vanity Installations', icon: '🛁' }
+      ];
+
+      categories.forEach((category) => {
+        const categoryProjects = getProjectsByType(category.type);
+        if (categoryProjects.length === 0) return;
+
+        if (yPosition > pageHeight - 80) {
+          doc.addPage();
+          yPosition = 20;
+        }
+
+        doc.setFillColor(240, 245, 249);
+        doc.rect(15, yPosition - 5, pageWidth - 30, 10, 'F');
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(25, 58, 130);
+        doc.text(`${category.icon} ${category.title}`, 20, yPosition + 2);
+        yPosition += 15;
+
+        const tableData = categoryProjects.map(project => {
+          let details = '';
+          if (project.type === 'room') {
+            const room = project as RoomEstimate;
+            details = `${room.squareFeet} sqft • ${room.grade} grade`;
+          } else if (project.type === 'kitchen') {
+            const kitchen = project as KitchenEstimate;
+            details = `${kitchen.multiplier}x size • ${kitchen.tier} tier`;
+            if (kitchen.cabinetUpgrade) details += ' • Cabinet upgrade';
+            if (kitchen.countertopUpgrade) details += ' • Countertop upgrade';
+          } else if (project.type === 'vanity') {
+            const vanity = project as VanityEstimate;
+            details = `${vanity.quantity}x ${vanity.vanityType} • ${vanity.tier} tier`;
+            if (vanity.singleToDouble) details += ' • Single→Double';
+            if (vanity.plumbingWallChange) details += ' • Plumbing change';
+          }
+          return [project.name, details, `$${project.cost.toFixed(2)}`];
+        });
+
+        autoTable(doc, {
+          startY: yPosition,
+          head: [['Project Name', 'Specifications', 'Cost']],
+          body: tableData,
+          theme: 'striped',
+          headStyles: {
+            fillColor: [25, 58, 130],
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            fontSize: 10
+          },
+          bodyStyles: {
+            fontSize: 9,
+            textColor: [0, 0, 0]
+          },
+          columnStyles: {
+            0: { cellWidth: 60 },
+            1: { cellWidth: 80 },
+            2: { cellWidth: 35, halign: 'right', fontStyle: 'bold' }
+          },
+          margin: { left: 15, right: 15 },
+          didDrawPage: function(data) {
+            yPosition = data.cursor?.y || yPosition;
+          }
+        });
+
+        yPosition = (doc as any).lastAutoTable.finalY + 10;
+      });
+
+      if (yPosition > pageHeight - 80) {
+        doc.addPage();
+        yPosition = 20;
+      }
+
+      doc.setFillColor(240, 253, 244);
+      doc.rect(15, yPosition, pageWidth - 30, 45, 'F');
+      doc.setDrawColor(34, 197, 94);
+      doc.setLineWidth(1);
+      doc.rect(15, yPosition, pageWidth - 30, 45);
+
+      yPosition += 10;
+
+      doc.setFontSize(11);
+      doc.setTextColor(0, 0, 0);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Subtotal:', 20, yPosition);
+      doc.text(`$${getTotalCost().toFixed(2)}`, pageWidth - 20, yPosition, { align: 'right' });
+      yPosition += 8;
+
+      doc.setTextColor(34, 197, 94);
+      doc.text('Estimated Savings vs Competitors:', 20, yPosition);
+      doc.text(`-$${getEstimatedSavings().toFixed(2)}`, pageWidth - 20, yPosition, { align: 'right' });
+      yPosition += 12;
+
+      doc.setDrawColor(34, 197, 94);
+      doc.setLineWidth(0.5);
+      doc.line(20, yPosition, pageWidth - 20, yPosition);
+      yPosition += 8;
+
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(25, 58, 130);
+      doc.text('Total Project Cost:', 20, yPosition);
+      doc.text(`$${getTotalCost().toFixed(2)}`, pageWidth - 20, yPosition, { align: 'right' });
+
+      yPosition = pageHeight - 40;
+      doc.setFillColor(249, 250, 251);
+      doc.rect(0, yPosition - 5, pageWidth, 45, 'F');
+
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text('Important Notes:', 20, yPosition);
+      yPosition += 6;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      const notes = [
+        '• This is a preliminary estimate. Final pricing will be confirmed after site visit and consultation.',
+        '• All prices include materials, labor, and professional installation.',
+        '• Estimates are valid for 30 days from the date of this document.',
+        '• Additional costs may apply for structural modifications or unforeseen site conditions.'
+      ];
+
+      notes.forEach(note => {
+        doc.text(note, 20, yPosition);
+        yPosition += 4;
+      });
+
+      yPosition = pageHeight - 10;
+      doc.setFillColor(25, 58, 130);
+      doc.rect(0, yPosition - 5, pageWidth, 15, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Factory Direct Pricing - Professional Quality', pageWidth / 2, yPosition + 2, { align: 'center' });
+
+      const pdfBase64 = doc.output('datauristring').split(',')[1];
+
+      const { data, error } = await supabase.functions.invoke('send-multi-project-quote', {
+        body: {
+          customerName: customerName.trim(),
+          customerEmail: customerEmail.trim(),
+          customerPhone: customerPhone.trim() || undefined,
+          customerCompany: customerCompany.trim() || undefined,
+          pdfBase64,
+          estimateName: displayName,
+          estimateNotes: estimateNotes.trim() || undefined,
+          totalCost: getTotalCost(),
+          projectCount: projects.length,
+        },
+      });
+
+      if (error) throw error;
+
+      toast.success("Quote request sent successfully!");
+      setPreviewOpen(false);
+      
+      // Reset customer form
+      setCustomerName("");
+      setCustomerEmail("");
+      setCustomerPhone("");
+      setCustomerCompany("");
+    } catch (error) {
+      console.error("Error sending quote email:", error);
+      toast.error("Failed to send quote request");
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
   return (
     <Card className="bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 border-2 border-primary/30">
       <CardHeader>
@@ -723,14 +983,65 @@ export function MultiProjectEstimator() {
                     </DialogTrigger>
                     <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                       <DialogHeader>
-                        <DialogTitle>Estimate Preview & Customization</DialogTitle>
+                        <DialogTitle>Estimate Preview & Quote Request</DialogTitle>
                         <DialogDescription>
-                          Customize your estimate details before downloading
+                          Customize your estimate and send it to our sales team
                         </DialogDescription>
                       </DialogHeader>
 
                       <div className="space-y-6">
+                        {/* Customer Information Section */}
                         <div className="space-y-4">
+                          <h3 className="font-semibold text-lg">Customer Information</h3>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="col-span-2">
+                              <Label htmlFor="customer-name">Name *</Label>
+                              <Input
+                                id="customer-name"
+                                value={customerName}
+                                onChange={(e) => setCustomerName(e.target.value)}
+                                placeholder="John Smith"
+                                required
+                              />
+                            </div>
+                            <div className="col-span-2">
+                              <Label htmlFor="customer-email">Email *</Label>
+                              <Input
+                                id="customer-email"
+                                type="email"
+                                value={customerEmail}
+                                onChange={(e) => setCustomerEmail(e.target.value)}
+                                placeholder="john@example.com"
+                                required
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="customer-phone">Phone (Optional)</Label>
+                              <Input
+                                id="customer-phone"
+                                type="tel"
+                                value={customerPhone}
+                                onChange={(e) => setCustomerPhone(e.target.value)}
+                                placeholder="(555) 123-4567"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="customer-company">Company (Optional)</Label>
+                              <Input
+                                id="customer-company"
+                                value={customerCompany}
+                                onChange={(e) => setCustomerCompany(e.target.value)}
+                                placeholder="ABC Construction"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        <Separator />
+
+                        {/* Estimate Details Section */}
+                        <div className="space-y-4">
+                          <h3 className="font-semibold text-lg">Estimate Details</h3>
                           <div>
                             <Label htmlFor="estimateName">Estimate Name (Optional)</Label>
                             <Input
@@ -740,9 +1051,6 @@ export function MultiProjectEstimator() {
                               onChange={(e) => setEstimateName(e.target.value)}
                               className="mt-2"
                             />
-                            <p className="text-sm text-muted-foreground mt-1">
-                              Custom name will appear on the PDF header
-                            </p>
                           </div>
 
                           <div>
@@ -754,9 +1062,6 @@ export function MultiProjectEstimator() {
                               onChange={(e) => setEstimateNotes(e.target.value)}
                               className="mt-2 min-h-[100px]"
                             />
-                            <p className="text-sm text-muted-foreground mt-1">
-                              These notes will be included in the PDF document
-                            </p>
                           </div>
                         </div>
 
@@ -839,13 +1144,28 @@ export function MultiProjectEstimator() {
                           </div>
                         </div>
 
-                        <div className="flex justify-end gap-2">
-                          <Button variant="outline" onClick={() => setPreviewOpen(false)}>
-                            Cancel
-                          </Button>
-                          <Button onClick={generatePDF} className="gap-2">
-                            <Download className="w-4 h-4" />
+                        <div className="flex gap-3">
+                          <Button 
+                            onClick={generatePDF} 
+                            variant="outline" 
+                            className="flex-1"
+                          >
+                            <Download className="mr-2 h-4 w-4" />
                             Download PDF
+                          </Button>
+                          <Button 
+                            onClick={sendQuoteEmail} 
+                            className="flex-1"
+                            disabled={sendingEmail || !customerName.trim() || !customerEmail.trim()}
+                          >
+                            {sendingEmail ? (
+                              <>Sending...</>
+                            ) : (
+                              <>
+                                <Mail className="mr-2 h-4 w-4" />
+                                Send Quote Request
+                              </>
+                            )}
                           </Button>
                         </div>
                       </div>
