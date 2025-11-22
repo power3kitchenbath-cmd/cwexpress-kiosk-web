@@ -4,6 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { 
   BookOpen, 
   Home, 
@@ -16,19 +17,54 @@ import {
   FileText,
   Image as ImageIcon,
   Truck,
-  ArrowLeft
+  ArrowLeft,
+  Search,
+  X
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import logo from "@/assets/logo.png";
 
 export default function KioskManual() {
   const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState("overview");
+
+  // Function to highlight search matches
+  const highlightText = (text: string, query: string) => {
+    if (!query.trim()) return text;
+    
+    const parts = text.split(new RegExp(`(${query})`, 'gi'));
+    return parts.map((part, index) => 
+      part.toLowerCase() === query.toLowerCase() 
+        ? `<mark class="bg-yellow-200 dark:bg-yellow-800 px-1 rounded">${part}</mark>`
+        : part
+    ).join('');
+  };
+
+  // Search through content
+  const searchResults = searchQuery.trim() ? [
+    { tab: "overview", matches: ["platform overview", "core modules", "key features", "what is the kiosk"] },
+    { tab: "estimator", matches: ["kitchen estimator", "vanity estimator", "bathroom estimator", "multi-project", "10x10 kitchen", "quality tier", "generate quote", "line items"] },
+    { tab: "shop", matches: ["online shop", "product selection", "shopping cart", "checkout process", "inventory status"] },
+    { tab: "design", matches: ["design import", "kcdw", "cabinet list", "design drawing", "csv upload", "pdf upload"] },
+    { tab: "admin", matches: ["admin dashboard", "orders management", "customer management", "email tracking", "multi-project estimates", "installation projects"] },
+    { tab: "installs", matches: ["installation management", "project tracking", "team assignment", "time tracking", "photo upload"] },
+    { tab: "customer", matches: ["customer service", "order status", "quote follow-up", "email communication", "refund policy"] },
+    { tab: "troubleshooting", matches: ["troubleshooting", "email not sending", "pdf not generating", "login issues", "payment failed"] }
+  ].filter(result => 
+    result.matches.some(match => match.toLowerCase().includes(searchQuery.toLowerCase()))
+  ) : [];
+
+  const clearSearch = () => {
+    setSearchQuery("");
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-secondary/20">
       <div className="container mx-auto p-6 max-w-7xl">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
+        <div className="flex items-center gap-4 mb-6">
           <img src={logo} alt="3 Power Cabinet Store" className="h-16" />
           <div className="flex-1">
             <h1 className="text-4xl font-bold mb-2">Kiosk Platform Instructional Manual</h1>
@@ -42,7 +78,69 @@ export default function KioskManual() {
           </Button>
         </div>
 
-        <Tabs defaultValue="overview" className="w-full">
+        {/* Search Bar */}
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
+              <Input
+                type="text"
+                placeholder="Search procedures, troubleshooting steps, or features..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 pr-10"
+              />
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
+                  onClick={clearSearch}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+
+            {/* Search Results */}
+            {searchQuery.trim() && searchResults.length > 0 && (
+              <div className="mt-4 p-4 bg-secondary/50 rounded-lg">
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  <Search className="h-4 w-4" />
+                  Found in {searchResults.length} section{searchResults.length > 1 ? 's' : ''}:
+                </h3>
+                <div className="space-y-2">
+                  {searchResults.map((result) => (
+                    <Button
+                      key={result.tab}
+                      variant="outline"
+                      className="w-full justify-start"
+                      onClick={() => {
+                        setActiveTab(result.tab);
+                        setSearchQuery("");
+                      }}
+                    >
+                      <Badge variant="secondary" className="mr-2 capitalize">
+                        {result.tab}
+                      </Badge>
+                      <span className="text-sm text-muted-foreground">
+                        {result.matches.filter(m => m.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 3).join(", ")}
+                      </span>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {searchQuery.trim() && searchResults.length === 0 && (
+              <div className="mt-4 p-4 bg-secondary/50 rounded-lg text-center text-muted-foreground">
+                No results found for "{searchQuery}"
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="estimator">Estimator</TabsTrigger>
