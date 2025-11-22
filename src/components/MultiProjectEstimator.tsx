@@ -687,6 +687,26 @@ export function MultiProjectEstimator() {
           estimateNotes: estimateNotes.trim() || undefined,
           totalCost: getTotalCost(),
           projectCount: projects.length,
+          projects: projects.map(p => ({
+            type: p.type,
+            name: p.name,
+            cost: p.cost,
+            details: p.type === 'room' ? {
+              squareFeet: (p as RoomEstimate).squareFeet,
+              grade: (p as RoomEstimate).grade
+            } : p.type === 'kitchen' ? {
+              multiplier: (p as KitchenEstimate).multiplier,
+              tier: (p as KitchenEstimate).tier,
+              cabinetUpgrade: (p as KitchenEstimate).cabinetUpgrade,
+              countertopUpgrade: (p as KitchenEstimate).countertopUpgrade
+            } : {
+              quantity: (p as VanityEstimate).quantity,
+              vanityType: (p as VanityEstimate).vanityType,
+              tier: (p as VanityEstimate).tier,
+              singleToDouble: (p as VanityEstimate).singleToDouble,
+              plumbingWallChange: (p as VanityEstimate).plumbingWallChange
+            }
+          }))
         },
       });
 

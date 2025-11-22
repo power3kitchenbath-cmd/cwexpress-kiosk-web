@@ -1,8 +1,12 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.0";
 import { Resend } from "https://esm.sh/resend@4.0.0";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const MultiProjectQuoteSchema = z.object({
   customerName: z.string().trim().min(1).max(100),
@@ -43,6 +47,7 @@ interface MultiProjectQuoteRequest {
   estimateNotes?: string;
   totalCost: number;
   projectCount: number;
+  projects?: any[];
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -65,6 +70,7 @@ const handler = async (req: Request): Promise<Response> => {
       estimateNotes,
       totalCost,
       projectCount,
+      projects,
     }: MultiProjectQuoteRequest = validatedData;
 
     const pdfBuffer = Uint8Array.from(atob(pdfBase64), (c) => c.charCodeAt(0));
@@ -236,6 +242,36 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     console.log("Multi-project quote email sent successfully:", emailResponse);
+
+    // Store the estimate request in the database
+    try {
+      const { data: estimateData, error: dbError } = await supabase
+        .from("multi_project_estimates")
+        .insert({
+          customer_name: customerName,
+          customer_email: customerEmail,
+          customer_phone: customerPhone || null,
+          customer_company: customerCompany || null,
+          estimate_name: estimateName,
+          estimate_notes: estimateNotes || null,
+          projects: projects || [],
+          total_cost: totalCost,
+          project_count: projectCount,
+          status: "pending",
+        })
+        .select()
+        .single();
+
+      if (dbError) {
+        console.error("Error storing estimate in database:", dbError);
+        // Don't fail the request if database insert fails
+      } else {
+        console.log("Estimate stored in database:", estimateData);
+      }
+    } catch (dbError) {
+      console.error("Exception storing estimate:", dbError);
+      // Don't fail the request if database operation fails
+    }
 
     return new Response(
       JSON.stringify({
