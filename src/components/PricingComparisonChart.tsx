@@ -10,6 +10,7 @@ import { PricingGuideEmailForm } from "./PricingGuideEmailForm";
 import { RoomSizeCalculator } from "./RoomSizeCalculator";
 import { KitchenSizeCalculator } from "./KitchenSizeCalculator";
 import { VanitySizeCalculator } from "./VanitySizeCalculator";
+import { MultiProjectEstimator } from "./MultiProjectEstimator";
 import { supabase } from "@/integrations/supabase/client";
 
 // Import LVP flooring images
@@ -719,6 +720,8 @@ export function PricingComparisonChart() {
           </li>
         </ul>
       </div>
+
+      <MultiProjectEstimator />
     </div>
   );
 }
