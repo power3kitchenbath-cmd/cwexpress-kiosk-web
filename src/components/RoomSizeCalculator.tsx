@@ -4,13 +4,44 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calculator, Home, TrendingDown } from "lucide-react";
+import { Calculator, Home, TrendingDown, Layers } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export function RoomSizeCalculator() {
   const [squareFeet, setSquareFeet] = useState<string>("");
   const [flooringGrade, setFlooringGrade] = useState<"standard" | "premium">("standard");
   const [showResults, setShowResults] = useState(false);
+  const [selectedRoomType, setSelectedRoomType] = useState<string>("");
+
+  // Room type presets
+  const roomPresets = [
+    { value: "small-bedroom", label: "Small Bedroom", sqft: 150 },
+    { value: "medium-bedroom", label: "Medium Bedroom", sqft: 175 },
+    { value: "large-bedroom", label: "Large Bedroom", sqft: 200 },
+    { value: "small-living", label: "Small Living Room", sqft: 200 },
+    { value: "medium-living", label: "Medium Living Room", sqft: 250 },
+    { value: "large-living", label: "Large Living Room", sqft: 300 },
+    { value: "small-kitchen", label: "Small Kitchen", sqft: 100 },
+    { value: "medium-kitchen", label: "Medium Kitchen", sqft: 125 },
+    { value: "large-kitchen", label: "Large Kitchen", sqft: 150 },
+    { value: "dining-room", label: "Dining Room", sqft: 180 },
+    { value: "home-office", label: "Home Office", sqft: 120 },
+    { value: "hallway", label: "Hallway", sqft: 80 },
+    { value: "custom", label: "Custom Size", sqft: 0 }
+  ];
+
+  const handleRoomTypeChange = (value: string) => {
+    setSelectedRoomType(value);
+    const preset = roomPresets.find(room => room.value === value);
+    if (preset && preset.sqft > 0) {
+      setSquareFeet(preset.sqft.toString());
+      setShowResults(false);
+    } else if (value === "custom") {
+      setSquareFeet("");
+      setShowResults(false);
+    }
+  };
 
   // Pricing data from PricingComparisonChart
   const pricing = {
@@ -84,6 +115,31 @@ export function RoomSizeCalculator() {
         <div className="grid md:grid-cols-2 gap-6">
           <div className="space-y-4">
             <div>
+              <Label htmlFor="roomType" className="text-base font-semibold mb-2 flex items-center gap-2">
+                <Layers className="w-4 h-4" />
+                Room Configuration
+              </Label>
+              <Select value={selectedRoomType} onValueChange={handleRoomTypeChange}>
+                <SelectTrigger id="roomType" className="text-lg h-12 bg-background z-50">
+                  <SelectValue placeholder="Select a room type or enter custom size" />
+                </SelectTrigger>
+                <SelectContent className="bg-background z-50">
+                  {roomPresets.map((preset) => (
+                    <SelectItem key={preset.value} value={preset.value} className="cursor-pointer">
+                      {preset.label}
+                      {preset.sqft > 0 && (
+                        <span className="text-muted-foreground ml-2">({preset.sqft} sqft)</span>
+                      )}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground mt-2">
+                Quick presets for common room sizes
+              </p>
+            </div>
+
+            <div>
               <Label htmlFor="squareFeet" className="text-base font-semibold mb-2 flex items-center gap-2">
                 <Home className="w-4 h-4" />
                 Room Size (Square Feet)
@@ -93,13 +149,16 @@ export function RoomSizeCalculator() {
                 type="number"
                 placeholder="Enter square footage (e.g., 250)"
                 value={squareFeet}
-                onChange={(e) => setSquareFeet(e.target.value)}
+                onChange={(e) => {
+                  setSquareFeet(e.target.value);
+                  setSelectedRoomType("custom");
+                }}
                 min="1"
                 step="1"
                 className="text-lg h-12"
               />
               <p className="text-sm text-muted-foreground mt-2">
-                Typical rooms: Living room (200-300 sqft) • Bedroom (150-200 sqft) • Kitchen (100-150 sqft)
+                Or enter a custom square footage value
               </p>
             </div>
 
