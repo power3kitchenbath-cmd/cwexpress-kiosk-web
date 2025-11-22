@@ -110,6 +110,23 @@ const Index = () => {
           <h1 className="text-6xl md:text-8xl font-extrabold text-primary-foreground mb-4 tracking-tight drop-shadow-lg animate-fade-in">
             ORDER TODAY
           </h1>
+          <div className="flex gap-3 justify-center mb-6">
+            <Button 
+              size="lg" 
+              className="bg-secondary text-secondary-foreground hover:bg-secondary/90"
+              onClick={() => navigate("/estimates")}
+            >
+              Get Started
+            </Button>
+            <Button 
+              size="lg" 
+              variant="outline"
+              className="bg-background/10 backdrop-blur-sm border-accent text-accent hover:bg-background/20"
+              onClick={() => navigate("/quote-comparison")}
+            >
+              Compare Prices
+            </Button>
+          </div>
           <div className="flex items-center justify-center gap-4 flex-wrap text-accent font-bold text-xl md:text-2xl">
             <span className="flex items-center gap-2">
               <Monitor className="w-6 h-6" />

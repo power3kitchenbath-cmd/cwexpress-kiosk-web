@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Check, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { PricingComparisonChart } from "@/components/PricingComparisonChart";
 
 interface KitchenQuote {
   id: string;
@@ -122,8 +123,21 @@ export default function QuoteComparison() {
           <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
             <ArrowLeft className="mr-2 h-4 w-4" /> Back
           </Button>
-          <h1 className="text-3xl font-bold">Quote Comparison</h1>
-          <p className="text-muted-foreground mt-2">Select up to 3 quotes to compare side-by-side</p>
+          <h1 className="text-3xl font-bold">Quote & Pricing Comparison</h1>
+          <p className="text-muted-foreground mt-2">Compare your quotes and see how we stack up against the competition</p>
+        </div>
+
+        {/* Market Pricing Comparison */}
+        <div className="mb-12">
+          <PricingComparisonChart />
+        </div>
+
+        <Separator className="my-8" />
+
+        {/* User's Personal Quotes Comparison */}
+        <div>
+          <h2 className="text-2xl font-bold mb-4">Compare Your Personal Quotes</h2>
+          <p className="text-muted-foreground mb-6">Select up to 3 of your saved quotes to compare</p>
         </div>
 
         {selectedQuotes.length === 0 && (
