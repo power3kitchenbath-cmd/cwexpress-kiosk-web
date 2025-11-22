@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { PricingGuideEmailForm } from "./PricingGuideEmailForm";
 import { RoomSizeCalculator } from "./RoomSizeCalculator";
 import { KitchenSizeCalculator } from "./KitchenSizeCalculator";
+import { VanitySizeCalculator } from "./VanitySizeCalculator";
 import { supabase } from "@/integrations/supabase/client";
 
 // Import LVP flooring images
@@ -658,6 +659,10 @@ export function PricingComparisonChart() {
           
           {section.category === "Kitchen Cabinet Installation" && (
             <KitchenSizeCalculator />
+          )}
+          
+          {section.category === "Bathroom Vanity Installation" && (
+            <VanitySizeCalculator />
           )}
           
           {section.category === "LVP Luxury Vinyl Plank Flooring" && (
