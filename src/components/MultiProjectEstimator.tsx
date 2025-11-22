@@ -5,9 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Calculator, Plus, Trash2, Home, ChefHat, Bath, TrendingDown, FileText, Download } from "lucide-react";
+import { Calculator, Plus, Trash2, Home, ChefHat, Bath, TrendingDown, FileText, Download, Eye } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { toast } from "sonner";
@@ -49,6 +51,9 @@ type ProjectEstimate = RoomEstimate | KitchenEstimate | VanityEstimate;
 export function MultiProjectEstimator() {
   const [projects, setProjects] = useState<ProjectEstimate[]>([]);
   const [activeTab, setActiveTab] = useState<string>("room");
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [estimateName, setEstimateName] = useState("");
+  const [estimateNotes, setEstimateNotes] = useState("");
 
   // Room form state
   const [roomName, setRoomName] = useState("");
@@ -231,7 +236,8 @@ export function MultiProjectEstimator() {
       
       doc.setFontSize(16);
       doc.setFont('helvetica', 'normal');
-      doc.text('Multi-Project Estimate', pageWidth / 2, 35, { align: 'center' });
+      const displayName = estimateName || 'Multi-Project Estimate';
+      doc.text(displayName, pageWidth / 2, 35, { align: 'center' });
 
       doc.setFontSize(10);
       doc.text('CABINETS • COUNTERTOPS • FLOORS', pageWidth / 2, 43, { align: 'center' });
@@ -248,6 +254,20 @@ export function MultiProjectEstimator() {
       });
       doc.text(`Estimate Date: ${today}`, 20, yPosition);
       yPosition += 8;
+
+      // Custom notes if provided
+      if (estimateNotes) {
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Customer Notes:', 20, yPosition);
+        yPosition += 6;
+        
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        const splitNotes = doc.splitTextToSize(estimateNotes, pageWidth - 40);
+        doc.text(splitNotes, 20, yPosition);
+        yPosition += splitNotes.length * 5 + 8;
+      }
 
       // Project summary stats
       doc.setFontSize(11);
@@ -414,11 +434,14 @@ export function MultiProjectEstimator() {
       doc.setFont('helvetica', 'bold');
       doc.text('Factory Direct Pricing - Professional Quality', pageWidth / 2, yPosition + 2, { align: 'center' });
 
-      // Generate filename with date
-      const filename = `3Power-Multi-Project-Estimate-${today.replace(/,/g, '').replace(/ /g, '-')}.pdf`;
+      // Generate filename with date and custom name
+      const safeName = (estimateName || 'Multi-Project-Estimate').replace(/[^a-z0-9]/gi, '-');
+      const dateStr = today.replace(/,/g, '').replace(/ /g, '-');
+      const filename = `3Power-${safeName}-${dateStr}.pdf`;
       
       doc.save(filename);
       toast.success("Estimate downloaded successfully!");
+      setPreviewOpen(false);
     } catch (error) {
       console.error("Error generating PDF:", error);
       toast.error("Failed to generate estimate. Please try again.");
@@ -690,11 +713,144 @@ export function MultiProjectEstimator() {
               <Separator />
 
               <div className="space-y-4">
-                <div className="flex justify-end">
-                  <Button onClick={generatePDF} variant="outline" className="gap-2">
-                    <Download className="w-4 h-4" />
-                    Download PDF Estimate
-                  </Button>
+                <div className="flex justify-end gap-2">
+                  <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" className="gap-2">
+                        <Eye className="w-4 h-4" />
+                        Preview & Download
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Estimate Preview & Customization</DialogTitle>
+                        <DialogDescription>
+                          Customize your estimate details before downloading
+                        </DialogDescription>
+                      </DialogHeader>
+
+                      <div className="space-y-6">
+                        <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="estimateName">Estimate Name (Optional)</Label>
+                            <Input
+                              id="estimateName"
+                              placeholder="e.g., Smith Residence Renovation"
+                              value={estimateName}
+                              onChange={(e) => setEstimateName(e.target.value)}
+                              className="mt-2"
+                            />
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Custom name will appear on the PDF header
+                            </p>
+                          </div>
+
+                          <div>
+                            <Label htmlFor="estimateNotes">Additional Notes (Optional)</Label>
+                            <Textarea
+                              id="estimateNotes"
+                              placeholder="Add any special requirements, preferences, or details about this project..."
+                              value={estimateNotes}
+                              onChange={(e) => setEstimateNotes(e.target.value)}
+                              className="mt-2 min-h-[100px]"
+                            />
+                            <p className="text-sm text-muted-foreground mt-1">
+                              These notes will be included in the PDF document
+                            </p>
+                          </div>
+                        </div>
+
+                        <Separator />
+
+                        <div className="space-y-4">
+                          <h3 className="font-semibold text-lg">Estimate Preview</h3>
+                          
+                          <div className="p-6 border rounded-lg bg-gradient-to-br from-primary/5 to-secondary/5">
+                            <div className="space-y-4">
+                              <div className="text-center p-4 bg-primary rounded-lg">
+                                <h2 className="text-2xl font-bold text-primary-foreground">3 Power Cabinet Store</h2>
+                                <p className="text-primary-foreground/90">
+                                  {estimateName || "Multi-Project Estimate"}
+                                </p>
+                              </div>
+
+                              {estimateNotes && (
+                                <div className="p-4 border rounded-lg bg-muted/50">
+                                  <p className="font-semibold mb-2">Customer Notes:</p>
+                                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                                    {estimateNotes}
+                                  </p>
+                                </div>
+                              )}
+
+                              <div className="grid grid-cols-3 gap-4 text-center">
+                                <div className="p-3 border rounded-lg">
+                                  <div className="text-2xl font-bold text-primary">
+                                    {getProjectsByType("room").length}
+                                  </div>
+                                  <div className="text-sm text-muted-foreground">Rooms</div>
+                                </div>
+                                <div className="p-3 border rounded-lg">
+                                  <div className="text-2xl font-bold text-secondary">
+                                    {getProjectsByType("kitchen").length}
+                                  </div>
+                                  <div className="text-sm text-muted-foreground">Kitchens</div>
+                                </div>
+                                <div className="p-3 border rounded-lg">
+                                  <div className="text-2xl font-bold text-accent">
+                                    {getProjectsByType("vanity").length}
+                                  </div>
+                                  <div className="text-sm text-muted-foreground">Bathrooms</div>
+                                </div>
+                              </div>
+
+                              <div className="space-y-2">
+                                {projects.map((project) => (
+                                  <div key={project.id} className="flex justify-between p-3 border rounded-lg bg-background">
+                                    <div className="flex items-center gap-2">
+                                      {project.type === "room" && <Home className="w-4 h-4 text-primary" />}
+                                      {project.type === "kitchen" && <ChefHat className="w-4 h-4 text-secondary" />}
+                                      {project.type === "vanity" && <Bath className="w-4 h-4 text-accent" />}
+                                      <span className="font-medium text-sm">{project.name}</span>
+                                    </div>
+                                    <span className="font-semibold text-sm">${project.cost.toFixed(2)}</span>
+                                  </div>
+                                ))}
+                              </div>
+
+                              <Separator />
+
+                              <div className="space-y-2">
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">Subtotal:</span>
+                                  <span className="font-semibold">${getTotalCost().toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between text-green-600">
+                                  <span>Estimated Savings:</span>
+                                  <span className="font-semibold">-${getEstimatedSavings().toFixed(2)}</span>
+                                </div>
+                                <Separator />
+                                <div className="flex justify-between text-lg">
+                                  <span className="font-bold">Total Project Cost:</span>
+                                  <span className="font-bold text-primary">${getTotalCost().toFixed(2)}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end gap-2">
+                          <Button variant="outline" onClick={() => setPreviewOpen(false)}>
+                            Cancel
+                          </Button>
+                          <Button onClick={generatePDF} className="gap-2">
+                            <Download className="w-4 h-4" />
+                            Download PDF
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
 
                 <div className="p-6 rounded-lg bg-gradient-to-br from-primary/20 to-secondary/20 border-2 border-primary/40">
