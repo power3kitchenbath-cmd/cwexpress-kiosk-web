@@ -5,8 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Calculator, ChefHat, TrendingDown } from "lucide-react";
+import { Calculator, ChefHat, TrendingDown, LayoutGrid } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type KitchenTier = "good" | "better" | "best";
 
@@ -16,6 +17,35 @@ export function KitchenSizeCalculator() {
   const [cabinetUpgrade, setCabinetUpgrade] = useState(false);
   const [countertopUpgrade, setCountertopUpgrade] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [selectedLayout, setSelectedLayout] = useState<string>("");
+
+  // Kitchen layout presets
+  const kitchenPresets = [
+    { value: "standard-10x10", label: "Standard 10x10 Kitchen", multiplier: 1.0, description: "Base reference size" },
+    { value: "small-galley", label: "Small Galley Kitchen", multiplier: 0.6, description: "8x8 compact layout" },
+    { value: "medium-galley", label: "Medium Galley Kitchen", multiplier: 0.8, description: "9x10 efficient design" },
+    { value: "small-l-shape", label: "Small L-Shaped Kitchen", multiplier: 1.0, description: "10x10 corner layout" },
+    { value: "medium-l-shape", label: "Medium L-Shaped Kitchen", multiplier: 1.3, description: "11x12 open design" },
+    { value: "large-l-shape", label: "Large L-Shaped Kitchen", multiplier: 1.6, description: "12x14 spacious" },
+    { value: "small-u-shape", label: "Small U-Shaped Kitchen", multiplier: 1.2, description: "10x12 enclosed" },
+    { value: "medium-u-shape", label: "Medium U-Shaped Kitchen", multiplier: 1.5, description: "12x14 functional" },
+    { value: "large-u-shape", label: "Large U-Shaped Kitchen", multiplier: 1.8, description: "14x16 premium" },
+    { value: "island-kitchen", label: "Kitchen with Island", multiplier: 1.4, description: "10x12 + island" },
+    { value: "open-concept", label: "Open Concept Kitchen", multiplier: 2.0, description: "12x18 expansive" },
+    { value: "custom", label: "Custom Size", multiplier: 0, description: "Enter your own multiplier" }
+  ];
+
+  const handleLayoutChange = (value: string) => {
+    setSelectedLayout(value);
+    const preset = kitchenPresets.find(kitchen => kitchen.value === value);
+    if (preset && preset.multiplier > 0) {
+      setKitchenSize(preset.multiplier.toString());
+      setShowResults(false);
+    } else if (value === "custom") {
+      setKitchenSize("1");
+      setShowResults(false);
+    }
+  };
 
   // Base pricing per tier (for 10x10 kitchen)
   const tierPricing = {
@@ -117,6 +147,33 @@ export function KitchenSizeCalculator() {
         <div className="grid md:grid-cols-2 gap-6">
           <div className="space-y-4">
             <div>
+              <Label htmlFor="kitchenLayout" className="text-base font-semibold mb-2 flex items-center gap-2">
+                <LayoutGrid className="w-4 h-4" />
+                Kitchen Layout
+              </Label>
+              <Select value={selectedLayout} onValueChange={handleLayoutChange}>
+                <SelectTrigger id="kitchenLayout" className="text-lg h-12 bg-background z-50">
+                  <SelectValue placeholder="Select a kitchen layout or enter custom size" />
+                </SelectTrigger>
+                <SelectContent className="bg-background z-50">
+                  {kitchenPresets.map((preset) => (
+                    <SelectItem key={preset.value} value={preset.value} className="cursor-pointer">
+                      <div className="flex flex-col">
+                        <span className="font-medium">{preset.label}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {preset.multiplier > 0 ? `${preset.multiplier}x • ${preset.description}` : preset.description}
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground mt-2">
+                Quick presets for common kitchen layouts
+              </p>
+            </div>
+
+            <div>
               <Label htmlFor="kitchenSize" className="text-base font-semibold mb-2 flex items-center gap-2">
                 <Calculator className="w-4 h-4" />
                 Kitchen Size Multiplier
@@ -126,13 +183,16 @@ export function KitchenSizeCalculator() {
                 type="number"
                 placeholder="Enter multiplier (e.g., 1.5)"
                 value={kitchenSize}
-                onChange={(e) => setKitchenSize(e.target.value)}
+                onChange={(e) => {
+                  setKitchenSize(e.target.value);
+                  setSelectedLayout("custom");
+                }}
                 min="0.5"
                 step="0.1"
                 className="text-lg h-12"
               />
               <p className="text-sm text-muted-foreground mt-2">
-                Standard 10x10 kitchen = 1.0 • Small kitchen (8x8) = 0.6 • Large kitchen (12x15) = 1.8
+                Or enter a custom size multiplier (1.0 = standard 10x10 kitchen)
               </p>
             </div>
 
