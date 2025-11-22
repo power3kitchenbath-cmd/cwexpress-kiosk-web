@@ -9,6 +9,19 @@ import { toast } from "sonner";
 import { PricingGuideEmailForm } from "./PricingGuideEmailForm";
 import { supabase } from "@/integrations/supabase/client";
 
+// Import LVP flooring images
+import blondieImg from "@/assets/flooring/lvp/blondie.png";
+import butternutImg from "@/assets/flooring/lvp/butternut.png";
+import cocoaImg from "@/assets/flooring/lvp/cocoa.png";
+import fogImg from "@/assets/flooring/lvp/fog.png";
+
+// Import shower door images
+import ds01Img from "@/assets/shower-doors/ds01.jpg";
+import ds0166Img from "@/assets/shower-doors/ds01-66.jpg";
+import ds08Img from "@/assets/shower-doors/ds08.jpg";
+import h07Img from "@/assets/shower-doors/h07.jpg";
+import ss03Img from "@/assets/shower-doors/ss03.jpg";
+
 interface CompetitorPrice {
   homeDepot: string;
   lowes: string;
@@ -24,6 +37,7 @@ interface PricingData {
     unit: string;
     prices: CompetitorPrice;
     savings: string;
+    imageUrl?: string;
   }[];
 }
 
@@ -222,7 +236,8 @@ const pricingData: PricingData[] = [
           ourPrice: "$3.49",
           profitMargin: "45%"
         },
-        savings: "Up to $2.50/sqft vs Empire"
+        savings: "Up to $2.50/sqft vs Empire",
+        imageUrl: cocoaImg
       },
       {
         name: "LVP Flooring - Premium Grade",
@@ -234,7 +249,8 @@ const pricingData: PricingData[] = [
           ourPrice: "$4.99-$6.49",
           profitMargin: "45%"
         },
-        savings: "Up to $1.00/sqft"
+        savings: "Up to $1.00/sqft",
+        imageUrl: butternutImg
       },
       {
         name: "LVP Installation - Labor Only",
@@ -275,7 +291,8 @@ const pricingData: PricingData[] = [
           ourPrice: "$647.50-$722.50",
           profitMargin: "45%"
         },
-        savings: "Up to $202"
+        savings: "Up to $202",
+        imageUrl: ds01Img
       },
       {
         name: "DS08 Double Sliding (50-55\" x 76\")",
@@ -287,7 +304,8 @@ const pricingData: PricingData[] = [
           ourPrice: "$441.25-$491.25",
           profitMargin: "45%"
         },
-        savings: "Up to $208"
+        savings: "Up to $208",
+        imageUrl: ds08Img
       },
       {
         name: "H07 Single Swing (28\" x 76\")",
@@ -299,7 +317,8 @@ const pricingData: PricingData[] = [
           ourPrice: "$441.25",
           profitMargin: "45%"
         },
-        savings: "Up to $208"
+        savings: "Up to $208",
+        imageUrl: h07Img
       },
       {
         name: "SS03 Single Sliding (56-60\" x 76\")",
@@ -311,7 +330,8 @@ const pricingData: PricingData[] = [
           ourPrice: "$541.25-$641.25",
           profitMargin: "45%"
         },
-        savings: "Up to $208"
+        savings: "Up to $208",
+        imageUrl: ss03Img
       },
       {
         name: "DS01-66 Double Sliding (66-72\" x 76\")",
@@ -323,7 +343,8 @@ const pricingData: PricingData[] = [
           ourPrice: "$722.50-$797.50",
           profitMargin: "45%"
         },
-        savings: "Up to $227"
+        savings: "Up to $227",
+        imageUrl: ds0166Img
       }
     ]
   }
@@ -595,9 +616,18 @@ export function PricingComparisonChart() {
                   {section.items.map((item, index) => (
                     <tr key={index} className="border-b hover:bg-muted/30 transition-colors">
                       <td className="p-4">
-                        <div>
-                          <div className="font-medium">{item.name}</div>
-                          <div className="text-sm text-muted-foreground">{item.unit}</div>
+                        <div className="flex items-center gap-3">
+                          {item.imageUrl && (
+                            <img 
+                              src={item.imageUrl} 
+                              alt={item.name}
+                              className="w-16 h-16 object-cover rounded-md border border-border"
+                            />
+                          )}
+                          <div>
+                            <div className="font-medium">{item.name}</div>
+                            <div className="text-sm text-muted-foreground">{item.unit}</div>
+                          </div>
                         </div>
                       </td>
                       <td className="text-center p-4 text-muted-foreground">{item.prices.homeDepot}</td>
