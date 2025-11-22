@@ -5,9 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Calculator, Plus, Trash2, Home, ChefHat, Bath, TrendingDown, FileText } from "lucide-react";
+import { Calculator, Plus, Trash2, Home, ChefHat, Bath, TrendingDown, FileText, Download } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import { toast } from "sonner";
 
 interface RoomEstimate {
   id: string;
@@ -208,6 +211,218 @@ export function MultiProjectEstimator() {
 
   const getProjectsByType = (type: string) => {
     return projects.filter(p => p.type === type);
+  };
+
+  const generatePDF = () => {
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      let yPosition = 20;
+
+      // Header with company branding
+      doc.setFillColor(25, 58, 130); // Primary blue
+      doc.rect(0, 0, pageWidth, 50, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(28);
+      doc.setFont('helvetica', 'bold');
+      doc.text('3 Power Cabinet Store', pageWidth / 2, 22, { align: 'center' });
+      
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Multi-Project Estimate', pageWidth / 2, 35, { align: 'center' });
+
+      doc.setFontSize(10);
+      doc.text('CABINETS • COUNTERTOPS • FLOORS', pageWidth / 2, 43, { align: 'center' });
+
+      yPosition = 60;
+
+      // Estimate date and summary
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(10);
+      const today = new Date().toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+      doc.text(`Estimate Date: ${today}`, 20, yPosition);
+      yPosition += 8;
+
+      // Project summary stats
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Project Summary:', 20, yPosition);
+      yPosition += 7;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      const roomCount = getProjectsByType("room").length;
+      const kitchenCount = getProjectsByType("kitchen").length;
+      const vanityCount = getProjectsByType("vanity").length;
+      
+      doc.text(`• ${roomCount} Room${roomCount !== 1 ? 's' : ''} (LVP Flooring)`, 25, yPosition);
+      yPosition += 6;
+      doc.text(`• ${kitchenCount} Kitchen${kitchenCount !== 1 ? 's' : ''}`, 25, yPosition);
+      yPosition += 6;
+      doc.text(`• ${vanityCount} Bathroom${vanityCount !== 1 ? 's' : ''} (Vanity Installation)`, 25, yPosition);
+      yPosition += 12;
+
+      // Detailed breakdown by category
+      const categories = [
+        { type: 'room', title: 'LVP Flooring Projects', icon: '🏠' },
+        { type: 'kitchen', title: 'Kitchen Installations', icon: '👨‍🍳' },
+        { type: 'vanity', title: 'Bathroom Vanity Installations', icon: '🛁' }
+      ];
+
+      categories.forEach((category) => {
+        const categoryProjects = getProjectsByType(category.type);
+        if (categoryProjects.length === 0) return;
+
+        // Check if we need a new page
+        if (yPosition > pageHeight - 80) {
+          doc.addPage();
+          yPosition = 20;
+        }
+
+        // Category header
+        doc.setFillColor(240, 245, 249);
+        doc.rect(15, yPosition - 5, pageWidth - 30, 10, 'F');
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(25, 58, 130);
+        doc.text(`${category.icon} ${category.title}`, 20, yPosition + 2);
+        yPosition += 15;
+
+        // Create table data for this category
+        const tableData = categoryProjects.map(project => {
+          let details = '';
+          if (project.type === 'room') {
+            const room = project as RoomEstimate;
+            details = `${room.squareFeet} sqft • ${room.grade} grade`;
+          } else if (project.type === 'kitchen') {
+            const kitchen = project as KitchenEstimate;
+            details = `${kitchen.multiplier}x size • ${kitchen.tier} tier`;
+            if (kitchen.cabinetUpgrade) details += ' • Cabinet upgrade';
+            if (kitchen.countertopUpgrade) details += ' • Countertop upgrade';
+          } else if (project.type === 'vanity') {
+            const vanity = project as VanityEstimate;
+            details = `${vanity.quantity}x ${vanity.vanityType} • ${vanity.tier} tier`;
+            if (vanity.singleToDouble) details += ' • Single→Double';
+            if (vanity.plumbingWallChange) details += ' • Plumbing change';
+          }
+          return [project.name, details, `$${project.cost.toFixed(2)}`];
+        });
+
+        autoTable(doc, {
+          startY: yPosition,
+          head: [['Project Name', 'Specifications', 'Cost']],
+          body: tableData,
+          theme: 'striped',
+          headStyles: {
+            fillColor: [25, 58, 130],
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            fontSize: 10
+          },
+          bodyStyles: {
+            fontSize: 9,
+            textColor: [0, 0, 0]
+          },
+          columnStyles: {
+            0: { cellWidth: 60 },
+            1: { cellWidth: 80 },
+            2: { cellWidth: 35, halign: 'right', fontStyle: 'bold' }
+          },
+          margin: { left: 15, right: 15 },
+          didDrawPage: function(data) {
+            yPosition = data.cursor?.y || yPosition;
+          }
+        });
+
+        yPosition = (doc as any).lastAutoTable.finalY + 10;
+      });
+
+      // Cost summary box
+      if (yPosition > pageHeight - 80) {
+        doc.addPage();
+        yPosition = 20;
+      }
+
+      doc.setFillColor(240, 253, 244);
+      doc.rect(15, yPosition, pageWidth - 30, 45, 'F');
+      doc.setDrawColor(34, 197, 94);
+      doc.setLineWidth(1);
+      doc.rect(15, yPosition, pageWidth - 30, 45);
+
+      yPosition += 10;
+
+      doc.setFontSize(11);
+      doc.setTextColor(0, 0, 0);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Subtotal:', 20, yPosition);
+      doc.text(`$${getTotalCost().toFixed(2)}`, pageWidth - 20, yPosition, { align: 'right' });
+      yPosition += 8;
+
+      doc.setTextColor(34, 197, 94);
+      doc.text('Estimated Savings vs Competitors:', 20, yPosition);
+      doc.text(`-$${getEstimatedSavings().toFixed(2)}`, pageWidth - 20, yPosition, { align: 'right' });
+      yPosition += 12;
+
+      doc.setDrawColor(34, 197, 94);
+      doc.setLineWidth(0.5);
+      doc.line(20, yPosition, pageWidth - 20, yPosition);
+      yPosition += 8;
+
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(25, 58, 130);
+      doc.text('Total Project Cost:', 20, yPosition);
+      doc.text(`$${getTotalCost().toFixed(2)}`, pageWidth - 20, yPosition, { align: 'right' });
+
+      // Footer notes
+      yPosition = pageHeight - 40;
+      doc.setFillColor(249, 250, 251);
+      doc.rect(0, yPosition - 5, pageWidth, 45, 'F');
+
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text('Important Notes:', 20, yPosition);
+      yPosition += 6;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      const notes = [
+        '• This is a preliminary estimate. Final pricing will be confirmed after site visit and consultation.',
+        '• All prices include materials, labor, and professional installation.',
+        '• Estimates are valid for 30 days from the date of this document.',
+        '• Additional costs may apply for structural modifications or unforeseen site conditions.'
+      ];
+
+      notes.forEach(note => {
+        doc.text(note, 20, yPosition);
+        yPosition += 4;
+      });
+
+      // Footer
+      yPosition = pageHeight - 10;
+      doc.setFillColor(25, 58, 130);
+      doc.rect(0, yPosition - 5, pageWidth, 15, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Factory Direct Pricing - Professional Quality', pageWidth / 2, yPosition + 2, { align: 'center' });
+
+      // Generate filename with date
+      const filename = `3Power-Multi-Project-Estimate-${today.replace(/,/g, '').replace(/ /g, '-')}.pdf`;
+      
+      doc.save(filename);
+      toast.success("Estimate downloaded successfully!");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast.error("Failed to generate estimate. Please try again.");
+    }
   };
 
   return (
@@ -474,22 +689,30 @@ export function MultiProjectEstimator() {
 
               <Separator />
 
-              <div className="p-6 rounded-lg bg-gradient-to-br from-primary/20 to-secondary/20 border-2 border-primary/40">
-                <div className="space-y-4">
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    <div>
-                      <div className="text-2xl font-bold text-primary">{getProjectsByType("room").length}</div>
-                      <div className="text-sm text-muted-foreground">Rooms</div>
+              <div className="space-y-4">
+                <div className="flex justify-end">
+                  <Button onClick={generatePDF} variant="outline" className="gap-2">
+                    <Download className="w-4 h-4" />
+                    Download PDF Estimate
+                  </Button>
+                </div>
+
+                <div className="p-6 rounded-lg bg-gradient-to-br from-primary/20 to-secondary/20 border-2 border-primary/40">
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                      <div>
+                        <div className="text-2xl font-bold text-primary">{getProjectsByType("room").length}</div>
+                        <div className="text-sm text-muted-foreground">Rooms</div>
+                      </div>
+                      <div>
+                        <div className="text-2xl font-bold text-secondary">{getProjectsByType("kitchen").length}</div>
+                        <div className="text-sm text-muted-foreground">Kitchens</div>
+                      </div>
+                      <div>
+                        <div className="text-2xl font-bold text-accent">{getProjectsByType("vanity").length}</div>
+                        <div className="text-sm text-muted-foreground">Bathrooms</div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="text-2xl font-bold text-secondary">{getProjectsByType("kitchen").length}</div>
-                      <div className="text-sm text-muted-foreground">Kitchens</div>
-                    </div>
-                    <div>
-                      <div className="text-2xl font-bold text-accent">{getProjectsByType("vanity").length}</div>
-                      <div className="text-sm text-muted-foreground">Bathrooms</div>
-                    </div>
-                  </div>
 
                   <Separator className="bg-primary/20" />
 
@@ -509,9 +732,10 @@ export function MultiProjectEstimator() {
 
                   <Separator className="bg-primary/20" />
 
-                  <div className="flex justify-between items-center pt-2">
-                    <span className="text-xl font-bold">Total Project Cost:</span>
-                    <span className="text-3xl font-bold text-primary">${getTotalCost().toFixed(2)}</span>
+                    <div className="flex justify-between items-center pt-2">
+                      <span className="text-xl font-bold">Total Project Cost:</span>
+                      <span className="text-3xl font-bold text-primary">${getTotalCost().toFixed(2)}</span>
+                    </div>
                   </div>
                 </div>
               </div>
