@@ -1,10 +1,13 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Check, TrendingDown, DollarSign, Download } from "lucide-react";
+import { Check, TrendingDown, DollarSign, Download, Mail } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { toast } from "sonner";
+import { PricingGuideEmailForm } from "./PricingGuideEmailForm";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CompetitorPrice {
   homeDepot: string;
@@ -209,6 +212,24 @@ const pricingData: PricingData[] = [
 ];
 
 export function PricingComparisonChart() {
+  const [emailFormOpen, setEmailFormOpen] = useState(false);
+
+  const handleDownload = async () => {
+    generatePricingPDF();
+    
+    // Track download event
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      await supabase.from("pricing_guide_requests").insert({
+        email: user?.email || "anonymous",
+        request_type: "download",
+        user_id: user?.id,
+      });
+    } catch (error) {
+      console.error("Error tracking download:", error);
+    }
+  };
+
   const generatePricingPDF = () => {
     try {
       const doc = new jsPDF();
@@ -400,14 +421,30 @@ export function PricingComparisonChart() {
           We believe in honest, transparent pricing. See how our prices compare to major retailers 
           while maintaining our 45% profit margin to ensure quality service and long-term sustainability.
         </p>
-        <Button 
-          onClick={generatePricingPDF}
-          size="lg"
-          className="gap-2"
-        >
-          <Download className="w-5 h-5" />
-          Download Complete Pricing Guide (PDF)
-        </Button>
+        <div className="flex gap-3 justify-center">
+          <Button 
+            onClick={handleDownload}
+            size="lg"
+            className="gap-2"
+          >
+            <Download className="w-5 h-5" />
+            Download Pricing Guide
+          </Button>
+          <Button 
+            onClick={() => setEmailFormOpen(true)}
+            size="lg"
+            variant="outline"
+            className="gap-2"
+          >
+            <Mail className="w-5 h-5" />
+            Email Me the Guide
+          </Button>
+        </div>
+        
+        <PricingGuideEmailForm 
+          open={emailFormOpen} 
+          onOpenChange={setEmailFormOpen} 
+        />
       </div>
 
       {pricingData.map((section) => (

@@ -829,6 +829,51 @@ export type Database = {
         }
         Relationships: []
       }
+      pricing_guide_requests: {
+        Row: {
+          company_name: string | null
+          created_at: string | null
+          email: string
+          id: string
+          name: string | null
+          opened_at: string | null
+          phone: string | null
+          request_type: string
+          sent_at: string | null
+          tracking_token: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          company_name?: string | null
+          created_at?: string | null
+          email: string
+          id?: string
+          name?: string | null
+          opened_at?: string | null
+          phone?: string | null
+          request_type?: string
+          sent_at?: string | null
+          tracking_token?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          company_name?: string | null
+          created_at?: string | null
+          email?: string
+          id?: string
+          name?: string | null
+          opened_at?: string | null
+          phone?: string | null
+          request_type?: string
+          sent_at?: string | null
+          tracking_token?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           category: string
