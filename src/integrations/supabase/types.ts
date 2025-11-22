@@ -842,6 +842,8 @@ export type Database = {
           request_type: string
           sent_at: string | null
           tracking_token: string | null
+          unsubscribed: boolean | null
+          unsubscribed_at: string | null
           updated_at: string | null
           user_id: string | null
         }
@@ -857,6 +859,8 @@ export type Database = {
           request_type?: string
           sent_at?: string | null
           tracking_token?: string | null
+          unsubscribed?: boolean | null
+          unsubscribed_at?: string | null
           updated_at?: string | null
           user_id?: string | null
         }
@@ -872,6 +876,8 @@ export type Database = {
           request_type?: string
           sent_at?: string | null
           tracking_token?: string | null
+          unsubscribed?: boolean | null
+          unsubscribed_at?: string | null
           updated_at?: string | null
           user_id?: string | null
         }

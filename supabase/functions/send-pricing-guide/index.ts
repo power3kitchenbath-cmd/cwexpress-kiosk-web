@@ -186,7 +186,8 @@ const handler = async (req: Request): Promise<Response> => {
             <p><strong>CABINETS • COUNTERTOPS • FLOORS</strong></p>
             <p>Factory Direct Pricing - Professional Quality</p>
             <p style="font-size: 12px; color: #9ca3af; margin-top: 15px;">
-              You received this email because you requested our pricing guide.
+              You received this email because you requested our pricing guide.<br>
+              <a href="${supabaseUrl}/functions/v1/unsubscribe-pricing-guide?email=${encodeURIComponent(email)}&token=${trackingToken}" style="color: #193a82; text-decoration: underline;">Unsubscribe from follow-ups</a>
             </p>
           </div>
           

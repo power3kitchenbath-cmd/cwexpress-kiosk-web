@@ -30,6 +30,7 @@ export function PricingGuideAnalytics() {
     followUp2Sent: 0,
     followUp5Sent: 0,
     followUp7Sent: 0,
+    unsubscribed: 0,
   });
 
   useEffect(() => {
@@ -58,6 +59,7 @@ export function PricingGuideAnalytics() {
       let followUp2Sent = 0;
       let followUp5Sent = 0;
       let followUp7Sent = 0;
+      let unsubscribed = 0;
       
       data?.forEach(req => {
         const followUps = (req.follow_ups_sent as any[]) || [];
@@ -66,6 +68,10 @@ export function PricingGuideAnalytics() {
           if (f.day === 5) followUp5Sent++;
           if (f.day === 7) followUp7Sent++;
         });
+        
+        if ((req as any).unsubscribed) {
+          unsubscribed++;
+        }
       });
 
       setStats({
@@ -77,6 +83,7 @@ export function PricingGuideAnalytics() {
         followUp2Sent,
         followUp5Sent,
         followUp7Sent,
+        unsubscribed,
       });
     } catch (error: any) {
       console.error("Error fetching pricing guide requests:", error);
@@ -196,6 +203,19 @@ export function PricingGuideAnalytics() {
               </p>
             </div>
           </div>
+          
+          {/* Unsubscribe Stats */}
+          <div className="mt-4 p-4 border rounded-lg bg-red-50 dark:bg-red-950">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-sm font-medium">Unsubscribed</span>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Customers who opted out of follow-ups
+                </p>
+              </div>
+              <Badge variant="destructive">{stats.unsubscribed}</Badge>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -272,6 +292,11 @@ export function PricingGuideAnalytics() {
                           </Badge>
                         ))}
                       </div>
+                    )}
+                    {(request as any).unsubscribed && (
+                      <Badge variant="destructive" className="text-xs">
+                        Unsubscribed
+                      </Badge>
                     )}
                   </div>
                 </div>
