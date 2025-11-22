@@ -231,6 +231,18 @@ const handler = async (req: Request): Promise<Response> => {
               html: emailHtml,
             });
 
+            // Create email tracking record for bounce detection
+            await supabase
+              .from("email_tracking")
+              .insert({
+                email_type: "pricing_guide",
+                recipient_email: request.email,
+                status: "sent",
+                tracking_token: request.tracking_token || crypto.randomUUID(),
+                sent_at: now.toISOString(),
+                order_id: "00000000-0000-0000-0000-000000000000", // Placeholder
+              });
+
             // Update follow_ups_sent
             const updatedFollowUps = [
               ...followUpsSent,

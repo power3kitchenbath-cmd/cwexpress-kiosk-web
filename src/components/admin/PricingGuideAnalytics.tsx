@@ -31,6 +31,7 @@ export function PricingGuideAnalytics() {
     followUp5Sent: 0,
     followUp7Sent: 0,
     unsubscribed: 0,
+    bouncedEmails: 0,
   });
 
   useEffect(() => {
@@ -74,6 +75,15 @@ export function PricingGuideAnalytics() {
         }
       });
 
+      // Get bounced email count from email tracking
+      const { data: bouncedTracking } = await supabase
+        .from("email_tracking")
+        .select("recipient_email")
+        .eq("email_type", "pricing_guide")
+        .eq("status", "bounced");
+      
+      const bouncedEmails = new Set(bouncedTracking?.map(b => b.recipient_email) || []).size;
+
       setStats({
         totalRequests,
         emailsSent,
@@ -84,6 +94,7 @@ export function PricingGuideAnalytics() {
         followUp5Sent,
         followUp7Sent,
         unsubscribed,
+        bouncedEmails,
       });
     } catch (error: any) {
       console.error("Error fetching pricing guide requests:", error);
@@ -205,17 +216,51 @@ export function PricingGuideAnalytics() {
           </div>
           
           {/* Unsubscribe Stats */}
-          <div className="mt-4 p-4 border rounded-lg bg-red-50 dark:bg-red-950">
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-sm font-medium">Unsubscribed</span>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Customers who opted out of follow-ups
-                </p>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <div className="p-4 border rounded-lg bg-red-50 dark:bg-red-950">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-sm font-medium">Unsubscribed</span>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Customers who opted out of follow-ups
+                  </p>
+                </div>
+                <Badge variant="destructive">{stats.unsubscribed}</Badge>
               </div>
-              <Badge variant="destructive">{stats.unsubscribed}</Badge>
+            </div>
+            
+            <div className="p-4 border rounded-lg bg-amber-50 dark:bg-amber-950">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-sm font-medium">Bounced Emails</span>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Invalid or non-existent email addresses
+                  </p>
+                </div>
+                <Badge variant="outline">{stats.bouncedEmails}</Badge>
+              </div>
             </div>
           </div>
+          
+          {/* Webhook Configuration Note */}
+          {stats.bouncedEmails === 0 && (
+            <div className="mt-4 p-4 border rounded-lg bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+              <div className="flex items-start gap-3">
+                <div className="text-blue-600 dark:text-blue-400 mt-0.5">ℹ️</div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                    Enable Real-Time Bounce Detection
+                  </p>
+                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                    Configure a Resend webhook to automatically detect and handle bounced emails in real-time. 
+                    Add this webhook URL in your Resend dashboard: <code className="bg-blue-100 dark:bg-blue-900 px-1 py-0.5 rounded text-xs">
+                      {window.location.origin.replace(window.location.host, 'ofgncyruijfnkiutnkxa.supabase.co')}/functions/v1/webhook-email-status
+                    </code>
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
