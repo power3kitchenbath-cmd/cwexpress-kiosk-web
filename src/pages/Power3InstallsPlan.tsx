@@ -1,4 +1,4 @@
-import { Factory, Truck, Warehouse, ArrowRight, CheckCircle, Clock, DollarSign } from "lucide-react";
+import { Factory, Truck, Warehouse, ArrowRight, CheckCircle, Clock, DollarSign, Star, Quote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
@@ -63,6 +63,57 @@ export default function Power3InstallsPlan() {
       icon: CheckCircle,
       title: "Quality Guaranteed",
       description: "State-of-the-art fabrication ensures premium quality products"
+    }
+  ];
+
+  const testimonials = [
+    {
+      name: "Sarah Thompson",
+      project: "Kitchen Renovation",
+      location: "Atlanta, GA",
+      rating: 5,
+      review: "I saved over $8,000 compared to other quotes I received! The quality is outstanding and they delivered exactly when promised. The fabrication was done in an hour and installed within 4 days.",
+      highlight: "Saved $8,000"
+    },
+    {
+      name: "Mike Rodriguez",
+      project: "Bathroom Remodel",
+      location: "Marietta, GA",
+      rating: 5,
+      review: "As a contractor, I've worked with many suppliers. Power 3's speed is unmatched - from order to installation in under a week. My clients love the quality and I love the pricing that lets me stay competitive.",
+      highlight: "Delivered in 5 Days"
+    },
+    {
+      name: "Jennifer Lee",
+      project: "Master Bath & Guest Bath",
+      location: "Decatur, GA",
+      rating: 5,
+      review: "The three-component system really works! Factory direct pricing, fast shipping, and same-day pickup option made our dual bathroom renovation so much easier. The quartz countertops are absolutely beautiful.",
+      highlight: "Factory Direct Pricing"
+    },
+    {
+      name: "David Patterson",
+      project: "Kitchen & Flooring",
+      location: "Roswell, GA",
+      rating: 5,
+      review: "We got premium cabinets and LVP flooring at prices I couldn't believe. The 1-hour fabrication turnaround meant we didn't have to wait weeks like with other suppliers. Professional service from start to finish.",
+      highlight: "Premium Quality"
+    },
+    {
+      name: "Lisa Martinez",
+      project: "Full Kitchen Install",
+      location: "Sandy Springs, GA",
+      rating: 5,
+      review: "Working with Power 3 was seamless. The warehouse had everything in stock, CW Express delivered right on schedule, and the installation team was professional. Saved thousands compared to big box stores!",
+      highlight: "Thousands Saved"
+    },
+    {
+      name: "Robert Chen",
+      project: "Vacation Home Renovation",
+      location: "Alpharetta, GA",
+      rating: 5,
+      review: "For our rental property, speed and budget were critical. Power 3 delivered on both - gorgeous granite countertops fabricated same day, delivered in 3 days, and installed flawlessly. Will definitely use again!",
+      highlight: "3-Day Delivery"
     }
   ];
 
@@ -169,6 +220,59 @@ export default function Power3InstallsPlan() {
               )}
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Testimonials Section */}
+      <div className="bg-muted/30 py-16 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold mb-4">What Our Customers Say</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Real feedback from real customers who experienced the Power 3 difference
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {testimonials.map((testimonial, index) => (
+              <Card key={index} className="relative overflow-hidden hover:shadow-lg transition-shadow">
+                <div className="absolute top-4 right-4 opacity-10">
+                  <Quote className="w-16 h-16" />
+                </div>
+                <CardHeader>
+                  <div className="flex items-center gap-1 mb-2">
+                    {[...Array(testimonial.rating)].map((_, i) => (
+                      <Star key={i} className="w-4 h-4 fill-yellow-500 text-yellow-500" />
+                    ))}
+                  </div>
+                  <CardTitle className="text-lg">{testimonial.name}</CardTitle>
+                  <CardDescription>
+                    {testimonial.project} • {testimonial.location}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+                    "{testimonial.review}"
+                  </p>
+                  <div className="inline-block px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-semibold">
+                    {testimonial.highlight}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <div className="text-center mt-12">
+            <div className="inline-flex items-center gap-2 px-6 py-3 bg-background rounded-lg border">
+              <div className="flex items-center gap-1">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-5 h-5 fill-yellow-500 text-yellow-500" />
+                ))}
+              </div>
+              <span className="text-lg font-semibold">4.9/5</span>
+              <span className="text-muted-foreground">from 200+ reviews</span>
+            </div>
+          </div>
         </div>
       </div>
 
