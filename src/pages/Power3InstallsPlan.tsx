@@ -2,6 +2,12 @@ import { Factory, Truck, Warehouse, ArrowRight, CheckCircle, Clock, DollarSign, 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
+import kitchenBefore1 from "@/assets/gallery/kitchen-before-1.jpg";
+import kitchenAfter1 from "@/assets/gallery/kitchen-after-1.jpg";
+import bathBefore1 from "@/assets/gallery/bath-before-1.jpg";
+import bathAfter1 from "@/assets/gallery/bath-after-1.jpg";
+import kitchenBefore2 from "@/assets/gallery/kitchen-before-2.jpg";
+import kitchenAfter2 from "@/assets/gallery/kitchen-after-2.jpg";
 
 export default function Power3InstallsPlan() {
   const navigate = useNavigate();
@@ -273,6 +279,121 @@ export default function Power3InstallsPlan() {
               <span className="text-muted-foreground">from 200+ reviews</span>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Photo Gallery Section */}
+      <div className="max-w-7xl mx-auto px-4 py-16">
+        <div className="text-center mb-12">
+          <h2 className="text-4xl font-bold mb-4">Transformation Gallery</h2>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            See the dramatic difference our Power 3 system makes. Real projects, real results, real savings.
+          </p>
+        </div>
+
+        <div className="space-y-12">
+          {/* Kitchen Project 1 */}
+          <div>
+            <h3 className="text-2xl font-semibold mb-4 text-center">Kitchen Renovation - Atlanta, GA</h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="relative group overflow-hidden rounded-lg">
+                <img 
+                  src={kitchenBefore1} 
+                  alt="Kitchen before renovation"
+                  className="w-full h-[400px] object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+                <div className="absolute top-4 left-4 bg-destructive text-destructive-foreground px-4 py-2 rounded-lg font-bold">
+                  BEFORE
+                </div>
+              </div>
+              <div className="relative group overflow-hidden rounded-lg">
+                <img 
+                  src={kitchenAfter1} 
+                  alt="Kitchen after renovation"
+                  className="w-full h-[400px] object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+                <div className="absolute top-4 left-4 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-bold">
+                  AFTER
+                </div>
+              </div>
+            </div>
+            <div className="mt-4 text-center">
+              <p className="text-muted-foreground">
+                <span className="font-semibold text-foreground">Transformation Details:</span> Granite countertops fabricated in 1 hour • White shaker cabinets • Subway tile backsplash • LED lighting • Completed in 5 days
+              </p>
+            </div>
+          </div>
+
+          {/* Bathroom Project */}
+          <div>
+            <h3 className="text-2xl font-semibold mb-4 text-center">Bathroom Remodel - Marietta, GA</h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="relative group overflow-hidden rounded-lg">
+                <img 
+                  src={bathBefore1} 
+                  alt="Bathroom before renovation"
+                  className="w-full h-[400px] object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+                <div className="absolute top-4 left-4 bg-destructive text-destructive-foreground px-4 py-2 rounded-lg font-bold">
+                  BEFORE
+                </div>
+              </div>
+              <div className="relative group overflow-hidden rounded-lg">
+                <img 
+                  src={bathAfter1} 
+                  alt="Bathroom after renovation"
+                  className="w-full h-[400px] object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+                <div className="absolute top-4 left-4 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-bold">
+                  AFTER
+                </div>
+              </div>
+            </div>
+            <div className="mt-4 text-center">
+              <p className="text-muted-foreground">
+                <span className="font-semibold text-foreground">Transformation Details:</span> Quartz vanity countertop • Contemporary fixtures • White cabinetry • Modern mirror • Delivered in 4 days
+              </p>
+            </div>
+          </div>
+
+          {/* Kitchen Project 2 */}
+          <div>
+            <h3 className="text-2xl font-semibold mb-4 text-center">Modern Kitchen Update - Roswell, GA</h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="relative group overflow-hidden rounded-lg">
+                <img 
+                  src={kitchenBefore2} 
+                  alt="Kitchen before modern update"
+                  className="w-full h-[400px] object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+                <div className="absolute top-4 left-4 bg-destructive text-destructive-foreground px-4 py-2 rounded-lg font-bold">
+                  BEFORE
+                </div>
+              </div>
+              <div className="relative group overflow-hidden rounded-lg">
+                <img 
+                  src={kitchenAfter2} 
+                  alt="Kitchen after modern update"
+                  className="w-full h-[400px] object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+                <div className="absolute top-4 left-4 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-bold">
+                  AFTER
+                </div>
+              </div>
+            </div>
+            <div className="mt-4 text-center">
+              <p className="text-muted-foreground">
+                <span className="font-semibold text-foreground">Transformation Details:</span> Sleek quartz countertops • Gray shaker cabinets • Glass tile backsplash • Stainless appliances • 3-day turnaround
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-12 text-center">
+          <Card className="inline-block p-6 bg-muted/50">
+            <p className="text-lg font-semibold mb-2">Ready to see your space transformed?</p>
+            <p className="text-muted-foreground">Get a free estimate and join hundreds of satisfied customers</p>
+          </Card>
         </div>
       </div>
 
