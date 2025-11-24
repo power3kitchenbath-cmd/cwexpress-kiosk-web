@@ -1,4 +1,4 @@
-import { Factory, Truck, Warehouse, ArrowRight, CheckCircle, Clock, DollarSign, Star, Quote, Award, Shield, BadgeCheck, Zap, ThumbsUp, Sparkles } from "lucide-react";
+import { ArrowRight, CheckCircle, Clock, DollarSign, Star, Quote, Award, Shield, BadgeCheck, Zap, ThumbsUp, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
@@ -8,13 +8,16 @@ import bathBefore1 from "@/assets/gallery/bath-before-1.jpg";
 import bathAfter1 from "@/assets/gallery/bath-after-1.jpg";
 import kitchenBefore2 from "@/assets/gallery/kitchen-before-2.jpg";
 import kitchenAfter2 from "@/assets/gallery/kitchen-after-2.jpg";
+import cornerstoneBadge from "@/assets/badges/cornerstone-fabricator-badge.png";
+import expressBadge from "@/assets/badges/express-delivery-badge.png";
+import power3Badge from "@/assets/badges/power3-main-badge.png";
 
 export default function Power3InstallsPlan() {
   const navigate = useNavigate();
 
   const components = [
     {
-      icon: Factory,
+      badge: cornerstoneBadge,
       title: "Our Fabricator",
       subtitle: "Cornerstone Quality Products",
       description: "Our state-of-the-art facilities allow us to produce products quickly and efficiently. We use the latest technology to ensure that our products are of the highest quality.",
@@ -24,10 +27,10 @@ export default function Power3InstallsPlan() {
         "Highest quality materials",
         "Advanced cutting technology"
       ],
-      color: "from-blue-500 to-blue-700"
+      tagline: "Precision Fabrication in 1 Hour"
     },
     {
-      icon: Truck,
+      badge: expressBadge,
       title: "Our Shipping Co.",
       subtitle: "CW Express Logistics",
       description: "(RTA) Ready To Assemble Cabinets, LVP Flooring, Vanity Tops Shipped To Your Home Or Job site in 3 to 5 Days",
@@ -37,10 +40,10 @@ export default function Power3InstallsPlan() {
         "Professional handling",
         "Real-time tracking"
       ],
-      color: "from-green-500 to-green-700"
+      tagline: "Fast Delivery Nationwide"
     },
     {
-      icon: Warehouse,
+      badge: power3Badge,
       title: "Our Distributor",
       subtitle: "Power 3 Kitchen & Bath",
       description: "Kitchen & Bath Cabinets, LVP Flooring, and Vanity Tops in stock Ready for Same Day Pick Up or Next Day Delivery",
@@ -50,7 +53,7 @@ export default function Power3InstallsPlan() {
         "Next-day delivery option",
         "Volume pricing for pros"
       ],
-      color: "from-purple-500 to-purple-700"
+      tagline: "Your Complete Kitchen & Bath Partner"
     }
   ];
 
@@ -145,36 +148,64 @@ export default function Power3InstallsPlan() {
         </Card>
       </div>
 
-      {/* Three Components */}
+      {/* Power 3 Brand Components Section */}
+      <div className="max-w-7xl mx-auto px-4 mb-20">
+        <div className="text-center mb-12">
+          <h2 className="text-4xl font-bold mb-4">Our Three Power Brands</h2>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Three established brands working as one unified system to deliver exceptional results
+          </p>
+        </div>
+        <div className="grid md:grid-cols-3 gap-8 mb-16">
+          {components.map((component, index) => (
+            <div key={index} className="text-center group">
+              <div className="mb-4 flex justify-center">
+                <div className="w-48 h-48 rounded-full overflow-hidden bg-background shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:shadow-2xl group-hover:shadow-primary/20">
+                  <img 
+                    src={component.badge} 
+                    alt={component.subtitle}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </div>
+              <h3 className="text-xl font-bold mb-2">{component.subtitle}</h3>
+              <p className="text-muted-foreground">{component.tagline}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Three Components Detail Cards */}
       <div className="max-w-7xl mx-auto px-4 mb-20">
         <div className="grid md:grid-cols-3 gap-8">
-          {components.map((component, index) => {
-            const Icon = component.icon;
-            return (
-              <Card key={index} className="overflow-hidden hover:shadow-xl transition-shadow">
-                <div className={`h-32 bg-gradient-to-br ${component.color} flex items-center justify-center`}>
-                  <Icon className="w-16 h-16 text-white" />
-                </div>
-                <CardHeader>
-                  <CardTitle className="text-2xl">{component.title}</CardTitle>
-                  <CardDescription className="text-lg font-semibold">
-                    {component.subtitle}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground mb-4">{component.description}</p>
-                  <ul className="space-y-2">
-                    {component.features.map((feature, fIndex) => (
-                      <li key={fIndex} className="flex items-start gap-2">
-                        <CheckCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                        <span className="text-sm">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            );
-          })}
+          {components.map((component, index) => (
+            <Card key={index} className="overflow-hidden hover:shadow-xl transition-shadow">
+              <div className="h-48 bg-gradient-to-br from-muted/50 to-muted flex items-center justify-center p-6">
+                <img 
+                  src={component.badge} 
+                  alt={component.subtitle}
+                  className="w-32 h-32 object-contain transition-transform duration-300 hover:scale-110"
+                />
+              </div>
+              <CardHeader>
+                <CardTitle className="text-2xl">{component.title}</CardTitle>
+                <CardDescription className="text-lg font-semibold">
+                  {component.subtitle}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground mb-4">{component.description}</p>
+                <ul className="space-y-2">
+                  {component.features.map((feature, fIndex) => (
+                    <li key={fIndex} className="flex items-start gap-2">
+                      <CheckCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                      <span className="text-sm">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
 
