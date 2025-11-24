@@ -1,4 +1,4 @@
-import { Factory, Truck, Warehouse, ArrowRight, CheckCircle, Clock, DollarSign, Star, Quote } from "lucide-react";
+import { Factory, Truck, Warehouse, ArrowRight, CheckCircle, Clock, DollarSign, Star, Quote, Award, Shield, BadgeCheck, Zap, ThumbsUp, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
@@ -394,6 +394,105 @@ export default function Power3InstallsPlan() {
             <p className="text-lg font-semibold mb-2">Ready to see your space transformed?</p>
             <p className="text-muted-foreground">Get a free estimate and join hundreds of satisfied customers</p>
           </Card>
+        </div>
+      </div>
+
+      {/* Trust Badges & Certifications */}
+      <div className="bg-gradient-to-b from-muted/30 to-background py-16 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold mb-4">Trusted by Professionals</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Our commitment to quality, safety, and customer satisfaction is backed by industry certifications and guarantees
+            </p>
+          </div>
+
+          {/* Certification Badges */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-12">
+            <div className="flex flex-col items-center text-center p-4 bg-background rounded-lg border hover:border-primary transition-colors">
+              <Award className="w-12 h-12 text-primary mb-3" />
+              <p className="text-sm font-semibold">BBB Accredited</p>
+              <p className="text-xs text-muted-foreground mt-1">A+ Rating</p>
+            </div>
+            <div className="flex flex-col items-center text-center p-4 bg-background rounded-lg border hover:border-primary transition-colors">
+              <Shield className="w-12 h-12 text-primary mb-3" />
+              <p className="text-sm font-semibold">Licensed & Insured</p>
+              <p className="text-xs text-muted-foreground mt-1">Full Coverage</p>
+            </div>
+            <div className="flex flex-col items-center text-center p-4 bg-background rounded-lg border hover:border-primary transition-colors">
+              <BadgeCheck className="w-12 h-12 text-primary mb-3" />
+              <p className="text-sm font-semibold">NKBA Member</p>
+              <p className="text-xs text-muted-foreground mt-1">Kitchen & Bath</p>
+            </div>
+            <div className="flex flex-col items-center text-center p-4 bg-background rounded-lg border hover:border-primary transition-colors">
+              <Zap className="w-12 h-12 text-primary mb-3" />
+              <p className="text-sm font-semibold">EPA Certified</p>
+              <p className="text-xs text-muted-foreground mt-1">Eco-Friendly</p>
+            </div>
+            <div className="flex flex-col items-center text-center p-4 bg-background rounded-lg border hover:border-primary transition-colors">
+              <ThumbsUp className="w-12 h-12 text-primary mb-3" />
+              <p className="text-sm font-semibold">HomeAdvisor</p>
+              <p className="text-xs text-muted-foreground mt-1">Top Rated Pro</p>
+            </div>
+            <div className="flex flex-col items-center text-center p-4 bg-background rounded-lg border hover:border-primary transition-colors">
+              <Sparkles className="w-12 h-12 text-primary mb-3" />
+              <p className="text-sm font-semibold">Angi Certified</p>
+              <p className="text-xs text-muted-foreground mt-1">Super Service</p>
+            </div>
+          </div>
+
+          {/* Guarantees & Warranties */}
+          <div className="grid md:grid-cols-3 gap-8">
+            <Card className="text-center p-6 hover:shadow-lg transition-shadow">
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Shield className="w-8 h-8 text-primary" />
+              </div>
+              <CardTitle className="text-xl mb-3">Lifetime Warranty</CardTitle>
+              <CardDescription className="text-sm leading-relaxed">
+                All fabrication work is backed by our lifetime warranty. We stand behind the quality of our craftsmanship for as long as you own your home.
+              </CardDescription>
+            </Card>
+
+            <Card className="text-center p-6 hover:shadow-lg transition-shadow">
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-8 h-8 text-primary" />
+              </div>
+              <CardTitle className="text-xl mb-3">Quality Guarantee</CardTitle>
+              <CardDescription className="text-sm leading-relaxed">
+                100% satisfaction guaranteed or we'll make it right. Our commitment to excellence means we don't rest until you're completely happy with the results.
+              </CardDescription>
+            </Card>
+
+            <Card className="text-center p-6 hover:shadow-lg transition-shadow">
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Award className="w-8 h-8 text-primary" />
+              </div>
+              <CardTitle className="text-xl mb-3">Price Match Promise</CardTitle>
+              <CardDescription className="text-sm leading-relaxed">
+                Found a lower price for comparable quality? We'll match it. Our factory-direct pricing is already the best, but we guarantee it.
+              </CardDescription>
+            </Card>
+          </div>
+
+          {/* Trust Stats */}
+          <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="text-center">
+              <p className="text-4xl font-bold text-primary mb-2">15+</p>
+              <p className="text-sm text-muted-foreground">Years in Business</p>
+            </div>
+            <div className="text-center">
+              <p className="text-4xl font-bold text-primary mb-2">5,000+</p>
+              <p className="text-sm text-muted-foreground">Projects Completed</p>
+            </div>
+            <div className="text-center">
+              <p className="text-4xl font-bold text-primary mb-2">98%</p>
+              <p className="text-sm text-muted-foreground">Customer Satisfaction</p>
+            </div>
+            <div className="text-center">
+              <p className="text-4xl font-bold text-primary mb-2">24/7</p>
+              <p className="text-sm text-muted-foreground">Customer Support</p>
+            </div>
+          </div>
         </div>
       </div>
 
