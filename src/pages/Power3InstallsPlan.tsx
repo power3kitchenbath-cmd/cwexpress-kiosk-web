@@ -195,7 +195,7 @@ export default function Power3InstallsPlan() {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground mb-4">{component.description}</p>
-                <ul className="space-y-2">
+                <ul className="space-y-2 mb-6">
                   {component.features.map((feature, fIndex) => (
                     <li key={fIndex} className="flex items-start gap-2">
                       <CheckCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
@@ -203,6 +203,16 @@ export default function Power3InstallsPlan() {
                     </li>
                   ))}
                 </ul>
+                {index === 0 && (
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
+                    onClick={() => navigate("/fabrication-showcase")}
+                  >
+                    View Fabrication Process
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                )}
               </CardContent>
             </Card>
           ))}

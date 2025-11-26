@@ -15,6 +15,7 @@ import LaunchPlan from "./pages/LaunchPlan";
 import InvestorDeck from "./pages/InvestorDeck";
 import Presentations from "./pages/Presentations";
 import Power3InstallsPlan from "./pages/Power3InstallsPlan";
+import FabricationShowcase from "./pages/FabricationShowcase";
 import OnlineShop from "./pages/OnlineShop";
 import ProductManager from "./pages/ProductManager";
 import Checkout from "./pages/Checkout";
@@ -65,6 +66,7 @@ const App = () => (
           <Route path="/investor-deck" element={<InvestorDeck />} />
           <Route path="/presentations" element={<Presentations />} />
           <Route path="/power3-team" element={<Power3InstallsPlan />} />
+          <Route path="/fabrication-showcase" element={<FabricationShowcase />} />
           <Route path="/online-shop" element={<OnlineShop />} />
           <Route path="/product-manager" element={<ProductManager />} />
           <Route path="/checkout" element={<Checkout />} />
