@@ -438,6 +438,104 @@ export default function Power3InstallsPlan() {
         </div>
       </div>
 
+      {/* Customer Testimonials */}
+      <div className="bg-gradient-to-b from-background to-muted/30 py-16 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold mb-4">What Our Customers Say</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Real customers sharing their experience with the Power 3 difference
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {/* Speed Testimonial */}
+            <Card className="relative p-8 hover:shadow-lg transition-shadow">
+              <Quote className="absolute top-4 right-4 w-12 h-12 text-primary/20" />
+              <div className="flex items-center gap-1 mb-4">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-5 h-5 fill-primary text-primary" />
+                ))}
+              </div>
+              <CardDescription className="text-base leading-relaxed mb-4 text-foreground">
+                "I couldn't believe they fabricated our granite countertops in just one hour! Most places quoted us 2-3 weeks. We had our entire kitchen done in 3 days instead of a month."
+              </CardDescription>
+              <div className="flex items-center gap-3 pt-4 border-t">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Clock className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <p className="font-semibold">Jennifer Martinez</p>
+                  <p className="text-sm text-muted-foreground">Atlanta, GA</p>
+                </div>
+              </div>
+            </Card>
+
+            {/* Quality Testimonial */}
+            <Card className="relative p-8 hover:shadow-lg transition-shadow">
+              <Quote className="absolute top-4 right-4 w-12 h-12 text-primary/20" />
+              <div className="flex items-center gap-1 mb-4">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-5 h-5 fill-primary text-primary" />
+                ))}
+              </div>
+              <CardDescription className="text-base leading-relaxed mb-4 text-foreground">
+                "The craftsmanship is exceptional. Our quartz countertops are flawless, and the cabinet installation was perfect. You can tell they use premium materials and really care about quality."
+              </CardDescription>
+              <div className="flex items-center gap-3 pt-4 border-t">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Award className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <p className="font-semibold">Michael Thompson</p>
+                  <p className="text-sm text-muted-foreground">Roswell, GA</p>
+                </div>
+              </div>
+            </Card>
+
+            {/* Cost Savings Testimonial */}
+            <Card className="relative p-8 hover:shadow-lg transition-shadow">
+              <Quote className="absolute top-4 right-4 w-12 h-12 text-primary/20" />
+              <div className="flex items-center gap-1 mb-4">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-5 h-5 fill-primary text-primary" />
+                ))}
+              </div>
+              <CardDescription className="text-base leading-relaxed mb-4 text-foreground">
+                "We saved over $8,000 compared to the other quotes we got! Same quality materials, better service, and way faster completion. Power 3 was a no-brainer for our bathroom renovation."
+              </CardDescription>
+              <div className="flex items-center gap-3 pt-4 border-t">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <DollarSign className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <p className="font-semibold">Sarah & David Chen</p>
+                  <p className="text-sm text-muted-foreground">Marietta, GA</p>
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Additional Customer Quotes Banner */}
+          <div className="mt-12 bg-muted/50 rounded-lg p-8">
+            <div className="grid md:grid-cols-3 gap-6 text-center">
+              <div>
+                <p className="text-sm font-semibold text-muted-foreground mb-2">SPEED</p>
+                <p className="text-lg italic">"Fastest turnaround I've ever seen"</p>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-muted-foreground mb-2">QUALITY</p>
+                <p className="text-lg italic">"Premium materials at amazing prices"</p>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-muted-foreground mb-2">SAVINGS</p>
+                <p className="text-lg italic">"Beat all competitors by thousands"</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Trust Badges & Certifications */}
       <div className="bg-gradient-to-b from-muted/30 to-background py-16 px-4">
         <div className="max-w-7xl mx-auto">
