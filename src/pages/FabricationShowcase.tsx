@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Play, Clock, Award, CheckCircle2, Sparkles, Ruler, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import cornerstoneBadge from "@/assets/badges/cornerstone-fabricator-badge.png";
+import fabricationMachine from "@/assets/fabrication-machine.jpg";
 
 const FabricationShowcase = () => {
   const navigate = useNavigate();
@@ -13,31 +14,36 @@ const FabricationShowcase = () => {
       title: "Material Selection",
       duration: "5 minutes",
       description: "Choose from our premium granite and quartz collection. Our experts help you select the perfect material for your space.",
-      videoPlaceholder: "https://via.placeholder.com/800x450/1a1a1a/ffffff?text=Material+Selection+Process"
+      videoUrl: "/videos/fabrication-process-1.mp4",
+      isVideo: true
     },
     {
       title: "Precision Measurement",
       duration: "10 minutes",
       description: "Advanced laser measuring ensures perfect fit. We capture every detail of your countertop space with millimeter accuracy.",
-      videoPlaceholder: "https://via.placeholder.com/800x450/1a1a1a/ffffff?text=Laser+Measurement+Process"
+      videoUrl: "/videos/fabrication-process-2.mp4",
+      isVideo: true
     },
     {
       title: "CNC Fabrication",
       duration: "30 minutes",
       description: "State-of-the-art CNC machines cut and shape your countertop with precision. Our automated process ensures consistency and quality.",
-      videoPlaceholder: "https://via.placeholder.com/800x450/1a1a1a/ffffff?text=CNC+Fabrication+Process"
+      imageUrl: fabricationMachine,
+      isVideo: false
     },
     {
       title: "Edge Finishing",
       duration: "10 minutes",
       description: "Multiple edge profiles available. Our craftsmen polish and finish edges to perfection for a smooth, beautiful result.",
-      videoPlaceholder: "https://via.placeholder.com/800x450/1a1a1a/ffffff?text=Edge+Finishing+Process"
+      videoPlaceholder: "https://via.placeholder.com/800x450/1a1a1a/ffffff?text=Edge+Finishing+Process",
+      isVideo: false
     },
     {
       title: "Quality Inspection",
       duration: "5 minutes",
       description: "Every countertop undergoes rigorous quality checks. We inspect for color consistency, structural integrity, and finish quality.",
-      videoPlaceholder: "https://via.placeholder.com/800x450/1a1a1a/ffffff?text=Quality+Inspection+Process"
+      videoPlaceholder: "https://via.placeholder.com/800x450/1a1a1a/ffffff?text=Quality+Inspection+Process",
+      isVideo: false
     }
   ];
 
@@ -192,18 +198,35 @@ const FabricationShowcase = () => {
             {processSteps.map((step, index) => (
               <Card key={index} className="overflow-hidden">
                 <div className={`grid md:grid-cols-2 gap-0 ${index % 2 === 1 ? 'md:grid-flow-dense' : ''}`}>
-                  {/* Video Placeholder */}
+                  {/* Video or Image */}
                   <div className={`relative aspect-video bg-muted ${index % 2 === 1 ? 'md:col-start-2' : ''}`}>
-                    <img 
-                      src={step.videoPlaceholder} 
-                      alt={step.title}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/20 transition-colors cursor-pointer group">
-                      <div className="w-20 h-20 rounded-full bg-white/90 flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <Play className="h-10 w-10 text-primary ml-1" fill="currentColor" />
-                      </div>
-                    </div>
+                    {step.isVideo ? (
+                      <video 
+                        src={step.videoUrl}
+                        className="w-full h-full object-cover"
+                        controls
+                        preload="metadata"
+                      />
+                    ) : step.imageUrl ? (
+                      <img 
+                        src={step.imageUrl}
+                        alt={step.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <>
+                        <img 
+                          src={step.videoPlaceholder} 
+                          alt={step.title}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/20 transition-colors cursor-pointer group">
+                          <div className="w-20 h-20 rounded-full bg-white/90 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <Play className="h-10 w-10 text-primary ml-1" fill="currentColor" />
+                          </div>
+                        </div>
+                      </>
+                    )}
                     <div className="absolute top-4 right-4">
                       <Badge className="bg-white/90 text-foreground">
                         <Clock className="h-3 w-3 mr-1" />
