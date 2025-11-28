@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from "react";
-import { motion } from "framer-motion";
 import { CalendarDays, ChevronRight, CreditCard, Phone, Mail, Ruler, Store, CheckCircle2 } from "lucide-react";
 
 /**
@@ -160,7 +159,7 @@ export default function KioskQuoteSystem() {
     <div className="min-h-screen w-full bg-white text-slate-900">
       <div className="mx-auto max-w-3xl px-6 py-8">
         {step === "welcome" && (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="text-center">
+          <div className="animate-in fade-in duration-300 text-center">
             <div className="mb-8 flex items-center justify-center gap-2 text-blue-700">
               <Store /> <span className="font-semibold tracking-wide">Kiosk – Quick Estimate & Appointment</span>
             </div>
@@ -168,11 +167,11 @@ export default function KioskQuoteSystem() {
             <p className="mt-3 text-slate-600">Get a ballpark total for cabinets, countertops, and flooring, then lock a design consultation. A refundable <strong>${DEPOSIT.toFixed(2)}</strong> deposit reserves your spot.</p>
             <Next onClick={() => setStep("customer")} label="Start" />
             <p className="mt-4 text-xs text-slate-500">Your estimate is for planning only. Final quote after on-site measure & design.</p>
-          </motion.div>
+          </div>
         )}
 
         {step === "customer" && (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+          <div className="animate-in fade-in duration-300">
             <h2 className="text-2xl font-bold">Your Info</h2>
             <div className="mt-4 grid gap-4">
               <label className="block">
@@ -191,11 +190,11 @@ export default function KioskQuoteSystem() {
               </div>
             </div>
             <Next onClick={() => setStep("kitchen")} />
-          </motion.div>
+          </div>
         )}
 
         {step === "kitchen" && (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+          <div className="animate-in fade-in duration-300">
             <h2 className="text-2xl font-bold">Kitchen Basics</h2>
             <div className="mt-3 rounded-2xl border p-4">
               <div className="flex flex-wrap items-center gap-3">
@@ -233,11 +232,11 @@ export default function KioskQuoteSystem() {
               )}
             </div>
             <Next onClick={() => setStep("materials")} />
-          </motion.div>
+          </div>
         )}
 
         {step === "materials" && (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+          <div className="animate-in fade-in duration-300">
             <h2 className="text-2xl font-bold">Materials & Tier</h2>
             <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="rounded-2xl border p-4">
@@ -287,11 +286,11 @@ export default function KioskQuoteSystem() {
               </div>
             </div>
             <Next onClick={() => setStep("estimate")} label="Review Estimate" />
-          </motion.div>
+          </div>
         )}
 
         {step === "estimate" && (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+          <div className="animate-in fade-in duration-300">
             <h2 className="text-2xl font-bold">Your Estimate</h2>
             <div className="mt-3 grid gap-4 md:grid-cols-2">
               <div className="rounded-2xl border p-4">
@@ -309,11 +308,11 @@ export default function KioskQuoteSystem() {
               </div>
             </div>
             <Next onClick={() => setStep("appointment")} label="Choose Appointment" />
-          </motion.div>
+          </div>
         )}
 
         {step === "appointment" && (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+          <div className="animate-in fade-in duration-300">
             <h2 className="text-2xl font-bold">Book Your Consultation</h2>
             <div className="mt-3 rounded-2xl border p-4">
               <div className="flex items-center gap-2 text-blue-700"><CalendarDays /> <span className="text-sm font-semibold">Select a time</span></div>
@@ -325,11 +324,11 @@ export default function KioskQuoteSystem() {
               <div className="mt-3 text-xs text-slate-600">For live scheduling, embed Calendly/Acuity here.</div>
             </div>
             <Next onClick={() => setStep("payment")} label={slot ? `Reserve ${slot}` : "Reserve (select a slot)"} />
-          </motion.div>
+          </div>
         )}
 
         {step === "payment" && (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+          <div className="animate-in fade-in duration-300">
             <h2 className="text-2xl font-bold">Reserve with Deposit</h2>
             <div className="mt-3 grid gap-4 md:grid-cols-2">
               <div className="rounded-2xl border p-4">
@@ -364,11 +363,11 @@ export default function KioskQuoteSystem() {
                 </div>
               </div>
             </div>
-          </motion.div>
+          </div>
         )}
 
         {step === "confirm" && (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="text-center">
+          <div className="animate-in fade-in duration-300 text-center">
             <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-green-100 p-3 text-green-700"><CheckCircle2 className="h-full w-full" /></div>
             <h2 className="text-2xl font-bold">You're Booked!</h2>
             <p className="mt-2 text-slate-700">Thanks, {customer.name || "Customer"}. Your consultation is reserved for <strong>{slot}</strong>.</p>
@@ -382,7 +381,7 @@ export default function KioskQuoteSystem() {
               </ol>
             </div>
             <button onClick={() => setStep("welcome")} className="mt-6 rounded-2xl bg-slate-900 px-6 py-3 text-white">Finish</button>
-          </motion.div>
+          </div>
         )}
       </div>
     </div>
