@@ -44,6 +44,7 @@ import ReturnPolicy from "./pages/shipping/policies/ReturnPolicy";
 import ShippingProcedures from "./pages/shipping/policies/ShippingProcedures";
 import Contact from "./pages/shipping/Contact";
 import KioskManual from "./pages/KioskManual";
+import KioskQuoteSystem from "./pages/KioskQuoteSystem";
 
 const queryClient = new QueryClient();
 
@@ -90,6 +91,9 @@ const App = () => (
           
           {/* Kiosk Manual */}
           <Route path="/kiosk-manual" element={<KioskManual />} />
+          
+          {/* Kiosk Quote System */}
+          <Route path="/kiosk-quote" element={<KioskQuoteSystem />} />
           
           {/* CW Express Shipping Platform */}
           <Route path="/shipping" element={<ShippingLayout />}>
