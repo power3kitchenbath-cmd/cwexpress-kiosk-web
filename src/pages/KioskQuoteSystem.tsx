@@ -1,5 +1,7 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { CalendarDays, ChevronRight, CreditCard, Phone, Mail, Ruler, Store, CheckCircle2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 /**
  * Kiosk Product Quote System – Single-File Prototype
@@ -69,11 +71,13 @@ function roundTo(n: number, step = 10) {
   return Math.round(n / step) * step;
 }
 
-export default function KioskQuoteSystem() {
+export default function KioskProductQuoteSystem() {
+  const { toast } = useToast();
   const [step, setStep] = useState<
     "welcome" | "customer" | "kitchen" | "materials" | "estimate" | "appointment" | "payment" | "confirm"
   >("welcome");
 
+  const [quoteId, setQuoteId] = useState<string | null>(null);
   const [customer, setCustomer] = useState({ name: "", phone: "", email: "" });
   const [sizeMode, setSizeMode] = useState<"PRESET" | "MANUAL">("PRESET");
   const [presetId, setPresetId] = useState("MEDIUM");
@@ -135,16 +139,98 @@ export default function KioskQuoteSystem() {
   const [slot, setSlot] = useState("");
   const [refCode, setRefCode] = useState("");
 
-  async function mockSave() {
-    // Replace with your DB/Zapier webhook
-    await new Promise(r => setTimeout(r, 400));
-    return { ok: true, id: Math.random().toString(36).slice(2, 8).toUpperCase() };
+  // Save or update quote in database
+  async function saveQuote(status: string = "draft") {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const quoteData = {
+        user_id: user?.id || null,
+        customer_name: customer.name,
+        customer_phone: customer.phone,
+        customer_email: customer.email,
+        size_mode: sizeMode,
+        preset_id: sizeMode === "PRESET" ? presetId : null,
+        length_ft: effective.lengthFt,
+        width_ft: effective.widthFt,
+        cabinet_lf: effective.cabLF,
+        countertop_lf: effective.ctLF,
+        area_sf: areaSF,
+        tier: tier,
+        countertop_material: ctMat,
+        flooring_material: floorMat,
+        plumbing_moves: addOns.plumbingMoves,
+        include_demo: addOns.demo,
+        estimate_low: estimate.low,
+        estimate_high: estimate.high,
+        estimate_subtotal: estimate.subtotal,
+        deposit_amount: DEPOSIT,
+        appointment_slot: slot,
+        status: status,
+      };
+
+      if (quoteId) {
+        // Update existing quote
+        const { error } = await supabase
+          .from("kiosk_quotes")
+          .update(quoteData)
+          .eq("id", quoteId);
+        
+        if (error) throw error;
+        return { ok: true, id: quoteId };
+      } else {
+        // Create new quote
+        const { data, error } = await supabase
+          .from("kiosk_quotes")
+          .insert(quoteData)
+          .select()
+          .single();
+        
+        if (error) throw error;
+        setQuoteId(data.id);
+        return { ok: true, id: data.id };
+      }
+    } catch (error) {
+      console.error("Error saving quote:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save quote. Please try again.",
+        variant: "destructive",
+      });
+      return { ok: false };
+    }
   }
 
-  async function mockPay() {
-    // Replace with Stripe Checkout or Stripe Terminal
-    await new Promise(r => setTimeout(r, 600));
-    return { ok: true, receipt: Math.random().toString(36).slice(2, 10).toUpperCase() };
+  async function completePayment() {
+    try {
+      // Generate reference code
+      const refCode = `KQ-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+      
+      // Update quote with payment info
+      const { error } = await supabase
+        .from("kiosk_quotes")
+        .update({
+          status: "appointment_booked",
+          deposit_paid: true,
+          deposit_paid_at: new Date().toISOString(),
+          reference_code: refCode,
+          payment_receipt: `RECEIPT-${refCode}`,
+        })
+        .eq("id", quoteId);
+      
+      if (error) throw error;
+      
+      setRefCode(refCode);
+      return { ok: true, receipt: refCode };
+    } catch (error) {
+      console.error("Error processing payment:", error);
+      toast({
+        title: "Payment Error",
+        description: "Failed to process payment. Please try again.",
+        variant: "destructive",
+      });
+      return { ok: false };
+    }
   }
 
   function Next({ onClick, label = "Continue" }: { onClick: () => void; label?: string }) {
@@ -189,7 +275,18 @@ export default function KioskQuoteSystem() {
                 </label>
               </div>
             </div>
-            <Next onClick={() => setStep("kitchen")} />
+            <Next onClick={async () => {
+              if (!customer.name || !customer.email || !customer.phone) {
+                toast({
+                  title: "Missing Information",
+                  description: "Please fill in all customer information.",
+                  variant: "destructive",
+                });
+                return;
+              }
+              await saveQuote("draft");
+              setStep("kitchen");
+            }} />
           </div>
         )}
 
@@ -231,7 +328,10 @@ export default function KioskQuoteSystem() {
                 </div>
               )}
             </div>
-            <Next onClick={() => setStep("materials")} />
+            <Next onClick={async () => {
+              await saveQuote("draft");
+              setStep("materials");
+            }} />
           </div>
         )}
 
@@ -285,7 +385,10 @@ export default function KioskQuoteSystem() {
                 </div>
               </div>
             </div>
-            <Next onClick={() => setStep("estimate")} label="Review Estimate" />
+            <Next onClick={async () => {
+              await saveQuote("draft");
+              setStep("estimate");
+            }} label="Review Estimate" />
           </div>
         )}
 
@@ -307,7 +410,10 @@ export default function KioskQuoteSystem() {
                 </ul>
               </div>
             </div>
-            <Next onClick={() => setStep("appointment")} label="Choose Appointment" />
+            <Next onClick={async () => {
+              await saveQuote("draft");
+              setStep("appointment");
+            }} label="Choose Appointment" />
           </div>
         )}
 
@@ -323,7 +429,18 @@ export default function KioskQuoteSystem() {
               </div>
               <div className="mt-3 text-xs text-slate-600">For live scheduling, embed Calendly/Acuity here.</div>
             </div>
-            <Next onClick={() => setStep("payment")} label={slot ? `Reserve ${slot}` : "Reserve (select a slot)"} />
+            <Next onClick={async () => {
+              if (!slot) {
+                toast({
+                  title: "Select Time Slot",
+                  description: "Please select an appointment time.",
+                  variant: "destructive",
+                });
+                return;
+              }
+              await saveQuote("draft");
+              setStep("payment");
+            }} label={slot ? `Reserve ${slot}` : "Reserve (select a slot)"} />
           </div>
         )}
 
@@ -339,11 +456,17 @@ export default function KioskQuoteSystem() {
                 </div>
                 <button
                   onClick={async () => {
-                    const save = await mockSave();
-                    if (!save.ok) return;
-                    const pay = await mockPay();
+                    if (!quoteId) {
+                      const save = await saveQuote("draft");
+                      if (!save.ok) return;
+                    }
+                    const pay = await completePayment();
                     if (!pay.ok) return;
-                    setRefCode(`${save.id}-${Date.now().toString().slice(-4)}`);
+                    
+                    toast({
+                      title: "Success!",
+                      description: "Your appointment has been confirmed.",
+                    });
                     setStep("confirm");
                   }}
                   className="mt-4 w-full rounded-2xl bg-blue-600 px-6 py-4 font-semibold text-white hover:bg-blue-700"
@@ -380,7 +503,14 @@ export default function KioskQuoteSystem() {
                 <li>Your $ {DEPOSIT.toFixed(2)} deposit is credited toward your order.</li>
               </ol>
             </div>
-            <button onClick={() => setStep("welcome")} className="mt-6 rounded-2xl bg-slate-900 px-6 py-3 text-white">Finish</button>
+            <button onClick={() => {
+              // Reset form
+              setQuoteId(null);
+              setCustomer({ name: "", phone: "", email: "" });
+              setSlot("");
+              setRefCode("");
+              setStep("welcome");
+            }} className="mt-6 rounded-2xl bg-slate-900 px-6 py-3 text-white">Finish</button>
           </div>
         )}
       </div>

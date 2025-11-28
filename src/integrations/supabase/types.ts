@@ -641,6 +641,111 @@ export type Database = {
           },
         ]
       }
+      kiosk_quotes: {
+        Row: {
+          appointment_date: string | null
+          appointment_slot: string | null
+          area_sf: number
+          cabinet_lf: number
+          countertop_lf: number
+          countertop_material: string
+          created_at: string
+          customer_email: string
+          customer_name: string
+          customer_phone: string
+          deposit_amount: number
+          deposit_paid: boolean
+          deposit_paid_at: string | null
+          estimate_high: number
+          estimate_low: number
+          estimate_subtotal: number
+          flooring_material: string
+          id: string
+          include_demo: boolean
+          length_ft: number
+          metadata: Json | null
+          notes: string | null
+          payment_receipt: string | null
+          plumbing_moves: number
+          preset_id: string | null
+          reference_code: string | null
+          size_mode: string
+          status: string
+          tier: string
+          updated_at: string
+          user_id: string | null
+          width_ft: number
+        }
+        Insert: {
+          appointment_date?: string | null
+          appointment_slot?: string | null
+          area_sf: number
+          cabinet_lf: number
+          countertop_lf: number
+          countertop_material: string
+          created_at?: string
+          customer_email: string
+          customer_name: string
+          customer_phone: string
+          deposit_amount?: number
+          deposit_paid?: boolean
+          deposit_paid_at?: string | null
+          estimate_high: number
+          estimate_low: number
+          estimate_subtotal: number
+          flooring_material: string
+          id?: string
+          include_demo?: boolean
+          length_ft: number
+          metadata?: Json | null
+          notes?: string | null
+          payment_receipt?: string | null
+          plumbing_moves?: number
+          preset_id?: string | null
+          reference_code?: string | null
+          size_mode?: string
+          status?: string
+          tier: string
+          updated_at?: string
+          user_id?: string | null
+          width_ft: number
+        }
+        Update: {
+          appointment_date?: string | null
+          appointment_slot?: string | null
+          area_sf?: number
+          cabinet_lf?: number
+          countertop_lf?: number
+          countertop_material?: string
+          created_at?: string
+          customer_email?: string
+          customer_name?: string
+          customer_phone?: string
+          deposit_amount?: number
+          deposit_paid?: boolean
+          deposit_paid_at?: string | null
+          estimate_high?: number
+          estimate_low?: number
+          estimate_subtotal?: number
+          flooring_material?: string
+          id?: string
+          include_demo?: boolean
+          length_ft?: number
+          metadata?: Json | null
+          notes?: string | null
+          payment_receipt?: string | null
+          plumbing_moves?: number
+          preset_id?: string | null
+          reference_code?: string | null
+          size_mode?: string
+          status?: string
+          tier?: string
+          updated_at?: string
+          user_id?: string | null
+          width_ft?: number
+        }
+        Relationships: []
+      }
       kitchen_quotes: {
         Row: {
           base_price: number
