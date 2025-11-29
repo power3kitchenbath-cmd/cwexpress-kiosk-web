@@ -54,9 +54,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       
       if (session?.user) {
         // User logged in - merge localStorage cart with database cart
-        setTimeout(async () => {
-          await syncCartOnLogin(session.user.id);
-        }, 0);
+        syncCartOnLogin(session.user.id).catch(error => {
+          console.error('Error syncing cart on login:', error);
+        });
       } else if (event === 'SIGNED_OUT') {
         // User logged out - keep localStorage cart only
         const savedCart = localStorage.getItem('cart');
@@ -74,6 +74,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         await loadCartFromDatabase(session.user.id);
       }
       
+      setIsLoadingAuth(false);
+    }).catch(error => {
+      console.error('Error getting session:', error);
       setIsLoadingAuth(false);
     });
 
