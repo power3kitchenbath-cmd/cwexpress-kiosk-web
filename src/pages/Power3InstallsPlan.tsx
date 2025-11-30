@@ -429,7 +429,7 @@ export default function Power3InstallsPlan() {
             </div>
             <div className="mt-4 text-center">
               <p className="text-muted-foreground">
-                <span className="font-semibold text-foreground">Transformation Details:</span> Sleek quartz countertops • Gray shaker cabinets • Glass tile backsplash • Stainless appliances • 3-day turnaround
+                <span className="font-semibold text-foreground">Transformation Details:</span> Sleek quartz countertops • White shaker cabinets • White tile backsplash •
               </p>
             </div>
           </div>
