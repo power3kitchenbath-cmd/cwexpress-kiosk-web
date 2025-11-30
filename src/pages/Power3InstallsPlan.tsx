@@ -8,16 +8,12 @@ import bathBefore1 from "@/assets/gallery/bath-before-1.jpg";
 import bathAfter1 from "@/assets/gallery/bath-after-1.jpg";
 import kitchenBefore2 from "@/assets/gallery/kitchen-before-3.jpg";
 import kitchenAfter2 from "@/assets/gallery/kitchen-after-3.jpg";
-import cornerstoneBadge from "@/assets/badges/cornerstone-fabricator-badge.png";
-import expressBadge from "@/assets/badges/express-delivery-badge.png";
-import power3Badge from "@/assets/badges/power3-main-badge.png";
 
 export default function Power3InstallsPlan() {
   const navigate = useNavigate();
 
   const components = [
     {
-      badge: cornerstoneBadge,
       title: "Our Fabricator",
       subtitle: "Cornerstone Quality Products",
       description: "Our state-of-the-art facilities allow us to produce products quickly and efficiently. We use the latest technology to ensure that our products are of the highest quality.",
@@ -30,7 +26,6 @@ export default function Power3InstallsPlan() {
       tagline: "Precision Fabrication in 1 Hour"
     },
     {
-      badge: expressBadge,
       title: "Our Shipping Co.",
       subtitle: "CW Express Logistics",
       description: "(RTA) Ready To Assemble Cabinets, LVP Flooring, Vanity Tops Shipped To Your Home Or Job site in 3 to 5 Days",
@@ -43,7 +38,6 @@ export default function Power3InstallsPlan() {
       tagline: "Fast Delivery Nationwide"
     },
     {
-      badge: power3Badge,
       title: "Our Distributor",
       subtitle: "Power 3 Kitchen & Bath",
       description: "Kitchen & Bath Cabinets, LVP Flooring, and Vanity Tops in stock Ready for Same Day Pick Up or Next Day Delivery",
@@ -164,17 +158,8 @@ export default function Power3InstallsPlan() {
         <div className="grid md:grid-cols-3 gap-8 mb-16">
           {components.map((component, index) => (
             <div key={index} className="text-center group">
-              <div className="mb-4 flex justify-center">
-                <div className="w-48 h-48 rounded-full overflow-hidden bg-background shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:shadow-2xl group-hover:shadow-primary/20">
-                  <img 
-                    src={component.badge} 
-                    alt={component.subtitle}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              </div>
-              <h3 className="text-xl font-bold mb-2">{component.subtitle}</h3>
-              <p className="text-muted-foreground">{component.tagline}</p>
+              <h3 className="text-2xl font-bold mb-2">{component.subtitle}</h3>
+              <p className="text-lg text-muted-foreground">{component.tagline}</p>
             </div>
           ))}
         </div>
@@ -185,13 +170,6 @@ export default function Power3InstallsPlan() {
         <div className="grid md:grid-cols-3 gap-8">
           {components.map((component, index) => (
             <Card key={index} className="overflow-hidden hover:shadow-xl transition-shadow">
-              <div className="h-48 bg-gradient-to-br from-muted/50 to-muted flex items-center justify-center p-6">
-                <img 
-                  src={component.badge} 
-                  alt={component.subtitle}
-                  className="w-32 h-32 object-contain transition-transform duration-300 hover:scale-110"
-                />
-              </div>
               <CardHeader>
                 <CardTitle className="text-2xl">{component.title}</CardTitle>
                 <CardDescription className="text-lg font-semibold">
