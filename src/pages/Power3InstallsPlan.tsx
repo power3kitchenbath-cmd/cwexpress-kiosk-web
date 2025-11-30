@@ -6,8 +6,8 @@ import kitchenBefore1 from "@/assets/gallery/kitchen-before-1.jpg";
 import kitchenAfter1 from "@/assets/gallery/kitchen-after-1.jpg";
 import bathBefore1 from "@/assets/gallery/bath-before-1.jpg";
 import bathAfter1 from "@/assets/gallery/bath-after-1.jpg";
-import kitchenBefore2 from "@/assets/gallery/kitchen-before-2.jpg";
-import kitchenAfter2 from "@/assets/gallery/kitchen-after-2.jpg";
+import kitchenBefore2 from "@/assets/gallery/kitchen-before-3.jpg";
+import kitchenAfter2 from "@/assets/gallery/kitchen-after-3.jpg";
 import cornerstoneBadge from "@/assets/badges/cornerstone-fabricator-badge.png";
 import expressBadge from "@/assets/badges/express-delivery-badge.png";
 import power3Badge from "@/assets/badges/power3-main-badge.png";
@@ -404,7 +404,7 @@ export default function Power3InstallsPlan() {
 
           {/* Kitchen Project 2 */}
           <div>
-            <h3 className="text-2xl font-semibold mb-4 text-center">Modern Kitchen Update - Roswell, GA</h3>
+            <h3 className="text-2xl font-semibold mb-4 text-center">Modern Kitchen Update - Stone Mountain, GA</h3>
             <div className="grid md:grid-cols-2 gap-4">
               <div className="relative group overflow-hidden rounded-lg">
                 <img 
