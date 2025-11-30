@@ -142,9 +142,14 @@ export default function Power3InstallsPlan() {
       {/* Video Section */}
       <div className="max-w-7xl mx-auto px-4 -mt-8 mb-16">
         <Card className="overflow-hidden shadow-2xl">
-          <div className="aspect-video bg-muted flex items-center justify-center">
-            <p className="text-muted-foreground">Video: Power 3 Team Overview</p>
-          </div>
+          <video 
+            className="w-full aspect-video"
+            controls
+            preload="metadata"
+          >
+            <source src="/videos/fabrication-process-1.mp4" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
         </Card>
       </div>
 
