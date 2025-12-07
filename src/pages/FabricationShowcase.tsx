@@ -5,6 +5,7 @@ import { ArrowLeft, Clock, Award, CheckCircle2, Sparkles, Ruler, Shield } from "
 import { useNavigate } from "react-router-dom";
 import cornerstoneBadge from "@/assets/badges/cornerstone-fabricator-badge.png";
 import fabricationMachine from "@/assets/fabrication-machine.jpg";
+import precisionMeasurement from "@/assets/precision-measurement.jpg";
 
 const FabricationShowcase = () => {
   const navigate = useNavigate();
@@ -21,8 +22,8 @@ const FabricationShowcase = () => {
       title: "Precision Measurement",
       duration: "10 minutes",
       description: "Advanced laser measuring ensures perfect fit. We capture every detail of your countertop space with millimeter accuracy.",
-      videoUrl: "/videos/fabrication-process-2.mp4",
-      isVideo: true
+      imageUrl: precisionMeasurement,
+      isVideo: false
     },
     {
       title: "CNC Fabrication",
