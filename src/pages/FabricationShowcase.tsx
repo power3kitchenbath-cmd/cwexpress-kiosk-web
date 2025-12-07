@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import cornerstoneBadge from "@/assets/badges/cornerstone-fabricator-badge.png";
 import fabricationMachine from "@/assets/fabrication-machine.jpg";
 import precisionMeasurement from "@/assets/precision-measurement.jpg";
+import slabShowroom from "@/assets/slab-showroom.jpg";
 
 const FabricationShowcase = () => {
   const navigate = useNavigate();
@@ -15,8 +16,8 @@ const FabricationShowcase = () => {
       title: "Material Selection",
       duration: "5 minutes",
       description: "Choose from our premium granite and quartz collection. Our experts help you select the perfect material for your space.",
-      videoUrl: "/videos/fabrication-process-1.mp4",
-      isVideo: true
+      imageUrl: slabShowroom,
+      isVideo: false
     },
     {
       title: "Precision Measurement",
@@ -187,16 +188,16 @@ const FabricationShowcase = () => {
                 <div className={`grid md:grid-cols-2 gap-0 ${index % 2 === 1 ? 'md:grid-flow-dense' : ''}`}>
                   {/* Video or Image */}
                   <div className={`relative aspect-video bg-muted ${index % 2 === 1 ? 'md:col-start-2' : ''}`}>
-                    {step.isVideo ? (
+                    {step.isVideo && 'videoUrl' in step ? (
                       <video 
-                        src={step.videoUrl}
+                        src={(step as { videoUrl: string }).videoUrl}
                         className="w-full h-full object-cover"
                         controls
                         preload="metadata"
                       />
                     ) : (
                       <img 
-                        src={step.imageUrl}
+                        src={'imageUrl' in step ? (step as { imageUrl: string }).imageUrl : ''}
                         alt={step.title}
                         className="w-full h-full object-cover"
                       />
